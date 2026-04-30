@@ -17,6 +17,7 @@ This repository is in the initial scaffold phase. The current codebase contains 
 - [Architecture Notes](#architecture-notes)
 - [API Contract Summary](#api-contract-summary)
 - [Team Workflow](#team-workflow)
+- [Contributing](#contributing)
 - [Documentation](#documentation)
 
 ## Project Status
@@ -359,6 +360,16 @@ feat(client): scaffold Angular workspace
 chore: add repository ignore rules
 ```
 
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a branch or pull request.
+
+Project standards are documented in [docs/CONVENTIONS.md](docs/CONVENTIONS.md), including branch naming, commit messages, backend structure, frontend structure, API rules, testing expectations, and security requirements.
+
+Security expectations and vulnerability reporting are documented in [SECURITY.md](SECURITY.md).
+
+GitHub issue and pull request templates live under `.github/`. Dependabot is configured for backend, frontend, and GitHub Actions dependency manifests.
+
 ## Documentation
 
 - [Project description](docs/project_description.md): original stack project brief and feature expectations
@@ -366,3 +377,4 @@ chore: add repository ignore rules
 - [Software Requirements Specification](docs/SRS.md): scope, architecture, data models, API contracts, and constraints
 - [Project execution plan](docs/project_plan.md): phases, milestones, branching strategy, setup plan, risks, and environment checklist
 - [Task distribution](docs/task_distribution.md): developer ownership, estimates, dependencies, and phase-by-phase delivery plan
+- [Project conventions](docs/CONVENTIONS.md): repository, backend, frontend, API, security, testing, and documentation standards

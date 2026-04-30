@@ -1,0 +1,76 @@
+name: Feature Request
+description: Propose a new feature or a scoped enhancement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for scoped, reviewable feature proposals. Link the SRS or requirements IDs when available.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend
+        - Frontend
+        - API Contract
+        - Auth
+        - Products
+        - Cart
+        - Checkout / Orders
+        - Payments
+        - Reviews
+        - Admin
+        - Documentation
+        - Tooling / CI
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user, admin, developer, or QA problem does this solve?
+      placeholder: Explain the current gap.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe the smallest useful implementation.
+      placeholder: Describe the expected behavior, UI, API, or data changes.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Use concrete, testable outcomes.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: input
+    id: requirements
+    attributes:
+      label: Requirement IDs
+      placeholder: FR-USR-001, NFR-SEC-004, etc.
+  - type: textarea
+    id: api
+    attributes:
+      label: API / Data Model Impact
+      placeholder: New endpoints, payload changes, model changes, migrations, or none.
+  - type: textarea
+    id: ui
+    attributes:
+      label: UI Impact
+      placeholder: Screens, states, validation, accessibility considerations, or none.
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and Dependencies
+      placeholder: Shared files, payment provider setup, backend/frontend dependencies, security concerns, or rollout notes.

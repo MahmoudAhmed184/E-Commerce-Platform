@@ -1,0 +1,57 @@
+name: Task
+description: Track implementation, documentation, setup, or QA work.
+title: "chore: "
+labels:
+  - task
+body:
+  - type: dropdown
+    id: track
+    attributes:
+      label: Track
+      options:
+        - Backend
+        - Frontend
+        - Full-stack
+        - Documentation
+        - DevOps / CI
+        - QA
+        - Architecture
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      placeholder: What should be completed?
+    validations:
+      required: true
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      placeholder: P1-SET-001, P2-BE-USR-001, etc.
+  - type: input
+    id: requirements
+    attributes:
+      label: Requirement IDs
+      placeholder: FR-USR-001, NFR-MNT-002, etc.
+  - type: textarea
+    id: checklist
+    attributes:
+      label: Checklist
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      placeholder: Commands, tests, manual checks, or review criteria.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      placeholder: Related tasks, blocked work, shared files, or external setup.

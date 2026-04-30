@@ -1,0 +1,101 @@
+name: Bug Report
+description: Report a reproducible defect in the application.
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Provide enough detail for another developer to reproduce it locally.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend
+        - Frontend
+        - API Contract
+        - Auth
+        - Products
+        - Cart
+        - Checkout / Orders
+        - Payments
+        - Reviews
+        - Admin
+        - Documentation
+        - Tooling / CI
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Blocker
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: Describe the defect in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: List exact steps, commands, request payloads, or UI actions.
+      placeholder: |
+        1. Go to ...
+        2. Run ...
+        3. Submit ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: What should happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add logs, screenshots, stack traces, API responses, or terminal output.
+      render: shell
+  - type: input
+    id: branch
+    attributes:
+      label: Branch / Commit
+      placeholder: develop, feature/auth-registration, or commit SHA
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser, OS, Python, Node, database, and package versions when relevant.
+      placeholder: |
+        OS:
+        Browser:
+        Python:
+        Node:
+        Database:
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Context
+      placeholder: Links to related issues, requirements, or SRS sections.
