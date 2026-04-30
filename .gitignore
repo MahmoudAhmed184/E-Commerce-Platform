@@ -1,0 +1,41 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+db.sqlite3
+media/
+staticfiles/
+
+# uv and virtual environments
+.venv/
+
+# Node and Angular
+node_modules/
+.angular/cache/
+dist/
+out-tsc/
+coverage/
+npm-debug.log*
+yarn-error.log*
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/mcp.json
