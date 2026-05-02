@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import CustomUser
+from .models import CustomUser, EmailConfirmationToken
 
 
 @admin.register(CustomUser)
@@ -28,3 +28,11 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
+
+
+@admin.register(EmailConfirmationToken)
+class EmailConfirmationTokenAdmin(admin.ModelAdmin):
+    list_display = ("user", "token", "is_used", "created_at", "expires_at")
+    list_filter = ("is_used", "created_at", "expires_at")
+    search_fields = ("user__email", "user__phone", "token")
+    readonly_fields = ("created_at",)
