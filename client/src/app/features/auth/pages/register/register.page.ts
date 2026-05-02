@@ -171,7 +171,8 @@ export class RegisterPage {
       .register({
         full_name: value.full_name.trim(),
         email: value.email.trim(),
-        ...(phone ? { phone } : {}),
+        // SRS-MISMATCH: auth/register phone - serializer marks phone optional, but backend create_user currently requires the key.
+        phone,
         password: value.password,
       })
       .pipe(finalize(() => this.isLoading.set(false)))
