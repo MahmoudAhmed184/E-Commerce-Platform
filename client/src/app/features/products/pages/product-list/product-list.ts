@@ -2,16 +2,16 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService, Product, Category, PaginatedResponse } from '../../services/product';
-import { ProductCard } from '../../components/product-card/product-card';
+import { ProductCardComponent } from '../../components/product-card/product-card';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCard],
+  imports: [CommonModule, FormsModule, ProductCardComponent],
   templateUrl: './product-list.html',
   styleUrls: ['./product-list.css']
 })
-export class ProductList implements OnInit {
+export class ProductListPage implements OnInit {
   private productService = inject(ProductService);
 
   products: Product[] = [];
@@ -68,7 +68,7 @@ export class ProductList implements OnInit {
         this.totalCount = data.count;
         this.loading = false;
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error('Failed to load products', err);
         this.error = 'Could not load products. Please try again.';
         this.loading = false;

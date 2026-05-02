@@ -10,7 +10,7 @@ import { ProductService, Product, ProductImage } from '../../services/product';
   templateUrl: './product-detail.html',
   styleUrls: ['./product-detail.css']
 })
-export class ProductDetail implements OnInit {
+export class ProductDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private productService = inject(ProductService);
 
@@ -36,7 +36,7 @@ export class ProductDetail implements OnInit {
         this.selectedImage = this.getPrimaryImage(data);
         this.loading = false;
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error('Failed to load product details', err);
         this.error = 'Product could not be loaded.';
         this.loading = false;
