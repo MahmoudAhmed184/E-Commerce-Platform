@@ -1,0 +1,131 @@
+<div class="product-list-container">
+  <!-- Sidebar Filters -->
+  <aside class="filters-sidebar">
+    <div class="filter-header">
+      <h2>Filters</h2>
+      <button class="btn-clear" (click)="resetFilters()">Clear All</button>
+    </div>
+
+    <!-- Search -->
+    <div class="filter-group">
+      <label for="search">Search</label>
+      <input
+        type="text"
+        id="search"
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="applyFilters()"
+        placeholder="Search products..."
+        class="form-control"
+      />
+    </div>
+
+    <!-- Categories -->
+    <div class="filter-group">
+      <label for="category">Category</label>
+      <select
+        id="category"
+        [(ngModel)]="selectedCategory"
+        (change)="applyFilters()"
+        class="form-control"
+      >
+        <option value="">All Categories</option>
+        <option *ngFor="let cat of categories" [value]="cat.slug">
+          {{ cat.name }} <span *ngIf="cat.product_count">({{ cat.product_count }})</span>
+        </option>
+      </select>
+    </div>
+
+    <!-- Price Range -->
+    <div class="filter-group">
+      <label>Price Range</label>
+      <div class="price-inputs">
+        <input
+          type="number"
+          [(ngModel)]="minPrice"
+          placeholder="Min"
+          class="form-control"
+          min="0"
+        />
+        <span class="separator">–</span>
+        <input
+          type="number"
+          [(ngModel)]="maxPrice"
+          placeholder="Max"
+          class="form-control"
+          min="0"
+        />
+      </div>
+    </div>
+
+    <button class="btn-apply" (click)="applyFilters()">Apply Filters</button>
+  </aside>
+
+  <!-- Product Grid -->
+  <main class="products-main">
+    <div class="products-header">
+      <div class="header-left">
+        <h1>Our Products</h1>
+        <span class="results-count" *ngIf="!loading">{{ totalCount }} results</span>
+      </div>
+      <div class="header-right">
+        <label for="ordering" class="sr-only">Sort by</label>
+        <select id="ordering" [(ngModel)]="ordering" (change)="applyFilters()" class="form-control sort-control">
+          <option value="-created_at">Newest First</option>
+          <option value="created_at">Oldest First</option>
+          <option value="price">Price: Low to High</option>
+          <option value="-price">Price: High to Low</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn-primary" (click)="loadProducts()">Retry</button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading products...</p>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!loading && !error && products.length === 0" class="empty-state">
+      <h3>No products found</h3>
+      <p>Try adjusting your filters to find what you're looking for.</p>
+      <button class="btn-primary" (click)="resetFilters()">Clear Filters</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="products-grid" *ngIf="!loading && products.length > 0">
+      <app-product-card *ngFor="let product of products" [product]="product"></app-product-card>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="pagination" *ngIf="!loading && totalPages > 1" aria-label="Product pages">
+      <button
+        class="page-btn"
+        [disabled]="currentPage === 1"
+        (click)="goToPage(currentPage - 1)"
+        aria-label="Previous page"
+      >&#8592;</button>
+
+      <button
+        *ngFor="let p of pages"
+        class="page-btn"
+        [class.active]="p === currentPage"
+        (click)="goToPage(p)"
+        [attr.aria-current]="p === currentPage ? 'page' : null"
+      >{{ p }}</button>
+
+      <button
+        class="page-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="goToPage(currentPage + 1)"
+        aria-label="Next page"
+      >&#8594;</button>
+    </nav>
+  </main>
+</div>
