@@ -82,6 +82,24 @@ def test_register_duplicate_email_returns_400() -> None:
 
 
 @pytest.mark.django_db
+def test_register_missing_phone_returns_400() -> None:
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/register/",
+        {
+            "email": "missing-phone@example.com",
+            "password": "Password123",
+            "full_name": "Missing Phone",
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "phone" in response.data
+
+
+@pytest.mark.django_db
 def test_confirm_email_valid_token() -> None:
     user = CustomUser.objects.create_user(
         email="confirm-view@example.com",
@@ -144,6 +162,11 @@ def test_login_pending_user_returns_403() -> None:
     response = _login(client, user.email)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data == {
+        "detail": "Please confirm your email before logging in.",
+        "code": "email_confirmation_required",
+        "account_status": CustomUser.Status.PENDING,
+    }
 
 
 @pytest.mark.django_db
@@ -156,6 +179,11 @@ def test_login_restricted_user_returns_403() -> None:
     response = _login(client, user.email)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data == {
+        "detail": "Your account has been restricted. Contact support.",
+        "code": "account_restricted",
+        "account_status": CustomUser.Status.RESTRICTED,
+    }
 
 
 @pytest.mark.django_db
@@ -169,6 +197,11 @@ def test_login_deleted_user_returns_403() -> None:
     response = _login(client, user.email)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data == {
+        "detail": "This account no longer exists.",
+        "code": "account_deleted",
+        "account_status": CustomUser.Status.DELETED,
+    }
 
 
 @pytest.mark.django_db

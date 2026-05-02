@@ -3,7 +3,7 @@ import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Va
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { AppError } from '../../../../core/interceptors/error.interceptor';
+import type { AppError } from '../../../../core/interceptors/error.interceptor';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -153,12 +153,24 @@ export class LoginPage {
   }
 }
 
-function loginErrorMessage(error: AppError): string {
+export function loginErrorMessage(error: AppError): string {
   if (error.status === 401) {
     return 'Invalid credentials.';
   }
 
   if (error.status === 403) {
+    if (error.code === 'account_restricted' || error.accountStatus === 'restricted') {
+      return 'Your account has been restricted. Contact support.';
+    }
+
+    if (error.code === 'account_deleted' || error.accountStatus === 'soft_deleted') {
+      return 'This account no longer exists.';
+    }
+
+    if (error.code === 'email_confirmation_required' || error.accountStatus === 'pending_approval') {
+      return 'Please confirm your email before logging in.';
+    }
+
     const message = error.message.toLowerCase();
 
     if (message.includes('restricted')) {
@@ -169,7 +181,6 @@ function loginErrorMessage(error: AppError): string {
       return 'This account no longer exists.';
     }
 
-    // SRS-MISMATCH: login 403 — live backend currently returns "Account is not active." for pending, restricted, and deleted users without a machine-readable status.
     return 'Please confirm your email before logging in.';
   }
 

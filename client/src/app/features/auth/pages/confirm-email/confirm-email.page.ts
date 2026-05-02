@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { AppError } from '../../../../core/interceptors/error.interceptor';
+import type { AppError } from '../../../../core/interceptors/error.interceptor';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';

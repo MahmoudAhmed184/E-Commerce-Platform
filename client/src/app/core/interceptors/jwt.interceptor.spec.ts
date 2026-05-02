@@ -80,8 +80,8 @@ describe('jwtInterceptor', () => {
       email: 'customer@example.com',
       phone: null,
       full_name: 'Customer User',
-      role: 'CUSTOMER',
-      status: 'ACTIVE',
+      role: 'customer',
+      status: 'active',
     });
 
     const errorPromise = new Promise<unknown>((resolve) => {

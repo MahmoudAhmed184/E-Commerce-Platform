@@ -3,7 +3,7 @@ import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Reacti
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { AppError } from '../../../../core/interceptors/error.interceptor';
+import type { AppError } from '../../../../core/interceptors/error.interceptor';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -26,7 +26,7 @@ type RegisterForm = FormGroup<{
         <div>
           <p class="text-sm font-medium uppercase tracking-wide text-indigo-600">Create account</p>
           <h1 class="mt-2 text-2xl font-semibold text-slate-950">Register</h1>
-          <p class="mt-2 text-sm text-slate-600">Use an email address and optional phone number for your customer account.</p>
+          <p class="mt-2 text-sm text-slate-600">Use an email address and phone number for your customer account.</p>
         </div>
 
         <form class="mt-8 space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -65,7 +65,7 @@ type RegisterForm = FormGroup<{
           </div>
 
           <div>
-            <label for="phone" class="block text-sm font-medium text-slate-700">Phone <span class="font-normal text-slate-500">(optional)</span></label>
+            <label for="phone" class="block text-sm font-medium text-slate-700">Phone</label>
             <input
               id="phone"
               type="tel"
@@ -145,7 +145,7 @@ export class RegisterPage {
     {
       full_name: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [phoneValidator()]],
+      phone: ['', [Validators.required, phoneValidator()]],
       password: ['', [Validators.required, Validators.minLength(8), passwordDigitValidator()]],
       confirmPassword: ['', [Validators.required]],
     },
@@ -171,7 +171,6 @@ export class RegisterPage {
       .register({
         full_name: value.full_name.trim(),
         email: value.email.trim(),
-        // SRS-MISMATCH: auth/register phone - serializer marks phone optional, but backend create_user currently requires the key.
         phone,
         password: value.password,
       })

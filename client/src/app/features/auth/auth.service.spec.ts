@@ -20,8 +20,8 @@ const adminUser: User = {
   email: 'admin@example.com',
   phone: null,
   full_name: 'Admin User',
-  role: 'ADMIN',
-  status: 'ACTIVE',
+  role: 'admin',
+  status: 'active',
 };
 
 describe('AuthService', () => {
@@ -100,8 +100,8 @@ describe('AuthService', () => {
       email: backendCustomer.email,
       phone: backendCustomer.phone,
       full_name: backendCustomer.full_name,
-      role: 'CUSTOMER',
-      status: 'ACTIVE',
+      role: 'customer',
+      status: 'active',
     });
   });
 
@@ -132,7 +132,7 @@ describe('AuthService', () => {
     request.flush(backendCustomer);
 
     expect(service.currentUser()?.email).toBe('customer@example.com');
-    expect(service.currentUser()?.role).toBe('CUSTOMER');
+    expect(service.currentUser()?.role).toBe('customer');
   });
 
   it('test_isLoggedIn_computed_reflects_currentUser', () => {
