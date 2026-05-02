@@ -1,9 +1,13 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
+import type { UserStatus } from '../models/user.model';
+
 export interface AppError {
   status: number;
   message: string;
+  code?: string;
+  accountStatus?: UserStatus;
   fieldErrors?: Record<string, string[]>;
 }
 
@@ -29,10 +33,14 @@ function mapHttpError(error: unknown): AppError {
   const body = toErrorBody(error.error);
   const fieldErrors = collectFieldErrors(body);
   const message = findErrorMessage(body) ?? defaultMessage(error.status);
+  const code = typeof body['code'] === 'string' ? body['code'] : undefined;
+  const accountStatus = toAccountStatus(body['account_status']);
 
   return {
     status: error.status,
     message,
+    ...(code ? { code } : {}),
+    ...(accountStatus ? { accountStatus } : {}),
     ...(Object.keys(fieldErrors).length ? { fieldErrors } : {}),
   };
 }
@@ -53,7 +61,7 @@ function collectFieldErrors(body: Record<string, unknown>): Record<string, strin
   const fieldErrors: Record<string, string[]> = {};
 
   for (const [key, value] of Object.entries(body)) {
-    if (key === 'detail' || key === 'message' || key === 'non_field_errors') {
+    if (key === 'detail' || key === 'message' || key === 'non_field_errors' || key === 'code' || key === 'account_status') {
       continue;
     }
 
@@ -91,6 +99,19 @@ function toMessages(value: unknown): string[] {
   }
 
   return [];
+}
+
+function toAccountStatus(value: unknown): UserStatus | undefined {
+  if (
+    value === 'pending_approval' ||
+    value === 'active' ||
+    value === 'restricted' ||
+    value === 'soft_deleted'
+  ) {
+    return value;
+  }
+
+  return undefined;
 }
 
 function defaultMessage(status: number): string {

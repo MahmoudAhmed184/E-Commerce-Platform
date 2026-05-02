@@ -3,7 +3,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 
 import { SKIP_AUTH, SKIP_REFRESH } from '../interceptors/auth-http-context';
-import { LoginPayload, RegisterPayload, User } from '../models/user.model';
+import type { LoginPayload, RegisterPayload, User, UserRole, UserStatus } from '../models/user.model';
 import { ApiService } from './api.service';
 
 interface BackendUser {
@@ -11,8 +11,8 @@ interface BackendUser {
   email: string;
   phone: string | null;
   full_name: string;
-  role: 'customer' | 'admin' | 'CUSTOMER' | 'ADMIN';
-  status: 'pending_approval' | 'active' | 'restricted' | 'soft_deleted' | 'PENDING' | 'ACTIVE' | 'RESTRICTED' | 'DELETED';
+  role: UserRole | 'CUSTOMER' | 'ADMIN';
+  status: UserStatus | 'PENDING' | 'ACTIVE' | 'RESTRICTED' | 'DELETED';
 }
 
 interface BackendAuthTokens {
@@ -39,7 +39,7 @@ export class AuthService {
 
   readonly currentUser = signal<User | null>(null);
   readonly isLoggedIn = computed(() => !!this.currentUser());
-  readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
+  readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
 
   register(payload: RegisterPayload): Observable<void> {
     return this.api.post<unknown>('/auth/register/', payload, { context: publicRequestContext() }).pipe(map(() => undefined));
@@ -134,26 +134,28 @@ function normalizeUser(user: BackendUser): User {
     email: user.email,
     phone: user.phone,
     full_name: user.full_name,
-    // SRS-MISMATCH: user.role — live backend returns lowercase role values while the frontend task model requires uppercase values.
-    role: user.role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'CUSTOMER',
-    // SRS-MISMATCH: user.status — live backend uses pending_approval/active/restricted/soft_deleted while the frontend task model requires PENDING/ACTIVE/RESTRICTED/DELETED.
+    role: normalizeRole(user.role),
     status: normalizeStatus(user.status),
   };
+}
+
+function normalizeRole(role: BackendUser['role']): UserRole {
+  return role.toLowerCase() === 'admin' ? 'admin' : 'customer';
 }
 
 function normalizeStatus(status: BackendUser['status']): User['status'] {
   switch (status) {
     case 'active':
     case 'ACTIVE':
-      return 'ACTIVE';
+      return 'active';
     case 'restricted':
     case 'RESTRICTED':
-      return 'RESTRICTED';
+      return 'restricted';
     case 'soft_deleted':
     case 'DELETED':
-      return 'DELETED';
+      return 'soft_deleted';
     case 'pending_approval':
     case 'PENDING':
-      return 'PENDING';
+      return 'pending_approval';
   }
 }
