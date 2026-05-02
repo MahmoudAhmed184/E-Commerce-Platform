@@ -72,13 +72,13 @@ Date: 2026-05-02
 - PASS: Angular dev server ran at `http://127.0.0.1:4200` against Django at `http://127.0.0.1:8000`.
 - PASS: `POST /api/v1/auth/register/` -> `POST /api/v1/auth/confirm-email/` -> `POST /api/v1/auth/login/` -> `GET /api/v1/users/me/` -> `POST /api/v1/auth/logout/` completed successfully with live MariaDB-backed data.
 - PASS: JWT refresh endpoint returned a new access token and rotated refresh token. Browser smoke check also verified the Angular interceptor refreshes automatically when an expired access token is present, retries `/users/me/`, and preserves the authenticated profile route.
-- PASS: PENDING user login returns HTTP 403 and the frontend maps the generic inactive-account response to the email-confirmation message.
-- FAIL: RESTRICTED and DELETED user login both return the same HTTP 403 body as PENDING (`{"detail":"Account is not active."}`), so the frontend cannot reliably show the required restricted/deleted-specific messages without a backend status code or distinct response detail.
-- PASS: Admin login returns role `admin`; the frontend normalizes it to `ADMIN`, and `isAdmin()` is true on the profile smoke path.
+- PASS: PENDING user login returns HTTP 403 with `code: "email_confirmation_required"` and `account_status: "pending_approval"`; the frontend shows the email-confirmation message.
+- PASS: RESTRICTED and DELETED user login return distinct HTTP 403 bodies with `code` and `account_status`, so the frontend can reliably show restricted/deleted-specific messages.
+- PASS: Admin login returns role `admin`; the frontend uses the SRS lowercase role/status contract and `isAdmin()` is true on the profile smoke path.
 - PASS: CORS configuration includes `http://localhost:4200`; local verification also confirmed `http://127.0.0.1:4200` is allowed for this environment.
-- `// SRS-MISMATCH: auth/register phone - the frontend task treats phone as optional and omittable, but the backend create_user() currently requires the phone keyword. Frontend sends an empty string for blank phone so the backend serializer can normalize it to null.`
-- `// SRS-MISMATCH: user.role/user.status - the live backend returns lowercase role/status values (customer, admin, active, pending_approval, restricted, soft_deleted) while the frontend task model requires uppercase values. Frontend normalizes the live values into the required UI model.`
-- `// SRS-MISMATCH: login 403 status specificity - live backend does not expose whether a 403 inactive account is pending, restricted, or deleted. Restricted and deleted frontend messages need a machine-readable status or distinct backend error detail to be fully verifiable.`
+- RESOLVED: `auth/register phone` now follows the SRS required-phone contract in the backend serializer and frontend form/payload model.
+- RESOLVED: `user.role/user.status` now follows the SRS lowercase contract in the frontend model while retaining defensive normalization for legacy uppercase values.
+- RESOLVED: `login 403 status specificity` now exposes machine-readable blocked-account codes and account statuses for pending, restricted, and soft-deleted users.
 
 ## Phase 5 - Testing and Polish
 
