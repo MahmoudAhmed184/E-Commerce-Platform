@@ -1,22 +1,25 @@
 import { Routes } from '@angular/router';
 
-import { AuthPlaceholderComponent } from './auth-placeholder.component';
+import { ConfirmEmailPage } from './pages/confirm-email/confirm-email.page';
+import { LoginPage } from './pages/login/login.page';
+import { RegisterPage } from './pages/register/register.page';
 
 export const AUTH_ROUTES: Routes = [
   {
     path: '',
-    component: AuthPlaceholderComponent,
+    redirectTo: 'login',
+    pathMatch: 'full',
   },
   {
     path: 'register',
-    component: AuthPlaceholderComponent,
+    component: RegisterPage,
   },
   {
     path: 'login',
-    component: AuthPlaceholderComponent,
+    component: LoginPage,
   },
   {
     path: 'confirm-email',
-    component: AuthPlaceholderComponent,
+    component: ConfirmEmailPage,
   },
 ];
