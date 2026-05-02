@@ -1,5 +1,6 @@
 import pytest
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -9,6 +10,30 @@ from apps.users.models import CustomUser, EmailConfirmationToken
 @pytest.fixture(autouse=True)
 def clear_cache() -> None:
     cache.clear()
+
+
+def _create_active_user(
+    email: str = "active@example.com",
+    phone: str = "+201000000100",
+    password: str = "Password123",
+) -> CustomUser:
+    user = CustomUser.objects.create_user(
+        email=email,
+        phone=phone,
+        password=password,
+        full_name="Active User",
+        status=CustomUser.Status.ACTIVE,
+        is_email_confirmed=True,
+    )
+    return user
+
+
+def _login(client: APIClient, identifier: str, password: str = "Password123"):
+    return client.post(
+        "/api/v1/auth/login/",
+        {"identifier": identifier, "password": password},
+        format="json",
+    )
 
 
 @pytest.mark.django_db
@@ -78,3 +103,152 @@ def test_confirm_email_valid_token() -> None:
     assert response.data == {"message": "Email confirmed."}
     assert user.status == CustomUser.Status.ACTIVE
     assert user.is_email_confirmed is True
+
+
+@pytest.mark.django_db
+def test_login_with_email_returns_tokens() -> None:
+    user = _create_active_user(email="login-email@example.com", phone="+201000000014")
+    client = APIClient()
+
+    response = _login(client, user.email)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert set(response.data) == {"access", "refresh", "user"}
+    assert response.data["user"]["email"] == user.email
+
+
+@pytest.mark.django_db
+def test_login_with_phone_returns_tokens() -> None:
+    user = _create_active_user(email="login-phone@example.com", phone="+201000000015")
+    assert user.phone is not None
+    client = APIClient()
+
+    response = _login(client, user.phone)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["access"]
+    assert response.data["refresh"]
+    assert response.data["user"]["phone"] == user.phone
+
+
+@pytest.mark.django_db
+def test_login_pending_user_returns_403() -> None:
+    user = CustomUser.objects.create_user(
+        email="pending-login@example.com",
+        phone="+201000000016",
+        password="Password123",
+        full_name="Pending User",
+    )
+    client = APIClient()
+
+    response = _login(client, user.email)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_login_restricted_user_returns_403() -> None:
+    user = _create_active_user(email="restricted-login@example.com", phone="+201000000017")
+    user.status = CustomUser.Status.RESTRICTED
+    user.save(update_fields=["status", "updated_at"])
+    client = APIClient()
+
+    response = _login(client, user.email)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_login_deleted_user_returns_403() -> None:
+    user = _create_active_user(email="deleted-login@example.com", phone="+201000000018")
+    user.status = CustomUser.Status.DELETED
+    user.deleted_at = timezone.now()
+    user.save(update_fields=["status", "deleted_at", "updated_at"])
+    client = APIClient()
+
+    response = _login(client, user.email)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_logout_blacklists_token() -> None:
+    user = _create_active_user(email="logout@example.com", phone="+201000000019")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    refresh = login_response.data["refresh"]
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    logout_response = client.post("/api/v1/auth/logout/", {"refresh": refresh}, format="json")
+    refresh_response = client.post("/api/v1/auth/token/refresh/", {"refresh": refresh}, format="json")
+
+    assert logout_response.status_code == status.HTTP_200_OK
+    assert logout_response.data == {"message": "Logged out."}
+    assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
+def test_refresh_token_rotates() -> None:
+    user = _create_active_user(email="refresh@example.com", phone="+201000000020")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    refresh = login_response.data["refresh"]
+
+    response = client.post("/api/v1/auth/token/refresh/", {"refresh": refresh}, format="json")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["access"]
+    assert response.data["refresh"]
+    assert response.data["refresh"] != refresh
+
+
+@pytest.mark.django_db
+def test_me_returns_current_user_shape() -> None:
+    user = _create_active_user(email="me@example.com", phone="+201000000021")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.get("/api/v1/users/me/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert set(response.data) == {
+        "id",
+        "email",
+        "phone",
+        "full_name",
+        "role",
+        "status",
+        "is_email_confirmed",
+    }
+    assert str(response.data["id"]) == str(user.id)
+    assert response.data["email"] == user.email
+    assert response.data["is_email_confirmed"] is True
+
+
+@pytest.mark.django_db
+def test_me_unauthenticated_returns_401() -> None:
+    client = APIClient()
+
+    response = client.get("/api/v1/users/me/")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
+def test_register_throttle_triggers_after_10_requests() -> None:
+    client = APIClient()
+
+    for attempt in range(11):
+        response = client.post(
+            "/api/v1/auth/register/",
+            {
+                "email": f"throttle-{attempt}@example.com",
+                "phone": f"+2010000002{attempt:02d}",
+                "password": "Password123",
+                "full_name": "Throttle User",
+            },
+            format="json",
+        )
+
+    assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
