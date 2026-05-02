@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import uuid
 from typing import Any, cast
+from urllib.parse import urlencode
 
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.mail import send_mail
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenError
@@ -29,8 +32,32 @@ def create_user(email: str, phone: str | None, password: str, full_name: str) ->
         password=password,
         full_name=full_name,
     )
-    EmailConfirmationToken.objects.create(user=user)
+    token = EmailConfirmationToken.objects.create(user=user)
+    transaction.on_commit(lambda: send_confirmation_email(user, token))
     return user
+
+
+def send_confirmation_email(user: CustomUser, token: EmailConfirmationToken) -> int:
+    confirmation_url = build_confirmation_url(token)
+    message = (
+        f"Hello {user.full_name},\n\n"
+        "Confirm your Stack Commerce account by opening this link:\n"
+        f"{confirmation_url}\n\n"
+        "If you did not create this account, you can ignore this email."
+    )
+
+    return send_mail(
+        subject="Confirm your Stack Commerce email",
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+def build_confirmation_url(token: EmailConfirmationToken) -> str:
+    query = urlencode({"token": str(token.token)})
+    return f"{settings.FRONTEND_BASE_URL}/auth/confirm-email?{query}"
 
 
 @transaction.atomic

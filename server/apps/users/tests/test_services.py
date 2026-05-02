@@ -1,13 +1,20 @@
 from datetime import timedelta
 
 import pytest
+from django.core import mail
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.utils import timezone
 
 from apps.users.models import CustomUser, EmailConfirmationToken
 from apps.users.services import confirm_email, create_user
 
 
+@override_settings(
+    DEFAULT_FROM_EMAIL="Stack Commerce <noreply@example.com>",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_BASE_URL="http://frontend.test",
+)
 @pytest.mark.django_db
 def test_create_user_hashes_password() -> None:
     user = create_user(
@@ -20,6 +27,29 @@ def test_create_user_hashes_password() -> None:
     assert user.password != "Password123"
     assert user.check_password("Password123")
     assert EmailConfirmationToken.objects.filter(user=user).exists()
+
+
+@override_settings(
+    DEFAULT_FROM_EMAIL="Stack Commerce <noreply@example.com>",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_BASE_URL="http://frontend.test",
+)
+@pytest.mark.django_db(transaction=True)
+def test_create_user_sends_confirmation_email() -> None:
+    user = create_user(
+        email="mail@example.com",
+        phone="+201000000104",
+        password="Password123",
+        full_name="Mail User",
+    )
+    token = EmailConfirmationToken.objects.get(user=user)
+
+    assert len(mail.outbox) == 1
+    message = mail.outbox[0]
+    assert message.subject == "Confirm your Stack Commerce email"
+    assert message.from_email == "Stack Commerce <noreply@example.com>"
+    assert message.to == ["mail@example.com"]
+    assert f"http://frontend.test/auth/confirm-email?token={token.token}" in message.body
 
 
 @pytest.mark.django_db
