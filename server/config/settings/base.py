@@ -7,7 +7,10 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-local-development-key")
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "local-development-only-secret-key-change-me-with-env-in-real-deployments",
+)
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
