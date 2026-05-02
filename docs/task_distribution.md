@@ -75,6 +75,17 @@
 | P5-QA-004 | Final payment and checkout regression, sandbox verification, demo-data validation, and handoff for payment-support flows | QA | FR-PAY-001, FR-PAY-002, FR-PAY-003, FR-PAY-004, FR-PAY-005, FR-PAY-006, FR-PAY-007, FR-PAY-008, FR-PAY-009, FR-PAY-010, FR-ORD-006 | 8 | D4 | Depends on: P4-INT-PAY-001 |
 | P5-QA-005 | End-to-end release-candidate pass, admin and review bug triage, and handoff notes | QA / Docs | FR-ADM-001, FR-ADM-002, FR-ADM-003, FR-ADM-004, FR-ADM-005, FR-ADM-010, FR-ADM-011, FR-ADM-012, FR-REV-001, FR-REV-002, FR-REV-003, FR-REV-004, FR-REV-005, FR-REV-006, FR-REV-007, FR-REV-008, FR-REV-009, NFR-TST-001, NFR-TST-002, NFR-TST-003, NFR-TST-004 | 6 | D5 | Depends on: P4-INT-ADMIN-REV-001, P5-QA-001, P5-QA-002, P5-QA-003, P5-QA-004 |
 
+### P5-QA-001 Release Checklist
+
+- Runtime secrets are provided through environment variables only, including `DJANGO_SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `CORS_ALLOWED_ORIGINS`.
+- HTTPS is enforced in production through `SECURE_SSL_REDIRECT=True`, secure session cookies, secure CSRF cookies, and one-year HSTS.
+- JWT refresh-token rotation is active with `ROTATE_REFRESH_TOKENS=True` and `BLACKLIST_AFTER_ROTATION=True`.
+- API throttling is active for anonymous, authenticated, and auth-scoped requests, including the `10/minute` auth throttle on registration and login.
+- Database migrations are applied before release with `uv run python manage.py migrate` using production environment settings.
+- Production runs with `DEBUG=False`; no production deployment may use development settings or committed `.env` files.
+- `uv run python manage.py check --deploy` passes with production settings before release.
+- `uv run python manage.py check_auth_security` is reviewed before release to confirm CORS origins, token lifetimes, throttle rates, and HTTPS settings.
+
 ## Workload Summary
 
 | Developer | Total Estimated Hours |
