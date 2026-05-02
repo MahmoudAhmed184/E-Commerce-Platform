@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
+from typing import Any
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -9,14 +10,14 @@ from django.db import models
 from django.utils import timezone
 
 
-class CustomUserManager(BaseUserManager):
+class CustomUserManager(BaseUserManager["CustomUser"]):
     def create_user(
         self,
         email: str,
         password: str | None = None,
         full_name: str = "",
         phone: str | None = None,
-        **extra_fields: object,
+        **extra_fields: Any,
     ) -> "CustomUser":
         if not email:
             raise ValueError("The email field is required.")
@@ -39,7 +40,7 @@ class CustomUserManager(BaseUserManager):
         password: str | None = None,
         full_name: str = "",
         phone: str | None = None,
-        **extra_fields: object,
+        **extra_fields: Any,
     ) -> "CustomUser":
         extra_fields.setdefault("role", CustomUser.Role.ADMIN)
         extra_fields.setdefault("status", CustomUser.Status.ACTIVE)
@@ -111,7 +112,7 @@ class EmailConfirmationToken(models.Model):
         ]
         ordering = ["-created_at"]
 
-    def save(self, *args: object, **kwargs: object) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         if self.expires_at is None:
             self.expires_at = timezone.now() + timedelta(hours=24)
         super().save(*args, **kwargs)
