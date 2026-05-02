@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any, cast
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser, EmailConfirmationToken
+from .selectors import get_user_by_email, get_user_by_phone
 
 
 @transaction.atomic
@@ -66,3 +70,35 @@ def soft_delete_user(user_id: uuid.UUID | str) -> None:
     user.deleted_at = timezone.now()
     user.status = CustomUser.Status.DELETED
     user.save(update_fields=["deleted_at", "status", "updated_at"])
+
+
+def authenticate_user(identifier: str, password: str) -> CustomUser:
+    normalized_identifier = identifier.strip()
+    user = (
+        get_user_by_email(normalized_identifier)
+        if "@" in normalized_identifier
+        else get_user_by_phone(normalized_identifier)
+    )
+
+    if user is None or not user.check_password(password):
+        raise ValidationError({"non_field_errors": "Invalid credentials."})
+
+    if user.status != CustomUser.Status.ACTIVE or not user.is_email_confirmed or user.deleted_at is not None:
+        raise PermissionDenied("Account is not active.")
+
+    return user
+
+
+def issue_auth_tokens(user: CustomUser) -> dict[str, str]:
+    refresh = RefreshToken.for_user(user)
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+    }
+
+
+def blacklist_refresh_token(refresh_token: str) -> None:
+    try:
+        RefreshToken(cast(Any, refresh_token)).blacklist()
+    except TokenError as exc:
+        raise ValidationError({"refresh": "Invalid refresh token."}) from exc
