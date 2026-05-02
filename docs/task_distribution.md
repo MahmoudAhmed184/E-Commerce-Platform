@@ -65,6 +65,21 @@
 | P4-INT-PAY-001 | Integrate payment UI with backend payments, verify COD, wallet, card-provider sandbox, webhook status updates, and recoverable failure states | Integration | FR-PAY-001, FR-PAY-002, FR-PAY-003, FR-PAY-004, FR-PAY-005, FR-PAY-006, FR-PAY-007, FR-PAY-008, FR-PAY-009, FR-PAY-010 | 10 | D4 | Depends on: P2-BE-PAY-002, P3-FE-CHECK-001 |
 | P4-INT-ADMIN-REV-001 | Integrate admin workflows, review moderation, order and payment support screens, and cross-flow bug triage | Integration | FR-ADM-001, FR-ADM-002, FR-ADM-003, FR-ADM-004, FR-ADM-005, FR-ADM-006, FR-ADM-007, FR-ADM-008, FR-ADM-009, FR-ADM-010, FR-ADM-011, FR-ADM-012, FR-REV-001, FR-REV-005, FR-REV-006, FR-REV-007, FR-REV-008, FR-REV-009 | 8 | D5 | Depends on: P2-BE-ADM-OPS-001, P3-FE-ADMIN-001, P3-FE-REV-001, P4-INT-AUTH-001, P4-INT-PRD-001, P4-INT-CART-ORD-001, P4-INT-PAY-001 |
 
+### P4-INT-AUTH-001 Integration Notes
+
+Date: 2026-05-02
+
+- PASS: Angular dev server ran at `http://127.0.0.1:4200` against Django at `http://127.0.0.1:8000`.
+- PASS: `POST /api/v1/auth/register/` -> `POST /api/v1/auth/confirm-email/` -> `POST /api/v1/auth/login/` -> `GET /api/v1/users/me/` -> `POST /api/v1/auth/logout/` completed successfully with live MariaDB-backed data.
+- PASS: JWT refresh endpoint returned a new access token and rotated refresh token. Browser smoke check also verified the Angular interceptor refreshes automatically when an expired access token is present, retries `/users/me/`, and preserves the authenticated profile route.
+- PASS: PENDING user login returns HTTP 403 and the frontend maps the generic inactive-account response to the email-confirmation message.
+- FAIL: RESTRICTED and DELETED user login both return the same HTTP 403 body as PENDING (`{"detail":"Account is not active."}`), so the frontend cannot reliably show the required restricted/deleted-specific messages without a backend status code or distinct response detail.
+- PASS: Admin login returns role `admin`; the frontend normalizes it to `ADMIN`, and `isAdmin()` is true on the profile smoke path.
+- PASS: CORS configuration includes `http://localhost:4200`; local verification also confirmed `http://127.0.0.1:4200` is allowed for this environment.
+- `// SRS-MISMATCH: auth/register phone - the frontend task treats phone as optional and omittable, but the backend create_user() currently requires the phone keyword. Frontend sends an empty string for blank phone so the backend serializer can normalize it to null.`
+- `// SRS-MISMATCH: user.role/user.status - the live backend returns lowercase role/status values (customer, admin, active, pending_approval, restricted, soft_deleted) while the frontend task model requires uppercase values. Frontend normalizes the live values into the required UI model.`
+- `// SRS-MISMATCH: login 403 status specificity - live backend does not expose whether a 403 inactive account is pending, restricted, or deleted. Restricted and deleted frontend messages need a machine-readable status or distinct backend error detail to be fully verifiable.`
+
 ## Phase 5 - Testing and Polish
 
 | Task ID | Title | Track | Requirement IDs | Estimated Hours | Assigned To | Dependencies |
