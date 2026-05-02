@@ -29,3 +29,7 @@ class RegisterSerializer(serializers.Serializer):
         if not any(character.isdigit() for character in value):
             raise serializers.ValidationError("Password must contain at least one digit.")
         return value
+
+
+class ConfirmEmailSerializer(serializers.Serializer):
+    token = serializers.UUIDField()
