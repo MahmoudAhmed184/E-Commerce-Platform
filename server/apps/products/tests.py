@@ -3,8 +3,11 @@ products/tests.py — Automated tests covering services, selectors,
 and API endpoints (NFR-TST-001, NFR-TST-002).
 """
 
+from io import StringIO
 from decimal import Decimal
+from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -12,7 +15,7 @@ from rest_framework.test import APIClient
 from apps.users.models import CustomUser
 
 from . import services
-from .models import Category, Product
+from .models import Category, Product, ProductImage
 from .selectors import get_active_categories, get_active_products, get_product_by_slug
 
 # ─── Helpers ───────────────────────────────────────────────────────
@@ -102,6 +105,56 @@ class ProductServicesTest(TestCase):
         services.deactivate_category(cat)
         cat.refresh_from_db()
         self.assertFalse(cat.is_active)
+
+
+# ─── Seeder Tests ─────────────────────────────────────────────────
+
+
+class ProductSeederCommandTest(TestCase):
+    @patch("apps.products.management.commands.seed_products.fetch_json")
+    def test_seed_products_imports_dummyjson_products(self, fetch_json):
+        fetch_json.side_effect = [
+            [
+                {
+                    "slug": "beauty",
+                    "name": "Beauty",
+                    "url": "https://dummyjson.com/products/category/beauty",
+                }
+            ],
+            {
+                "products": [
+                    {
+                        "id": 1,
+                        "title": "Essence Mascara Lash Princess",
+                        "description": "A volumizing mascara.",
+                        "category": "beauty",
+                        "price": 9.99,
+                        "stock": 99,
+                        "brand": "Essence",
+                        "sku": "RCH45Q1A",
+                        "thumbnail": "https://example.com/mascara.webp",
+                        "images": ["https://example.com/mascara-1.webp"],
+                    }
+                ],
+                "total": 1,
+                "skip": 0,
+                "limit": 1,
+            },
+        ]
+
+        output = StringIO()
+        call_command("seed_products", "--skip-images", stdout=output)
+
+        category = Category.objects.get(slug="beauty")
+        product = Product.objects.get(slug="dummyjson-1-essence-mascara-lash-princess")
+
+        self.assertEqual(category.name, "Beauty")
+        self.assertEqual(product.category, category)
+        self.assertEqual(product.price, Decimal("9.99"))
+        self.assertEqual(product.stock, 99)
+        self.assertIn("Brand: Essence.", product.description)
+        self.assertEqual(ProductImage.objects.count(), 0)
+        self.assertIn("Seed complete: 1 created", output.getvalue())
 
 
 # ─── Selectors Tests ───────────────────────────────────────────────
