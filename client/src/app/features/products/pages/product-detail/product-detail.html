@@ -1,0 +1,59 @@
+<div class="product-detail-container">
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading product details...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <h3>{{ error }}</h3>
+    <a routerLink="/products" class="btn-primary">Back to Products</a>
+  </div>
+
+  <div class="product-content" *ngIf="!loading && product">
+    <div class="breadcrumb">
+      <a routerLink="/products">Products</a> &gt;
+      <span>{{ product.category.name }}</span> &gt;
+      <span class="current">{{ product.name }}</span>
+    </div>
+
+    <div class="product-main">
+      <!-- Image Gallery -->
+      <div class="gallery-section">
+        <div class="main-image-container">
+          <img [src]="selectedImage" [alt]="product.name" class="main-image" />
+        </div>
+
+        <div class="thumbnail-list" *ngIf="product.images.length > 1">
+          <button *ngFor="let img of product.images" class="thumbnail-btn" [class.active]="img.image === selectedImage"
+            (click)="selectImage(img)">
+            <img [src]="img.image" [alt]="product.name + ' thumbnail'" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Section -->
+      <div class="info-section">
+        <div class="category-badge">{{ product.category.name }}</div>
+        <h1 class="title">{{ product.name }}</h1>
+
+        <div class="price-stock">
+          <span class="price">${{ product.price }}</span>
+          <span class="stock-badge" [class.in-stock]="product.stock > 0" [class.out-of-stock]="product.stock === 0">
+            {{ product.stock > 0 ? product.stock + ' in stock' : 'Out of stock' }}
+          </span>
+        </div>
+
+        <div class="description">
+          <h3>Description</h3>
+          <p>{{ product.description }}</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn-cart" [disabled]="product.stock === 0">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

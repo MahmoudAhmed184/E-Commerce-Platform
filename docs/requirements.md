@@ -26,16 +26,16 @@
 
 ## 2. Product Catalog
 
-- [ ] FR-PRD-001 The system shall provide a paginated list of active products.
-- [ ] FR-PRD-002 Each product list item shall include name, primary image URL, price, category, and stock availability state.
-- [ ] FR-PRD-003 The system shall provide product details including name, description, images, price, category, stock availability, average rating, and review count.
-- [ ] FR-PRD-004 The system shall search products by product name.
-- [ ] FR-PRD-005 The system shall filter products by category.
-- [ ] FR-PRD-006 The system shall filter products by minimum and maximum price.
-- [ ] FR-PRD-007 The system shall combine search, category filter, and price filter in one product listing request.
-- [ ] FR-PRD-008 The system shall display out-of-stock products as unavailable for purchase.
-- [ ] FR-PRD-009 The system shall store and serve product images through configured media storage.
-- [ ] FR-PRD-010 The system shall require each product to belong to exactly one category.
+- [x] FR-PRD-001 The system shall provide a paginated list of active products.
+- [x] FR-PRD-002 Each product list item shall include name, primary image URL, price, category, and stock availability state.
+- [x] FR-PRD-003 The system shall provide product details including name, description, images, price, category, stock availability, average rating, and review count.
+- [x] FR-PRD-004 The system shall search products by product name.
+- [x] FR-PRD-005 The system shall filter products by category.
+- [x] FR-PRD-006 The system shall filter products by minimum and maximum price.
+- [x] FR-PRD-007 The system shall combine search, category filter, and price filter in one product listing request.
+- [x] FR-PRD-008 The system shall display out-of-stock products as unavailable for purchase.
+- [x] FR-PRD-009 The system shall store and serve product images through configured media storage.
+- [x] FR-PRD-010 The system shall require each product to belong to exactly one category.
 
 ## 3. Cart
 
@@ -79,10 +79,10 @@
 - [ ] FR-ADM-003 Admin users shall approve pending users.
 - [ ] FR-ADM-004 Admin users shall restrict users.
 - [ ] FR-ADM-005 Admin users shall soft-delete users without deleting historical orders or reviews.
-- [ ] FR-ADM-006 Admin users shall create products.
-- [ ] FR-ADM-007 Admin users shall update product name, description, price, category, images, and stock quantity.
-- [ ] FR-ADM-008 Admin users shall deactivate products without deleting historical order data.
-- [ ] FR-ADM-009 Admin users shall create, update, and deactivate categories.
+- [x] FR-ADM-006 Admin users shall create products.
+- [x] FR-ADM-007 Admin users shall update product name, description, price, category, images, and stock quantity.
+- [x] FR-ADM-008 Admin users shall deactivate products without deleting historical order data.
+- [x] FR-ADM-009 Admin users shall create, update, and deactivate categories.
 - [ ] FR-ADM-010 Admin users shall view order and payment status for support and operations.
 - [ ] FR-ADM-011 Admin users shall moderate product reviews by hiding or removing them from public display.
 - [ ] FR-ADM-012 The system shall block non-admin users from admin API endpoints and admin UI routes.
@@ -103,10 +103,10 @@
 
 ### 8.1 Performance
 
-- [ ] NFR-PER-001 List endpoints that can return many records shall use bounded pagination with a default page size.
-- [ ] NFR-PER-002 Product search, category filter, price filter, and ownership lookup fields shall be indexed where supported by PostgreSQL.
-- [ ] NFR-PER-003 API list responses shall avoid returning unnecessary detail-only fields.
-- [ ] NFR-PER-004 Product images shall be returned by URL and shall not be embedded directly in JSON payloads.
+- [x] NFR-PER-001 List endpoints that can return many records shall use bounded pagination with a default page size.
+- [x] NFR-PER-002 Product search, category filter, price filter, and ownership lookup fields shall be indexed where supported by PostgreSQL.
+- [x] NFR-PER-003 API list responses shall avoid returning unnecessary detail-only fields.
+- [x] NFR-PER-004 Product images shall be returned by URL and shall not be embedded directly in JSON payloads.
 - [ ] NFR-PER-005 API list endpoints shall respond within 500 ms under normal development or demo load.
 
 ### 8.2 Security
@@ -118,7 +118,7 @@
 - [ ] NFR-SEC-005 CORS allowed origins shall be controlled by environment-specific settings.
 - [ ] NFR-SEC-006 Rate limiting shall be applied to authentication, payment-sensitive, and review-submission endpoints.
 - [ ] NFR-SEC-007 Secrets shall be loaded from environment variables and shall not be committed to Git.
-- [ ] NFR-SEC-008 Uploaded product images shall be validated for allowed type and size.
+- [x] NFR-SEC-008 Uploaded product images shall be validated for allowed type and size.
 
 ### 8.3 Scalability and Maintainability
 
@@ -135,8 +135,8 @@
 
 ### 8.4 Testing
 
-- [ ] NFR-TST-001 Backend services and selectors shall have automated tests.
-- [ ] NFR-TST-002 API endpoints shall have integration tests covering successful and error paths.
+- [x] NFR-TST-001 Backend services and selectors shall have automated tests.
+- [x] NFR-TST-002 API endpoints shall have integration tests covering successful and error paths.
 - [ ] NFR-TST-003 Angular feature services shall have automated tests.
 - [ ] NFR-TST-004 CI shall run backend tests, frontend tests, linting, and build checks on pull requests.
 
