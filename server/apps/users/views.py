@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from .models import CustomUser
 from .selectors import get_current_user_data
 from .serializers import ConfirmEmailSerializer, CurrentUserSerializer, LoginSerializer, LogoutSerializer, RegisterSerializer
-from .services import authenticate_user, blacklist_refresh_token, confirm_email, create_user, issue_auth_tokens
+from .services import AuthBlockedError, authenticate_user, blacklist_refresh_token, confirm_email, create_user, issue_auth_tokens
 
 
 def _raise_serializer_error(error: DjangoValidationError) -> NoReturn:
@@ -64,6 +64,15 @@ class LoginView(APIView):
             user = authenticate_user(**serializer.validated_data)
         except DjangoValidationError as exc:
             _raise_serializer_error(exc)
+        except AuthBlockedError as exc:
+            return Response(
+                {
+                    "detail": exc.detail,
+                    "code": exc.code,
+                    "account_status": exc.account_status,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         tokens = issue_auth_tokens(user)
         return Response(

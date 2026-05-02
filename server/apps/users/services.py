@@ -4,7 +4,7 @@ import uuid
 from typing import Any, cast
 from urllib.parse import urlencode
 
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
@@ -16,8 +16,16 @@ from .models import CustomUser, EmailConfirmationToken
 from .selectors import get_user_by_email, get_user_by_phone
 
 
+class AuthBlockedError(Exception):
+    def __init__(self, code: str, detail: str, account_status: str) -> None:
+        self.code = code
+        self.detail = detail
+        self.account_status = account_status
+        super().__init__(detail)
+
+
 @transaction.atomic
-def create_user(email: str, phone: str | None, password: str, full_name: str) -> CustomUser:
+def create_user(email: str, phone: str, password: str, full_name: str) -> CustomUser:
     normalized_email = CustomUser.objects.normalize_email(email).strip()
     normalized_phone = phone.strip() if phone else None
 
@@ -110,8 +118,26 @@ def authenticate_user(identifier: str, password: str) -> CustomUser:
     if user is None or not user.check_password(password):
         raise ValidationError({"non_field_errors": "Invalid credentials."})
 
-    if user.status != CustomUser.Status.ACTIVE or not user.is_email_confirmed or user.deleted_at is not None:
-        raise PermissionDenied("Account is not active.")
+    if user.deleted_at is not None or user.status == CustomUser.Status.DELETED:
+        raise AuthBlockedError(
+            code="account_deleted",
+            detail="This account no longer exists.",
+            account_status=CustomUser.Status.DELETED,
+        )
+
+    if user.status == CustomUser.Status.RESTRICTED:
+        raise AuthBlockedError(
+            code="account_restricted",
+            detail="Your account has been restricted. Contact support.",
+            account_status=CustomUser.Status.RESTRICTED,
+        )
+
+    if user.status != CustomUser.Status.ACTIVE or not user.is_email_confirmed:
+        raise AuthBlockedError(
+            code="email_confirmation_required",
+            detail="Please confirm your email before logging in.",
+            account_status=CustomUser.Status.PENDING,
+        )
 
     return user
 

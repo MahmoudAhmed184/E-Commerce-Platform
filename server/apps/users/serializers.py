@@ -14,14 +14,9 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(max_length=20)
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     full_name = serializers.CharField(max_length=150)
-
-    def validate_phone(self, value: str | None) -> str | None:
-        if value == "":
-            return None
-        return value
 
     def validate_password(self, value: str) -> str:
         if len(value) < 8:
