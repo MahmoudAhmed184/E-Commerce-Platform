@@ -1,5 +1,4 @@
-from django.urls import path
+from django.urls import URLPattern
 
 
-urlpatterns = [
-]
+urlpatterns: list[URLPattern] = []
