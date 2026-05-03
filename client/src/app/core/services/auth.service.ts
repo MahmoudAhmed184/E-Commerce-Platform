@@ -107,6 +107,13 @@ export class AuthService {
     );
   }
 
+  updateProfile(payload: Partial<User>): Observable<void> {
+    return this.api.patch<BackendUser>('/users/me/', payload).pipe(
+      tap((user) => this.currentUser.set(normalizeUser(user))),
+      map(() => undefined),
+    );
+  }
+
   getAccessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   }

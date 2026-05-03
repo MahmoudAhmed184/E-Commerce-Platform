@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 
-import { ProfilePlaceholderComponent } from './profile-placeholder.component';
+import { ProfilePage } from './pages/profile-page/profile-page';
 
 export const PROFILE_ROUTES: Routes = [
   {
     path: '',
-    component: ProfilePlaceholderComponent,
+    component: ProfilePage,
   },
 ];
