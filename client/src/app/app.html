@@ -1,59 +1,9 @@
-<header class="app-header">
-  <div class="header-container">
-    <div class="logo">
-      <a routerLink="/">
-        <span class="logo-icon">🛍️</span>
-        <span class="logo-text">Aura<strong>Shop</strong></span>
-      </a>
-    </div>
+<div class="flex min-h-dvh flex-col bg-slate-50 text-slate-950">
+  <app-header />
 
-    <nav class="main-nav">
-      <a routerLink="/products" routerLinkActive="active" class="nav-link">Products</a>
-      <a routerLink="/categories" routerLinkActive="active" class="nav-link">Categories</a>
-      <a routerLink="/about" routerLinkActive="active" class="nav-link">About</a>
-    </nav>
+  <main class="flex-1">
+    <router-outlet />
+  </main>
 
-    <div class="header-actions">
-      <button class="icon-btn search-btn" aria-label="Search">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      </button>
-      <button class="icon-btn profile-btn" aria-label="Profile">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-      </button>
-      <button class="icon-btn cart-btn" aria-label="Cart">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-        <span class="cart-badge">0</span>
-      </button>
-    </div>
-  </div>
-</header>
-
-<main class="main-content">
-  <router-outlet />
-</main>
-
-<footer class="app-footer">
-  <div class="footer-container">
-    <div class="footer-brand">
-      <h3>AuraShop</h3>
-      <p>Your one-stop destination for premium products.</p>
-    </div>
-    <div class="footer-links">
-      <div class="link-group">
-        <h4>Shop</h4>
-        <a href="#">New Arrivals</a>
-        <a href="#">Best Sellers</a>
-        <a href="#">Sale</a>
-      </div>
-      <div class="link-group">
-        <h4>Support</h4>
-        <a href="#">Contact Us</a>
-        <a href="#">FAQ</a>
-        <a href="#">Shipping & Returns</a>
-      </div>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>&copy; 2026 AuraShop. All rights reserved.</p>
-  </div>
-</footer>
+  <app-footer />
+</div>

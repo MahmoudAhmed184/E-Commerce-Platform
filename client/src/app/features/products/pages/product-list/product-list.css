@@ -50,7 +50,8 @@
   margin-bottom: 20px;
 }
 
-.filter-group label {
+.filter-group label,
+.filter-label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;

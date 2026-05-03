@@ -53,7 +53,7 @@ export interface ProductFilters {
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/products`;
+  private apiUrl = `${environment.apiBaseUrl}/products`;
 
   getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
     let params = new HttpParams();

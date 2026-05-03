@@ -6,7 +6,7 @@ Views delegate reads to selectors and writes to services.
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -40,6 +40,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Public category listing and detail."""
     serializer_class = CategorySerializer
     lookup_field = 'slug'
+    permission_classes = [AllowAny]
     pagination_class = None  # categories are small lists
 
     def get_queryset(self):
@@ -57,6 +58,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
       - ``?ordering=price`` / ``-price`` / ``created_at`` etc.
     """
     lookup_field = 'slug'
+    permission_classes = [AllowAny]
     pagination_class = StandardPagination
     filter_backends = [
         DjangoFilterBackend,

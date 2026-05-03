@@ -10,7 +10,7 @@ import { Product } from '../../services/product';
   templateUrl: './product-card.html',
   styleUrls: ['./product-card.css']
 })
-export class ProductCard {
+export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
 
   get primaryImage(): string {

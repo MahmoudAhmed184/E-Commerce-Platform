@@ -29,17 +29,24 @@
         class="form-control"
       >
         <option value="">All Categories</option>
-        <option *ngFor="let cat of categories" [value]="cat.slug">
-          {{ cat.name }} <span *ngIf="cat.product_count">({{ cat.product_count }})</span>
-        </option>
+        @for (cat of categories; track cat.id) {
+          <option [value]="cat.slug">
+            {{ cat.name }}
+            @if (cat.product_count) {
+              ({{ cat.product_count }})
+            }
+          </option>
+        }
       </select>
     </div>
 
     <!-- Price Range -->
     <div class="filter-group">
-      <label>Price Range</label>
+      <div class="filter-label">Price Range</div>
       <div class="price-inputs">
+        <label for="min-price" class="sr-only">Minimum price</label>
         <input
+          id="min-price"
           type="number"
           [(ngModel)]="minPrice"
           placeholder="Min"
@@ -47,7 +54,9 @@
           min="0"
         />
         <span class="separator">–</span>
+        <label for="max-price" class="sr-only">Maximum price</label>
         <input
+          id="max-price"
           type="number"
           [(ngModel)]="maxPrice"
           placeholder="Max"
@@ -65,7 +74,9 @@
     <div class="products-header">
       <div class="header-left">
         <h1>Our Products</h1>
-        <span class="results-count" *ngIf="!loading">{{ totalCount }} results</span>
+        @if (!loading) {
+          <span class="results-count">{{ totalCount }} results</span>
+        }
       </div>
       <div class="header-right">
         <label for="ordering" class="sr-only">Sort by</label>
@@ -80,52 +91,65 @@
     </div>
 
     <!-- Error -->
-    <div *ngIf="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="btn-primary" (click)="loadProducts()">Retry</button>
-    </div>
+    @if (error) {
+      <div class="error-state">
+        <p>{{ error }}</p>
+        <button class="btn-primary" (click)="loadProducts()">Retry</button>
+      </div>
+    }
 
     <!-- Loading -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading products...</p>
-    </div>
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading products...</p>
+      </div>
+    }
 
     <!-- Empty -->
-    <div *ngIf="!loading && !error && products.length === 0" class="empty-state">
-      <h3>No products found</h3>
-      <p>Try adjusting your filters to find what you're looking for.</p>
-      <button class="btn-primary" (click)="resetFilters()">Clear Filters</button>
-    </div>
+    @if (!loading && !error && products.length === 0) {
+      <div class="empty-state">
+        <h3>No products found</h3>
+        <p>Try adjusting your filters to find what you're looking for.</p>
+        <button class="btn-primary" (click)="resetFilters()">Clear Filters</button>
+      </div>
+    }
 
     <!-- Grid -->
-    <div class="products-grid" *ngIf="!loading && products.length > 0">
-      <app-product-card *ngFor="let product of products" [product]="product"></app-product-card>
-    </div>
+    @if (!loading && products.length > 0) {
+      <div class="products-grid">
+        @for (product of products; track product.id) {
+          <app-product-card [product]="product"></app-product-card>
+        }
+      </div>
+    }
 
     <!-- Pagination -->
-    <nav class="pagination" *ngIf="!loading && totalPages > 1" aria-label="Product pages">
-      <button
-        class="page-btn"
-        [disabled]="currentPage === 1"
-        (click)="goToPage(currentPage - 1)"
-        aria-label="Previous page"
-      >&#8592;</button>
+    @if (!loading && totalPages > 1) {
+      <nav class="pagination" aria-label="Product pages">
+        <button
+          class="page-btn"
+          [disabled]="currentPage === 1"
+          (click)="goToPage(currentPage - 1)"
+          aria-label="Previous page"
+        >&#8592;</button>
 
-      <button
-        *ngFor="let p of pages"
-        class="page-btn"
-        [class.active]="p === currentPage"
-        (click)="goToPage(p)"
-        [attr.aria-current]="p === currentPage ? 'page' : null"
-      >{{ p }}</button>
+        @for (p of pages; track p) {
+          <button
+            class="page-btn"
+            [class.active]="p === currentPage"
+            (click)="goToPage(p)"
+            [attr.aria-current]="p === currentPage ? 'page' : null"
+          >{{ p }}</button>
+        }
 
-      <button
-        class="page-btn"
-        [disabled]="currentPage === totalPages"
-        (click)="goToPage(currentPage + 1)"
-        aria-label="Next page"
-      >&#8594;</button>
-    </nav>
+        <button
+          class="page-btn"
+          [disabled]="currentPage === totalPages"
+          (click)="goToPage(currentPage + 1)"
+          aria-label="Next page"
+        >&#8594;</button>
+      </nav>
+    }
   </main>
 </div>

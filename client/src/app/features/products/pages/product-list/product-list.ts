@@ -1,18 +1,19 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService, Product, Category, PaginatedResponse } from '../../services/product';
-import { ProductCard } from '../../components/product-card/product-card';
+import { ProductCardComponent } from '../../components/product-card/product-card';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCard],
+  imports: [CommonModule, FormsModule, ProductCardComponent],
   templateUrl: './product-list.html',
   styleUrls: ['./product-list.css']
 })
-export class ProductList implements OnInit {
+export class ProductListPage implements OnInit {
   private productService = inject(ProductService);
+  private cdr = inject(ChangeDetectorRef);
 
   products: Product[] = [];
   categories: Category[] = [];
@@ -42,8 +43,14 @@ export class ProductList implements OnInit {
 
   loadCategories(): void {
     this.productService.getCategories().subscribe({
-      next: (data) => this.categories = data,
-      error: (err) => console.error('Failed to load categories', err)
+      next: (data) => {
+        this.categories = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load categories', err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -67,11 +74,13 @@ export class ProductList implements OnInit {
         this.products = data.results;
         this.totalCount = data.count;
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error('Failed to load products', err);
         this.error = 'Could not load products. Please try again.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }

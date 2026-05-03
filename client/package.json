@@ -5,12 +5,14 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "lint": "ng lint",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "node scripts/ng-test-compat.mjs"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
   "dependencies": {
+    "@angular/animations": "^21.2.11",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
@@ -21,15 +23,26 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@angular-eslint/builder": "^21.3.1",
+    "@angular-eslint/eslint-plugin": "^21.3.1",
+    "@angular-eslint/eslint-plugin-template": "^21.3.1",
+    "@angular-eslint/schematics": "^21.3.1",
+    "@angular-eslint/template-parser": "^21.3.1",
     "@angular/build": "^21.2.5",
     "@angular/cli": "^21.2.5",
     "@angular/compiler-cli": "^21.2.0",
-    "@tailwindcss/postcss": "^4.1.12",
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@vitest/browser-playwright": "^4.1.5",
+    "angular-eslint": "^21.3.1",
+    "eslint": "^10.3.0",
     "jsdom": "^29.1.1",
+    "playwright": "^1.59.1",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
-    "tailwindcss": "^4.1.12",
+    "tailwindcss": "^4.2.4",
     "typescript": "~5.9.2",
+    "typescript-eslint": "^8.59.1",
     "vitest": "^4.0.8"
   }
 }
