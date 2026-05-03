@@ -26,6 +26,18 @@
 | P1-SET-004 | Shared API contract draft, sample payloads, mock data, and integration conventions | Architecture | FR-USR-001, FR-PRD-001, FR-CRT-001, FR-CHK-001, FR-PAY-001, FR-ADM-001, FR-REV-001 | 8 | D2 | Depends on: P1-SET-001 |
 | P1-SET-005 | CI workflow for backend tests, frontend tests, lint checks, and build verification | DevOps | NFR-TST-001, NFR-TST-002, NFR-TST-003, NFR-TST-004 | 8 | D5 | Depends on: P1-SET-002, P1-SET-003 |
 
+### P1-SET-001 Completion Notes
+
+Date: 2026-05-03
+
+- DONE: Repository contribution standards are documented in `CONTRIBUTING.md` and `docs/CONVENTIONS.md`.
+- DONE: Pull request and issue templates are present under `.github/`.
+- DONE: Dependabot is configured for backend, frontend, and GitHub Actions manifests.
+- DONE: README onboarding reflects the current backend/frontend setup and verification commands.
+- DONE: `.gitignore` excludes local environment files, virtual environments, caches, build outputs, logs, media, and static output while preserving checked-in `.env.example` templates.
+- DONE: Backend and frontend environment templates exist at `server/.env.example` and `client/.env.example`.
+- MANUAL: Branch protection, secret scanning, push protection, and repository labels must be applied in GitHub using `docs/GITHUB_SETUP.md` after the remote repository is created.
+
 ## Phase 2 - Core Backend
 
 | Task ID | Title | Track | Requirement IDs | Estimated Hours | Assigned To | Dependencies |
