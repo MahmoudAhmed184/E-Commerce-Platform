@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 
-import { CartPlaceholderComponent } from './cart-placeholder.component';
+import { CartPage } from './pages/cart-page/cart-page';
 
 export const CART_ROUTES: Routes = [
   {
     path: '',
-    component: CartPlaceholderComponent,
+    component: CartPage,
   },
 ];
