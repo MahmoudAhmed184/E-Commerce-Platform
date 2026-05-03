@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 
-import { ReviewsPlaceholderComponent } from './reviews-placeholder.component';
+import { ReviewsPage } from './pages/reviews-page/reviews-page';
 
 export const REVIEWS_ROUTES: Routes = [
   {
-    path: '',
-    component: ReviewsPlaceholderComponent,
+    path: ':slug',
+    component: ReviewsPage,
   },
 ];
