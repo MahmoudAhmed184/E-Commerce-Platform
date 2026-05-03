@@ -12,6 +12,7 @@ dependencies = [
     "djangorestframework-simplejwt>=5.5.1",
     "mysqlclient>=2.2.8",
     "pillow>=12.2.0",
+    "python-dotenv>=1.2.2",
 ]
 
 [dependency-groups]
