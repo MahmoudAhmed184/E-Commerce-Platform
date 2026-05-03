@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 
-import { OrdersPlaceholderComponent } from './orders-placeholder.component';
+import { OrderConfirmationPage } from './pages/order-confirmation/order-confirmation';
 
 export const ORDERS_ROUTES: Routes = [
   {
-    path: '',
-    component: OrdersPlaceholderComponent,
+    path: ':orderNumber',
+    component: OrderConfirmationPage,
   },
 ];
