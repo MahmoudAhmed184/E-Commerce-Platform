@@ -136,7 +136,7 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
 
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:4200,http://127.0.0.1:4200").split(",")
     if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True

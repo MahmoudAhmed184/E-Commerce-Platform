@@ -1,10 +1,15 @@
 import { Routes } from '@angular/router';
 
-import { ProductsPlaceholderComponent } from './products-placeholder.component';
+import { ProductDetailPage } from './pages/product-detail/product-detail';
+import { ProductListPage } from './pages/product-list/product-list';
 
 export const PRODUCTS_ROUTES: Routes = [
   {
     path: '',
-    component: ProductsPlaceholderComponent,
+    component: ProductListPage,
+  },
+  {
+    path: ':slug',
+    component: ProductDetailPage,
   },
 ];
