@@ -438,15 +438,15 @@ Base path: `/api/v1`
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/api/v1/products/` | Public | List active products with search, category filter, price filter, and pagination. |
-| GET | `/api/v1/products/{id}/` | Public | Retrieve product details including images and review summary. |
-| GET | `/api/v1/categories/` | Public | List active product categories. |
-| POST | `/api/v1/admin/products/` | Admin | Create a product. |
-| PATCH | `/api/v1/admin/products/{id}/` | Admin | Update product fields, stock, category, or image metadata. |
-| DELETE | `/api/v1/admin/products/{id}/` | Admin | Deactivate a product. |
-| POST | `/api/v1/admin/products/{id}/images/` | Admin | Upload a product image. |
-| POST | `/api/v1/admin/categories/` | Admin | Create a category. |
-| PATCH | `/api/v1/admin/categories/{id}/` | Admin | Update a category. |
-| DELETE | `/api/v1/admin/categories/{id}/` | Admin | Deactivate a category. |
+| GET | `/api/v1/products/products/{slug}/` | Public | Retrieve product details including images and review summary. |
+| GET | `/api/v1/products/categories/` | Public | List active product categories. |
+| POST | `/api/v1/products/admin/products/` | Admin | Create a product. |
+| PATCH | `/api/v1/products/admin/products/{slug}/` | Admin | Update product fields, stock, category, or image metadata. |
+| DELETE | `/api/v1/products/admin/products/{slug}/` | Admin | Deactivate a product. |
+| POST | `/api/v1/products/admin/product-images/` | Admin | Upload a product image. |
+| POST | `/api/v1/products/admin/categories/` | Admin | Create a category. |
+| PATCH | `/api/v1/products/admin/categories/{slug}/` | Admin | Update a category. |
+| DELETE | `/api/v1/products/admin/categories/{slug}/` | Admin | Deactivate a category. |
 
 ### 8.3 Cart
 
@@ -456,45 +456,40 @@ Base path: `/api/v1`
 | POST | `/api/v1/cart/items/` | Authenticated | Add a product to the active authenticated cart. |
 | PATCH | `/api/v1/cart/items/{id}/` | Authenticated | Update cart item quantity. |
 | DELETE | `/api/v1/cart/items/{id}/` | Authenticated | Remove a cart item. |
-| GET | `/api/v1/cart/summary/` | Authenticated | Retrieve the server-calculated authenticated cart summary. |
 
 ### 8.4 Orders and Checkout
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/v1/orders/` | Authenticated | Create an order from the authenticated customer's active cart. |
-| POST | `/api/v1/orders/guest/` | Public | Create a guest order from submitted checkout data and item payloads. |
-| GET | `/api/v1/orders/{id}/` | Authenticated owner or Admin | Retrieve order detail and confirmation data. |
+| POST | `/api/v1/orders/checkout/` | Public or Authenticated | Create a guest or authenticated order from submitted checkout data and item payloads. |
+| GET | `/api/v1/orders/{order_number}/` | Authenticated owner, guest order context, or Admin | Retrieve order detail and confirmation data. |
 | GET | `/api/v1/admin/orders/` | Admin | List orders and filter by status. |
 
 ### 8.5 Payments
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/v1/orders/{order_id}/payments/` | Authenticated owner, guest order context, or Admin | Create a payment attempt for an order and return provider flow metadata when needed. |
-| GET | `/api/v1/payments/{id}/` | Authenticated owner, guest order context, or Admin | Retrieve payment status for a specific payment attempt. |
-| GET | `/api/v1/users/me/wallet/` | Authenticated | Retrieve the current authenticated user's wallet balance. |
-| POST | `/api/v1/payments/webhooks/stripe/` | Public, provider-signed | Receive verified Stripe webhook events. |
-| POST | `/api/v1/payments/webhooks/paypal/` | Public, provider-signed | Receive verified PayPal webhook events. |
+| POST | `/api/v1/orders/checkout/` | Public or Authenticated | Create an order and its initial payment attempt in one server-calculated checkout flow. |
+| POST | `/api/v1/payments/webhooks/sandbox/` | Public, provider-signed | Receive verified sandbox card-provider webhook events. |
 | GET | `/api/v1/admin/payments/` | Admin | List payment records for support and verification. |
 
 ### 8.6 Reviews
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/v1/products/{product_id}/reviews/` | Public | List visible reviews for a product with pagination. |
-| POST | `/api/v1/products/{product_id}/reviews/` | Authenticated Customer | Create a review for a product. |
+| GET | `/api/v1/products/{product_slug}/reviews/` | Public | List visible reviews for a product. |
+| POST | `/api/v1/products/{product_slug}/reviews/` | Authenticated Customer | Create a review for a product. |
 | PATCH | `/api/v1/reviews/{id}/` | Authenticated Owner | Update the current user's own review. |
 | DELETE | `/api/v1/reviews/{id}/` | Authenticated Owner | Delete the current user's own review. |
-| PATCH | `/api/v1/admin/reviews/{id}/moderate/` | Admin | Change review visibility for moderation. |
+| PATCH | `/api/v1/admin/reviews/{id}/hide/` | Admin | Change review visibility for moderation. |
 
 ### 8.7 Admin Users
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/api/v1/admin/users/` | Admin | List user accounts and support search by email or phone. |
-| GET | `/api/v1/admin/users/{id}/` | Admin | Retrieve user details. |
-| PATCH | `/api/v1/admin/users/{id}/` | Admin | Approve, restrict, or otherwise update admin-managed account-state fields. |
+| PATCH | `/api/v1/admin/users/{id}/approve/` | Admin | Approve a pending user account. |
+| PATCH | `/api/v1/admin/users/{id}/restrict/` | Admin | Restrict a user account. |
 | DELETE | `/api/v1/admin/users/{id}/` | Admin | Soft-delete a user account. |
 
 ## 9. Angular Module Map

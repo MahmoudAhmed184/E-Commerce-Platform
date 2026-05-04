@@ -248,6 +248,7 @@ Backend:
 ```bash
 cd server
 uv run python manage.py check
+uv run python manage.py check_auth_security
 uv run pytest
 ```
 

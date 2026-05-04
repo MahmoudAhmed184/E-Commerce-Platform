@@ -104,6 +104,13 @@ Date: 2026-05-02
 
 ### P5-QA-001 Release Checklist
 
+Status notes as of 2026-05-04:
+
+- DONE: Backend auth regression covers registration, confirmation, login by email or phone, blocked-account handling, logout, refresh rotation, current-user lookup, and profile update under `server/apps/users/tests/`.
+- DONE: Frontend auth regression covers login error mapping and auth service behavior, including current-user loading and profile update.
+- DONE: Deployment-oriented auth security review is supported by `uv run python manage.py check_auth_security`.
+- BLOCKED: Final release signoff for `P5-QA-001` remains dependent on `P4-INT-PAY-001`, so the full release checklist cannot be closed until payment integration is complete.
+
 - Runtime secrets are provided through environment variables only, including `DJANGO_SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `CORS_ALLOWED_ORIGINS`.
 - HTTPS is enforced in production through `SECURE_SSL_REDIRECT=True`, secure session cookies, secure CSRF cookies, and one-year HSTS.
 - JWT refresh-token rotation is active with `ROTATE_REFRESH_TOKENS=True` and `BLACKLIST_AFTER_ROTATION=True`.
@@ -112,6 +119,20 @@ Date: 2026-05-02
 - Production runs with `DEBUG=False`; no production deployment may use development settings or committed `.env` files.
 - `uv run python manage.py check --deploy` passes with production settings before release.
 - `uv run python manage.py check_auth_security` is reviewed before release to confirm CORS origins, token lifetimes, throttle rates, and HTTPS settings.
+
+### D1-D4 Completion Update
+
+Status notes as of 2026-05-04 after implementation and verification:
+
+- DONE: `P1-SET-004` shared API contract is documented in `docs/api_contract.md`, including auth, catalog, cart, checkout, order, and payment payloads.
+- DONE: `P5-QA-001` is no longer blocked by payment integration. Auth security checks, auth regression, and payment/checkout handoff notes are available.
+- DONE: `P5-QA-002` catalog/admin-catalog regression includes query-count coverage for product list and admin product list edge cases.
+- DONE: `P2-BE-SEC-001` has additional authenticated cart isolation, webhook signature, and private order access regression coverage.
+- DONE: `P2-BE-CRT-001`, `P2-BE-ORD-001`, `P4-INT-CART-ORD-001`, and `P5-QA-003` are covered by authenticated cart APIs, stock validation, checkout rollback checks, cart clearing, and frontend build verification.
+- DONE: `P2-BE-PAY-001`, `P2-BE-PAY-002`, `P4-INT-PAY-001`, and `P5-QA-004` are covered by COD, wallet, sandbox card, signed webhook, idempotency, and payment/checkout handoff verification.
+- PASS: Backend regression command `uv run pytest` passed with the D1-D4 scope.
+- PASS: Django system check passed with `DJANGO_SETTINGS_MODULE=config.settings.testing uv run python manage.py check`.
+- PASS: Angular production build passed with `npm run build`.
 
 ## Workload Summary
 
