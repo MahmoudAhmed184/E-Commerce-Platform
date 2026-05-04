@@ -61,9 +61,15 @@
           </div>
 
           <div class="actions">
-            <button class="btn-cart" [disabled]="product.stock === 0">
-              Add to Cart
+            <button class="btn-cart" [disabled]="product.stock === 0 || addingToCart" (click)="addToCart()">
+              {{ addingToCart ? 'Adding...' : 'Add to Cart' }}
             </button>
+            @if (cartMessage) {
+              <p class="cart-feedback success">{{ cartMessage }}</p>
+            }
+            @if (cartError) {
+              <p class="cart-feedback error">{{ cartError }}</p>
+            }
           </div>
         </div>
       </div>

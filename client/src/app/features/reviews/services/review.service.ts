@@ -5,7 +5,7 @@ import { ApiService } from '../../../core/services/api.service';
 
 export interface Review {
   id: number;
-  user: number;
+  user: string;
   user_name: string;
   product: number;
   rating: number;
@@ -27,6 +27,10 @@ export class ReviewService {
 
   getProductReviews(productSlug: string): Observable<Review[]> {
     return this.api.get<Review[]>(`/products/${productSlug}/reviews/`);
+  }
+
+  createProductReview(productSlug: string, payload: Omit<ReviewPayload, 'product'>): Observable<Review> {
+    return this.api.post<Review>(`/products/${productSlug}/reviews/`, payload);
   }
 
   createReview(payload: ReviewPayload): Observable<Review> {

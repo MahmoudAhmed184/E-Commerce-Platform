@@ -117,9 +117,9 @@ type CheckoutForm = FormGroup<{
             <span>Subtotal</span>
             <span class="font-semibold text-slate-900">
               @if (authService.isLoggedIn()) {
-                ${{ cartService.cart()?.subtotal ?? '0.00' }}
+                &#36;{{ cartService.cart()?.subtotal ?? '0.00' }}
               } @else {
-                ${{ cartService.guestSubtotal.toFixed(2) }}
+                &#36;{{ cartService.guestSubtotal.toFixed(2) }}
               }
             </span>
           </div>
@@ -178,10 +178,14 @@ export class CheckoutPage {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
 
     const v = this.form.getRawValue();
-    const guestItems = this.cartService.guestItems().map((i) => ({
-      product: i.product,
-      quantity: i.quantity,
-    }));
+    const checkoutItems = this.authService.isLoggedIn()
+      ? this.cartService.cart()?.items.map((i) => ({ product: i.product, quantity: i.quantity })) ?? []
+      : this.cartService.guestItems().map((i) => ({ product: i.product, quantity: i.quantity }));
+
+    if (checkoutItems.length === 0) {
+      this.formError.set('Your cart is empty.');
+      return;
+    }
 
     this.isLoading.set(true);
     this.checkoutService
@@ -190,12 +194,12 @@ export class CheckoutPage {
         phone: v.phone,
         shipping_address: { line1: v.line1, city: v.city, state: v.state, postal_code: v.postal_code, country: v.country },
         payment_method: v.payment_method,
-        ...(!this.authService.isLoggedIn() && { items: guestItems }),
+        items: checkoutItems,
       })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (order) => {
-          this.cartService.clearGuestCart();
+          this.cartService.clearCartState();
           void this.router.navigate(['/orders', order.order_number]);
         },
         error: () => this.formError.set('Could not place your order. Please try again.'),

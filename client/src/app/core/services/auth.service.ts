@@ -163,6 +163,7 @@ function normalizeStatus(status: BackendUser['status']): User['status'] {
       return 'soft_deleted';
     case 'pending_approval':
     case 'PENDING':
+    default:
       return 'pending_approval';
   }
 }

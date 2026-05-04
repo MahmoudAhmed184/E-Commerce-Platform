@@ -63,7 +63,7 @@ type CategoryForm = FormGroup<{
       <!-- Create / Edit form -->
       <div class="w-72 shrink-0">
         <h3 class="text-base font-semibold text-slate-800">
-          {{ editingId() ? 'Edit Category' : 'New Category' }}
+          {{ editingSlug() ? 'Edit Category' : 'New Category' }}
         </h3>
         <form class="mt-4 space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
           [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -79,12 +79,12 @@ type CategoryForm = FormGroup<{
               class="mt-1 block w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
           </div>
           <div class="flex gap-2">
-            <button type="submit"
+              <button type="submit"
               class="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
               [disabled]="submitting()">
-              @if (submitting()) { Saving… } @else { {{ editingId() ? 'Update' : 'Create' }} }
+              @if (submitting()) { Saving... } @else { {{ editingSlug() ? 'Update' : 'Create' }} }
             </button>
-            @if (editingId()) {
+            @if (editingSlug()) {
               <button type="button" (click)="cancelEdit()"
                 class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 Cancel
@@ -94,6 +94,18 @@ type CategoryForm = FormGroup<{
         </form>
       </div>
     </div>
+
+    @if (totalPages() > 1) {
+      <div class="mt-4 flex items-center gap-2 text-sm">
+        <button type="button" [disabled]="currentPage() === 1"
+          class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
+          (click)="load(currentPage() - 1)">← Prev</button>
+        <span class="text-slate-600">Page {{ currentPage() }} of {{ totalPages() }}</span>
+        <button type="button" [disabled]="currentPage() === totalPages()"
+          class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
+          (click)="load(currentPage() + 1)">Next →</button>
+      </div>
+    }
   `,
 })
 export class AdminCategoriesPage implements OnInit {
@@ -105,7 +117,11 @@ export class AdminCategoriesPage implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
   protected readonly formError = signal('');
-  protected readonly editingId = signal<number | null>(null);
+  protected readonly currentPage = signal(1);
+  protected readonly totalCount = signal(0);
+  protected readonly editingSlug = signal<string | null>(null);
+  protected readonly pageSize = 20;
+  protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
 
   protected readonly form: CategoryForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -114,13 +130,17 @@ export class AdminCategoriesPage implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  private load(): void {
+  protected load(page = 1): void {
     this.isLoading.set(true);
+    this.currentPage.set(page);
     this.adminService
-      .getAdminCategories()
+      .getAdminCategories({ page })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (cats) => this.categories.set(cats),
+        next: (response) => {
+          this.categories.set(response.results);
+          this.totalCount.set(response.count);
+        },
         error: () => this.error.set('Could not load categories.'),
       });
   }
@@ -131,9 +151,9 @@ export class AdminCategoriesPage implements OnInit {
 
     const { name, description } = this.form.getRawValue();
     this.submitting.set(true);
-    const id = this.editingId();
-    const req = id
-      ? this.adminService.updateCategory(id, { name, description: description || undefined })
+    const slug = this.editingSlug();
+    const req = slug
+      ? this.adminService.updateCategory(slug, { name, description: description || undefined })
       : this.adminService.createCategory({ name, description: description || undefined });
 
     req.pipe(finalize(() => this.submitting.set(false))).subscribe({
@@ -143,17 +163,17 @@ export class AdminCategoriesPage implements OnInit {
   }
 
   protected startEdit(cat: AdminCategory): void {
-    this.editingId.set(cat.id);
+    this.editingSlug.set(cat.slug);
     this.form.setValue({ name: cat.name, description: cat.description });
   }
 
   protected cancelEdit(): void {
-    this.editingId.set(null);
+    this.editingSlug.set(null);
     this.form.reset();
   }
 
   protected deleteCategory(cat: AdminCategory): void {
-    this.adminService.deleteCategory(cat.id).subscribe({
+    this.adminService.deleteCategory(cat.slug).subscribe({
       next: () => this.categories.update((list) => list.filter((c) => c.id !== cat.id)),
       error: () => this.error.set('Could not delete category.'),
     });

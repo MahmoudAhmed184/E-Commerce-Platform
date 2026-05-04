@@ -1,3 +1,4 @@
+import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 
@@ -8,7 +9,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 @Component({
   selector: 'app-admin-orders',
   standalone: true,
-  imports: [LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
@@ -36,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                 <tr class="hover:bg-slate-50">
                   <td class="px-4 py-3 font-mono text-slate-900">{{ order.order_number }}</td>
                   <td class="px-4 py-3 text-slate-600">{{ order.customer_email }}</td>
-                  <td class="px-4 py-3 font-semibold text-slate-900">${{ order.total_amount }}</td>
+                  <td class="px-4 py-3 font-semibold text-slate-900">&#36;{{ order.total_amount }}</td>
                   <td class="px-4 py-3">
                     <span class="rounded-full px-2 py-0.5 text-xs font-medium"
                       [class.bg-green-100]="order.status === 'confirmed'"

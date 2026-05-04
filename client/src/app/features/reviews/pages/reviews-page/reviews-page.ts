@@ -1,3 +1,4 @@
+import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,7 +17,7 @@ type ReviewForm = FormGroup<{
 @Component({
   selector: 'app-reviews-page',
   standalone: true,
-  imports: [ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-3xl px-4 py-10">
@@ -33,7 +34,7 @@ type ReviewForm = FormGroup<{
 
             <!-- Star rating -->
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">Rating</label>
+              <span class="block text-sm font-medium text-slate-700 mb-2">Rating</span>
               <div class="flex gap-1">
                 @for (star of stars; track star) {
                   <button type="button"
@@ -96,7 +97,7 @@ type ReviewForm = FormGroup<{
                 @if (review.comment) {
                   <p class="mt-3 text-sm text-slate-700">{{ review.comment }}</p>
                 }
-                @if (authService.currentUser()?.id === review.user.toString()) {
+                @if (authService.currentUser()?.id === review.user) {
                   <div class="mt-4 flex gap-3 text-sm">
                     <button type="button" (click)="startEdit(review)"
                       class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
@@ -160,7 +161,7 @@ export class ReviewsPage implements OnInit {
     const id = this.editingId();
     const req = id
       ? this.reviewService.updateReview(id, { rating, comment: comment || undefined })
-      : this.reviewService.createReview({ product: 0, rating, comment: comment || undefined });
+      : this.reviewService.createProductReview(this.productSlug, { rating, comment: comment || undefined });
 
     req.pipe(finalize(() => this.submitting.set(false))).subscribe({
       next: () => { this.cancelEdit(); this.loadReviews(); },

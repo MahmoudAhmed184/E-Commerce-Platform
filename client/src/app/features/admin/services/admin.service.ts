@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
 
@@ -62,6 +62,32 @@ export interface AdminCategoryPayload {
   description?: string;
 }
 
+interface BackendCategorySummary {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface BackendAdminProduct {
+  id: number;
+  name: string;
+  slug: string;
+  price: string;
+  stock: number;
+  availability: 'in_stock' | 'out_of_stock';
+  is_active: boolean;
+  category: BackendCategorySummary;
+}
+
+interface BackendAdminCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  is_active: boolean;
+  product_count: number;
+}
+
 export interface AdminPayment {
   id: number;
   order_number: string;
@@ -70,6 +96,15 @@ export interface AdminPayment {
   method: PaymentMethod;
   status: PaymentStatus;
   provider_reference: string | null;
+  created_at: string;
+}
+
+export interface AdminProductImage {
+  id: number;
+  product: number;
+  image: string;
+  alt_text: string;
+  is_primary: boolean;
   created_at: string;
 }
 
@@ -125,40 +160,107 @@ export class AdminService {
 
   // Products
   getAdminProducts(params?: { page?: number }): Observable<PaginatedResponse<AdminProduct>> {
-    return this.api.get<PaginatedResponse<AdminProduct>>('/admin/products/', params);
+    return this.api
+      .get<PaginatedResponse<BackendAdminProduct>>('/products/admin/products/', params)
+      .pipe(map((response) => mapPaginatedResponse(response, mapAdminProduct)));
   }
 
-  updateStock(productId: number, quantity: number): Observable<AdminProduct> {
-    return this.api.patch<AdminProduct>(`/admin/products/${productId}/stock/`, { stock_quantity: quantity });
+  updateStock(productSlug: string, quantity: number): Observable<AdminProduct> {
+    return this.api
+      .post<BackendAdminProduct>(`/products/admin/products/${productSlug}/update_stock/`, { quantity })
+      .pipe(map(mapAdminProduct));
   }
 
-  toggleProductActive(productId: number, isActive: boolean): Observable<AdminProduct> {
-    return this.api.patch<AdminProduct>(`/admin/products/${productId}/`, { is_active: isActive });
+  toggleProductActive(product: Pick<AdminProduct, 'slug' | 'is_active'>): Observable<AdminProduct> {
+    const request = product.is_active
+      ? this.api.post<BackendAdminProduct>(`/products/admin/products/${product.slug}/deactivate/`, {})
+      : this.api.patch<BackendAdminProduct>(`/products/admin/products/${product.slug}/`, { is_active: true });
+
+    return request.pipe(map(mapAdminProduct));
   }
 
-  deleteProduct(productId: number): Observable<void> {
-    return this.api.delete<void>(`/admin/products/${productId}/`);
+  deleteProduct(productSlug: string): Observable<void> {
+    return this.api.delete<void>(`/products/admin/products/${productSlug}/`);
+  }
+
+  uploadProductImage(
+    productId: number,
+    file: File,
+    options?: { altText?: string; isPrimary?: boolean },
+  ): Observable<AdminProductImage> {
+    const formData = new FormData();
+    formData.append('product', String(productId));
+    formData.append('image', file);
+
+    if (options?.altText) {
+      formData.append('alt_text', options.altText);
+    }
+
+    if (options?.isPrimary) {
+      formData.append('is_primary', 'true');
+    }
+
+    return this.api.post<AdminProductImage>('/products/admin/product-images/', formData);
   }
 
   // Categories
-  getAdminCategories(): Observable<AdminCategory[]> {
-    return this.api.get<AdminCategory[]>('/admin/categories/');
+  getAdminCategories(params?: { page?: number }): Observable<PaginatedResponse<AdminCategory>> {
+    return this.api
+      .get<PaginatedResponse<BackendAdminCategory>>('/products/admin/categories/', params)
+      .pipe(map((response) => mapPaginatedResponse(response, mapAdminCategory)));
   }
 
   createCategory(payload: AdminCategoryPayload): Observable<AdminCategory> {
-    return this.api.post<AdminCategory>('/admin/categories/', payload);
+    return this.api
+      .post<BackendAdminCategory>('/products/admin/categories/', payload)
+      .pipe(map(mapAdminCategory));
   }
 
-  updateCategory(id: number, payload: AdminCategoryPayload): Observable<AdminCategory> {
-    return this.api.patch<AdminCategory>(`/admin/categories/${id}/`, payload);
+  updateCategory(categorySlug: string, payload: AdminCategoryPayload): Observable<AdminCategory> {
+    return this.api
+      .patch<BackendAdminCategory>(`/products/admin/categories/${categorySlug}/`, payload)
+      .pipe(map(mapAdminCategory));
   }
 
-  deleteCategory(id: number): Observable<void> {
-    return this.api.delete<void>(`/admin/categories/${id}/`);
+  deleteCategory(categorySlug: string): Observable<void> {
+    return this.api.delete<void>(`/products/admin/categories/${categorySlug}/`);
   }
 
   // Payments
   getPayments(params?: { page?: number }): Observable<PaginatedResponse<AdminPayment>> {
     return this.api.get<PaginatedResponse<AdminPayment>>('/admin/payments/', params);
   }
+}
+
+function mapPaginatedResponse<TInput, TOutput>(
+  response: PaginatedResponse<TInput>,
+  mapper: (value: TInput) => TOutput,
+): PaginatedResponse<TOutput> {
+  return {
+    ...response,
+    results: response.results.map(mapper),
+  };
+}
+
+function mapAdminProduct(product: BackendAdminProduct): AdminProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    price: product.price,
+    stock_quantity: product.stock,
+    availability: product.availability,
+    is_active: product.is_active,
+    category_name: product.category.name,
+  };
+}
+
+function mapAdminCategory(category: BackendAdminCategory): AdminCategory {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    product_count: category.product_count,
+  };
 }

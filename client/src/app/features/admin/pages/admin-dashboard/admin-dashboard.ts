@@ -33,7 +33,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     </div>
   `,
 })
-export class AdminDashboard {
+export class AdminDashboardPage {
   protected readonly navLinks = [
     { path: 'users',      label: 'Users',      icon: '👤' },
     { path: 'orders',     label: 'Orders',     icon: '📦' },
