@@ -7,7 +7,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from apps.users.models import CustomUser, EmailConfirmationToken
-from apps.users.services import confirm_email, create_user
+from apps.users.services import confirm_email, create_user, update_user_profile
 
 
 @override_settings(
@@ -117,3 +117,53 @@ def test_confirm_email_used_token_raises() -> None:
 
     with pytest.raises(ValidationError):
         confirm_email(token.token)
+
+
+@pytest.mark.django_db
+def test_update_user_profile_updates_name_and_phone() -> None:
+    user = CustomUser.objects.create_user(
+        email="profile-update@example.com",
+        password="Password123",
+        full_name="Before Name",
+        phone="+201000000110",
+    )
+
+    update_user_profile(user, full_name="After Name", phone="+201000000111")
+    user.refresh_from_db()
+
+    assert user.full_name == "After Name"
+    assert user.phone == "+201000000111"
+
+
+@pytest.mark.django_db
+def test_update_user_profile_allows_clearing_phone() -> None:
+    user = CustomUser.objects.create_user(
+        email="profile-clear@example.com",
+        password="Password123",
+        full_name="Clear Phone",
+        phone="+201000000112",
+    )
+
+    update_user_profile(user, phone="")
+    user.refresh_from_db()
+
+    assert user.phone is None
+
+
+@pytest.mark.django_db
+def test_update_user_profile_duplicate_phone_raises() -> None:
+    CustomUser.objects.create_user(
+        email="existing-phone@example.com",
+        password="Password123",
+        full_name="Existing Phone",
+        phone="+201000000113",
+    )
+    user = CustomUser.objects.create_user(
+        email="profile-duplicate@example.com",
+        password="Password123",
+        full_name="Duplicate Phone",
+        phone="+201000000114",
+    )
+
+    with pytest.raises(ValidationError):
+        update_user_profile(user, phone="+201000000113")

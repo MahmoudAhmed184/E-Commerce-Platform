@@ -155,3 +155,32 @@ def blacklist_refresh_token(refresh_token: str) -> None:
         RefreshToken(cast(Any, refresh_token)).blacklist()
     except TokenError as exc:
         raise ValidationError({"refresh": "Invalid refresh token."}) from exc
+
+
+@transaction.atomic
+def update_user_profile(
+    user: CustomUser,
+    *,
+    full_name: str | None = None,
+    phone: str | None = None,
+) -> CustomUser:
+    updates: list[str] = []
+
+    if full_name is not None:
+        normalized_full_name = full_name.strip()
+        if not normalized_full_name:
+            raise ValidationError({"full_name": "This field may not be blank."})
+        user.full_name = normalized_full_name
+        updates.append("full_name")
+
+    if phone is not None:
+        normalized_phone = phone.strip() or None
+        if normalized_phone and CustomUser.objects.exclude(id=user.id).filter(phone=normalized_phone).exists():
+            raise ValidationError({"phone": "A user with this phone already exists."})
+        user.phone = normalized_phone
+        updates.append("phone")
+
+    if updates:
+        user.save(update_fields=[*updates, "updated_at"])
+
+    return user

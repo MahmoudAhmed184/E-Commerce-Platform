@@ -42,9 +42,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_primary_image(self, obj) -> str | None:
-        primary = obj.images.filter(is_primary=True).first()
-        if not primary:
-            primary = obj.images.first()
+        images = list(obj.images.all())
+        primary = next((img for img in images if img.is_primary), None)
+        if not primary and images:
+            primary = images[0]
         if primary:
             request = self.context.get('request')
             if request:
@@ -85,10 +86,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 class AdminCategorySerializer(serializers.ModelSerializer):
     """Admin serializer for category CRUD (FR-ADM-009)."""
+    product_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'description', 'is_active',
+        fields = ['id', 'name', 'slug', 'description', 'is_active', 'product_count',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
 
@@ -120,15 +122,20 @@ class AdminProductSerializer(serializers.ModelSerializer):
         queryset=Category.objects.all(),
         source='category',
         write_only=True,
+        required=False,
     )
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
+    availability = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'stock',
-            'is_active', 'category_id', 'category', 'images',
+            'is_active', 'category_id', 'category', 'images', 'availability',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
+
+    def get_availability(self, obj) -> str:
+        return obj.availability

@@ -269,6 +269,65 @@ def test_me_unauthenticated_returns_401() -> None:
 
 
 @pytest.mark.django_db
+def test_me_patch_updates_profile() -> None:
+    user = _create_active_user(email="me-patch@example.com", phone="+201000000022")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.patch(
+        "/api/v1/users/me/",
+        {"full_name": "Updated User", "phone": "+201000000023"},
+        format="json",
+    )
+    user.refresh_from_db()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["full_name"] == "Updated User"
+    assert response.data["phone"] == "+201000000023"
+    assert user.full_name == "Updated User"
+    assert user.phone == "+201000000023"
+
+
+@pytest.mark.django_db
+def test_me_patch_duplicate_phone_returns_400() -> None:
+    CustomUser.objects.create_user(
+        email="other-user@example.com",
+        phone="+201000000024",
+        password="Password123",
+        full_name="Other User",
+        status=CustomUser.Status.ACTIVE,
+        is_email_confirmed=True,
+    )
+    user = _create_active_user(email="me-duplicate@example.com", phone="+201000000025")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.patch(
+        "/api/v1/users/me/",
+        {"phone": "+201000000024"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data == {"phone": ["A user with this phone already exists."]}
+
+
+@pytest.mark.django_db
+def test_me_patch_without_fields_returns_400() -> None:
+    user = _create_active_user(email="me-empty@example.com", phone="+201000000026")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.patch("/api/v1/users/me/", {}, format="json")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data == {"non_field_errors": ["Provide at least one field to update."]}
+
+
+@pytest.mark.django_db
 def test_register_throttle_triggers_after_10_requests() -> None:
     client = APIClient()
 
