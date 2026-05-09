@@ -185,6 +185,20 @@
   cursor: not-allowed;
 }
 
+.cart-feedback {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.cart-feedback.success {
+  color: #1f7a3f;
+}
+
+.cart-feedback.error {
+  color: #dc3545;
+}
+
 /* States */
 .loading-state, .error-state {
   text-align: center;

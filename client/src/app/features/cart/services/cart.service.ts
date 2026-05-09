@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
@@ -53,10 +53,12 @@ export class CartService {
   loadCart(): Observable<Cart> {
     this.isLoading.set(true);
     return this.api.get<Cart>('/cart/').pipe(
-      tap((cart) => {
-        this.cart.set(cart);
-        this.isLoading.set(false);
+      tap((cart) => this.cart.set(cart)),
+      catchError((error: unknown) => {
+        this.cart.set(null);
+        return throwError(() => error);
       }),
+      finalize(() => this.isLoading.set(false)),
     );
   }
 
@@ -109,6 +111,11 @@ export class CartService {
   clearGuestCart(): void {
     this.guestItems.set([]);
     localStorage.removeItem(GUEST_CART_KEY);
+  }
+
+  clearCartState(): void {
+    this.cart.set(null);
+    this.clearGuestCart();
   }
 
   get guestSubtotal(): number {

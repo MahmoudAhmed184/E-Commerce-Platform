@@ -135,6 +135,40 @@ describe('AuthService', () => {
     expect(service.currentUser()?.role).toBe('customer');
   });
 
+  it('test_updateProfile_updates_currentUser_signal', () => {
+    service.currentUser.set({
+      id: backendCustomer.id,
+      email: backendCustomer.email,
+      phone: backendCustomer.phone,
+      full_name: backendCustomer.full_name,
+      role: 'customer',
+      status: 'active',
+    });
+
+    service.updateProfile({ full_name: 'Updated Customer', phone: '201999999999' }).subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/users/me/`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      full_name: 'Updated Customer',
+      phone: '201999999999',
+    });
+    request.flush({
+      ...backendCustomer,
+      full_name: 'Updated Customer',
+      phone: '201999999999',
+    });
+
+    expect(service.currentUser()).toEqual({
+      id: backendCustomer.id,
+      email: backendCustomer.email,
+      phone: '201999999999',
+      full_name: 'Updated Customer',
+      role: 'customer',
+      status: 'active',
+    });
+  });
+
   it('test_isLoggedIn_computed_reflects_currentUser', () => {
     expect(service.isLoggedIn()).toBe(false);
 

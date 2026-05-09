@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { AdminDashboard } from './pages/admin-dashboard/admin-dashboard';
+import { AdminDashboardPage } from './pages/admin-dashboard/admin-dashboard';
 import { AdminUsersPage } from './pages/admin-users/admin-users';
 import { AdminOrdersPage } from './pages/admin-orders/admin-orders';
 import { AdminReviewsPage } from './pages/admin-reviews/admin-reviews';
@@ -11,7 +11,7 @@ import { AdminPaymentsPage } from './pages/admin-payments/admin-payments';
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
-    component: AdminDashboard,
+    component: AdminDashboardPage,
     children: [
       { path: '', redirectTo: 'users', pathMatch: 'full' },
       { path: 'users',      component: AdminUsersPage },

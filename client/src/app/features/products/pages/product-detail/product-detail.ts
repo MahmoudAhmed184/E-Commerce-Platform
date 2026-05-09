@@ -1,6 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { finalize } from 'rxjs';
+
+import { AuthService } from '../../../../core/services/auth.service';
+import { CartService } from '../../../cart/services/cart.service';
 import { ProductService, Product, ProductImage } from '../../services/product';
 
 @Component({
@@ -13,12 +17,17 @@ import { ProductService, Product, ProductImage } from '../../services/product';
 export class ProductDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private productService = inject(ProductService);
+  private authService = inject(AuthService);
+  private cartService = inject(CartService);
   private cdr = inject(ChangeDetectorRef);
 
   product: Product | null = null;
   loading = true;
   error = '';
   selectedImage = '';
+  addingToCart = false;
+  cartMessage = '';
+  cartError = '';
 
   ngOnInit(): void {
     const slug = this.route.snapshot.paramMap.get('slug');
@@ -55,5 +64,44 @@ export class ProductDetailPage implements OnInit {
 
   selectImage(img: ProductImage): void {
     this.selectedImage = img.image;
+  }
+
+  addToCart(): void {
+    if (!this.product || this.product.stock === 0 || this.addingToCart) {
+      return;
+    }
+
+    this.cartMessage = '';
+    this.cartError = '';
+
+    if (!this.authService.isLoggedIn()) {
+      this.cartService.addGuestItem({
+        product: this.product.id,
+        product_name: this.product.name,
+        product_slug: this.product.slug,
+        product_price: this.product.price,
+        primary_image: this.selectedImage || null,
+        quantity: 1,
+      });
+      this.cartMessage = 'Added to cart.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.addingToCart = true;
+    this.cartService
+      .addItem(this.product.id, 1)
+      .pipe(finalize(() => {
+        this.addingToCart = false;
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: () => {
+          this.cartMessage = 'Added to cart.';
+        },
+        error: () => {
+          this.cartError = 'Could not add this product to cart.';
+        },
+      });
   }
 }

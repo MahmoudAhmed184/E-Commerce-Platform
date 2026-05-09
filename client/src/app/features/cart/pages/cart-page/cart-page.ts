@@ -35,7 +35,7 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
       } @else {
         <div class="mt-8 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-sm">
           @if (authService.isLoggedIn()) {
-            @for (item of authCart(); track item.id) {
+            @for (item of authCart()?.items ?? []; track item.id) {
               <div class="flex items-center gap-4 px-6 py-4">
                 @if (item.primary_image) {
                   <img [src]="item.primary_image" [alt]="item.product_name" class="h-16 w-16 rounded-md object-cover" />
@@ -44,7 +44,7 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
                 }
                 <div class="flex-1 min-w-0">
                   <p class="truncate font-medium text-slate-900">{{ item.product_name }}</p>
-                  <p class="text-sm text-slate-500">${{ item.unit_price_snapshot }} each</p>
+                  <p class="text-sm text-slate-500">&#36;{{ item.unit_price_snapshot }} each</p>
                 </div>
                 <div class="flex items-center gap-2">
                   <button
@@ -60,7 +60,7 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
                     (click)="changeQty(item, item.quantity + 1)"
                   >+</button>
                 </div>
-                <p class="w-20 text-right text-sm font-semibold text-slate-900">${{ item.line_total }}</p>
+                <p class="w-20 text-right text-sm font-semibold text-slate-900">&#36;{{ item.line_total }}</p>
                 <button
                   type="button"
                   class="ml-2 text-sm text-red-500 hover:text-red-700"
@@ -78,7 +78,7 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
                 }
                 <div class="flex-1 min-w-0">
                   <p class="truncate font-medium text-slate-900">{{ item.product_name }}</p>
-                  <p class="text-sm text-slate-500">${{ item.product_price }} each</p>
+                  <p class="text-sm text-slate-500">&#36;{{ item.product_price }} each</p>
                 </div>
                 <div class="flex items-center gap-2">
                   <button
@@ -95,7 +95,7 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
                   >+</button>
                 </div>
                 <p class="w-20 text-right text-sm font-semibold text-slate-900">
-                  ${{ (parseFloat(item.product_price) * item.quantity).toFixed(2) }}
+                  &#36;{{ (parseFloat(item.product_price) * item.quantity).toFixed(2) }}
                 </p>
                 <button
                   type="button"
@@ -114,9 +114,9 @@ import { CartService, CartItem, GuestCartItem } from '../../services/cart.servic
               <span>Subtotal</span>
               <span class="font-semibold text-slate-900">
                 @if (authService.isLoggedIn()) {
-                  ${{ cartService.cart()?.subtotal ?? '0.00' }}
+                  &#36;{{ cartService.cart()?.subtotal ?? '0.00' }}
                 } @else {
-                  ${{ cartService.guestSubtotal.toFixed(2) }}
+                  &#36;{{ cartService.guestSubtotal.toFixed(2) }}
                 }
               </span>
             </div>

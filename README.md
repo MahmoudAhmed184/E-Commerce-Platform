@@ -2,7 +2,7 @@
 
 Full-stack e-commerce platform built with a Django backend and an Angular frontend.
 
-This repository is in the initial scaffold phase. The current codebase contains a Django project created with `uv` and an Angular standalone workspace. The project documentation defines the target release scope, API contracts, architecture, delivery phases, and team ownership model.
+This repository contains a Django REST backend and an Angular standalone frontend for the first release of the e-commerce platform. The project documentation defines the target release scope, API contracts, architecture, delivery phases, and team ownership model.
 
 ## Table of Contents
 
@@ -26,22 +26,18 @@ Phase 1 is focused on repository readiness, backend and frontend scaffolds, shar
 
 Current baseline:
 
-- Django project scaffold under `server/`
+- Django project under `server/` with split settings, DRF, JWT auth, CORS, filtering, and media/static configuration
 - Python dependency management with `uv`
-- Angular workspace scaffold under `client/`
+- Angular standalone workspace under `client/` with `core`, `shared`, `layout`, and feature folders
+- Implemented backend slices for users/auth and product catalog
+- Implemented frontend slices for auth, app core/layout, and product catalog
 - Planning, requirements, task distribution, and SRS documents under `docs/`
-- Root README and Git ignore rules for local build output, virtual environments, and secrets
+- Repository standards, issue templates, PR template, Dependabot config, environment templates, and ignore rules
 
-Planned Phase 1 additions from the documentation:
+Remaining infrastructure gaps:
 
-- Backend app skeletons under `server/apps/`
-- Django settings split into `base.py`, `development.py`, `production.py`, and `testing.py`
-- PostgreSQL configuration
-- Media and static file configuration
-- Angular `core/`, `shared/`, `layout/`, and `features/` folder structure
-- Environment templates
-- Shared API contract and sample payloads
 - CI workflow for backend checks, frontend checks, linting, and builds
+- Manual GitHub repository settings such as branch protection and secret scanning after the remote repository is configured
 
 ## Core Scope
 
@@ -78,7 +74,8 @@ Backend:
 - Python 3.14
 - Django 6
 - `uv` for Python dependency and virtual environment management
-- Planned: Django REST Framework, JWT authentication, PostgreSQL, CORS handling, filtering, image uploads, payment provider integration, and backend test tooling
+- Django REST Framework, JWT authentication, CORS handling, filtering, image uploads, and backend test tooling
+- Database configured through environment variables; local defaults currently target MariaDB/MySQL, while `psycopg` is available if the team switches to PostgreSQL
 
 Frontend:
 
@@ -86,7 +83,7 @@ Frontend:
 - TypeScript
 - Standalone Angular components
 - npm for frontend dependency management
-- Planned: feature-based routing, guards, interceptors, shared models, API services, and frontend tests
+- Feature-based routing, guards, interceptors, shared models, API services, and frontend tests
 
 Infrastructure and collaboration:
 
@@ -94,6 +91,7 @@ Infrastructure and collaboration:
 - Feature branches from `develop`
 - Pull requests with relevant backend or frontend verification
 - Protected `main` and `develop` branches after the remote repository is configured
+- Repository setup checklist in [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md)
 
 ## Repository Structure
 
@@ -175,7 +173,7 @@ Install these tools before running the project locally:
 - `uv`
 - Node.js LTS and npm
 - Angular CLI through `npx`
-- PostgreSQL for the planned full backend setup
+- MariaDB/MySQL for the current local defaults, or PostgreSQL if you set `DB_ENGINE=django.db.backends.postgresql`
 
 Check versions:
 
@@ -193,6 +191,7 @@ From the repository root:
 
 ```bash
 cd server
+cp .env.example .env
 uv sync
 uv run python manage.py migrate
 uv run python manage.py runserver
@@ -204,7 +203,7 @@ The Django development server runs at:
 http://127.0.0.1:8000/
 ```
 
-Current note: the initial scaffold still uses Django's default SQLite configuration. PostgreSQL and split settings are part of the documented Phase 1 backend setup.
+The backend loads environment variables from `server/.env`. The checked-in [server/.env.example](server/.env.example) documents the local database, CORS, email, and frontend callback settings. Do not commit real `.env` files.
 
 Add backend dependencies with:
 
@@ -221,6 +220,7 @@ From the repository root:
 
 ```bash
 cd client
+cp .env.example .env
 npm install
 npm start
 ```
@@ -239,6 +239,8 @@ npx ng generate component features/products/pages/product-list
 npx ng generate service core/services/api
 ```
 
+Angular currently reads the API base URL from `client/src/environments/`; [client/.env.example](client/.env.example) is kept as the local setup template and documents the expected API base URL.
+
 ## Verification
 
 Backend:
@@ -246,6 +248,8 @@ Backend:
 ```bash
 cd server
 uv run python manage.py check
+uv run python manage.py check_auth_security
+uv run pytest
 ```
 
 Frontend:
@@ -295,7 +299,7 @@ Security and data handling expectations:
 
 ## API Contract Summary
 
-The API base path is planned as:
+The API base path is:
 
 ```text
 /api/v1
@@ -309,9 +313,13 @@ Main endpoint groups:
 - `POST /api/v1/auth/token/refresh/`
 - `POST /api/v1/auth/logout/`
 - `GET /api/v1/users/me/`
-- `GET /api/v1/products/`
-- `GET /api/v1/products/{id}/`
-- `GET /api/v1/categories/`
+- `GET /api/v1/products/products/`
+- `GET /api/v1/products/products/{slug}/`
+- `GET /api/v1/products/categories/`
+- Admin catalog endpoints under `/api/v1/products/admin/`
+
+Planned endpoint groups that are not implemented yet:
+
 - `GET /api/v1/cart/`
 - `POST /api/v1/cart/items/`
 - `POST /api/v1/orders/`
@@ -378,3 +386,4 @@ GitHub issue and pull request templates live under `.github/`. Dependabot is con
 - [Project execution plan](docs/project_plan.md): phases, milestones, branching strategy, setup plan, risks, and environment checklist
 - [Task distribution](docs/task_distribution.md): developer ownership, estimates, dependencies, and phase-by-phase delivery plan
 - [Project conventions](docs/CONVENTIONS.md): repository, backend, frontend, API, security, testing, and documentation standards
+- [GitHub setup checklist](docs/GITHUB_SETUP.md): branch protection, repository settings, labels, and secret-scanning checklist

@@ -12,6 +12,16 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class UpdateCurrentUserSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=150, required=False)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, allow_null=True)
+
+    def validate(self, attrs: dict[str, object]) -> dict[str, object]:
+        if not attrs:
+            raise serializers.ValidationError("Provide at least one field to update.")
+        return attrs
+
+
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     phone = serializers.CharField(max_length=20)

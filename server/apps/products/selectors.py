@@ -4,20 +4,16 @@ products/selectors.py — Query logic for product catalog (NFR-MNT-004).
 All read-side queries are centralized here.  Views call selectors
 instead of building querysets directly.
 
-Note: review annotations (average_rating, review_count) are stubbed
-with Value(0) until the reviews app is built by Developer 5.
 """
-from django.db.models import QuerySet, Value
-from django.db.models.functions import Cast
-from django.db.models import FloatField, IntegerField
+from django.db.models import Avg, Count, FloatField, Q, QuerySet, Value
+from django.db.models.functions import Coalesce
 from .models import Product, Category
 
 
 def get_active_products() -> QuerySet[Product]:
     """Return active products with related data pre-fetched.
 
-    Annotates average_rating and review_count as stubs (0) until the
-    reviews app provides the real relation.
+    Annotates visible review aggregates for public catalog displays.
     """
     return (
         Product.objects
@@ -25,8 +21,12 @@ def get_active_products() -> QuerySet[Product]:
         .select_related('category')
         .prefetch_related('images')
         .annotate(
-            average_rating=Cast(Value(0), output_field=FloatField()),
-            review_count=Cast(Value(0), output_field=IntegerField()),
+            average_rating=Coalesce(
+                Avg('reviews__rating', filter=Q(reviews__is_visible=True)),
+                Value(0.0),
+                output_field=FloatField(),
+            ),
+            review_count=Count('reviews', filter=Q(reviews__is_visible=True)),
         )
     )
 
@@ -39,8 +39,12 @@ def get_product_by_slug(slug: str) -> Product:
         .select_related('category')
         .prefetch_related('images')
         .annotate(
-            average_rating=Cast(Value(0), output_field=FloatField()),
-            review_count=Cast(Value(0), output_field=IntegerField()),
+            average_rating=Coalesce(
+                Avg('reviews__rating', filter=Q(reviews__is_visible=True)),
+                Value(0.0),
+                output_field=FloatField(),
+            ),
+            review_count=Count('reviews', filter=Q(reviews__is_visible=True)),
         )
         .get(slug=slug)
     )

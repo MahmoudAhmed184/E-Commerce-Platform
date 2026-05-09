@@ -15,6 +15,7 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
 db.sqlite3
 media/
@@ -31,6 +32,12 @@ out-tsc/
 coverage/
 npm-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Logs and local runtime files
+*.log
+*.pid
 
 # IDEs
 .idea/

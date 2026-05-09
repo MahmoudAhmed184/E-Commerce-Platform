@@ -25,7 +25,6 @@ export const routes: Routes = [
   {
     path: 'cart',
     loadChildren: () => import('./features/cart/cart.routes').then((m) => m.CART_ROUTES),
-    canActivate: [authGuard],
   },
   {
     path: 'checkout',
@@ -34,7 +33,6 @@ export const routes: Routes = [
   {
     path: 'orders',
     loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDERS_ROUTES),
-    canActivate: [authGuard],
   },
   {
     path: 'admin',

@@ -88,10 +88,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["full_name"]
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["email"], name="unique_user_email"),
-            models.UniqueConstraint(fields=["phone"], name="unique_user_phone"),
-        ]
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
@@ -104,12 +100,9 @@ class EmailConfirmationToken(models.Model):
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["token"], name="unique_email_confirmation_token"),
-        ]
         ordering = ["-created_at"]
 
     def save(self, *args: Any, **kwargs: Any) -> None:

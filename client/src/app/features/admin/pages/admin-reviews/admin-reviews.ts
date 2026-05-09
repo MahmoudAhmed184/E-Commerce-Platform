@@ -1,3 +1,4 @@
+import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 
@@ -8,7 +9,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 @Component({
   selector: 'app-admin-reviews',
   standalone: true,
-  imports: [LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>

@@ -298,6 +298,26 @@ class ProductAPITest(TestCase):
         names = [p["name"] for p in response.data["results"]]
         self.assertIn("Laptop", names)
 
+    def test_ordering_by_price_ascending(self):
+        response = self.client.get("/api/v1/products/products/?ordering=price")
+        prices = [Decimal(item["price"]) for item in response.data["results"]]
+        self.assertEqual(prices, sorted(prices))
+
+    def test_list_uses_bounded_query_count(self):
+        for index in range(15):
+            make_product(
+                self.cat_electronics,
+                name=f"Perf Product {index}",
+                price=Decimal("49.99"),
+                stock=10,
+            )
+
+        with self.assertNumQueries(3):
+            response = self.client.get("/api/v1/products/products/?page_size=12")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data["results"]), 12)
+
     # FR-PRD-008: out-of-stock display
     def test_out_of_stock_still_listed(self):
         make_product(self.cat_electronics, name="No Stock", stock=0)
@@ -396,6 +416,24 @@ class AdminProductAPITest(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_admin_update_stock_rejects_negative_quantity(self):
+        product = make_product(self.category)
+        response = self.client.post(
+            f"/api/v1/products/admin/products/{product.slug}/update_stock/",
+            {"quantity": -1},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_list_products_uses_bounded_query_count(self):
+        for index in range(15):
+            make_product(self.category, name=f"Admin Perf Product {index}")
+
+        with self.assertNumQueries(4):
+            response = self.client.get("/api/v1/products/admin/products/?page_size=12")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data["results"]), 12)
+
     def test_non_admin_cannot_access_admin_endpoints(self):
         user = CustomUser.objects.create_user(
             email="user@test.com",
@@ -413,6 +451,14 @@ class AdminProductAPITest(TestCase):
             {"name": "Sports", "description": "Sports gear"},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_admin_list_categories_includes_product_count(self):
+        make_product(self.category)
+        response = self.client.get("/api/v1/products/admin/categories/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
+        category = next(item for item in response.data["results"] if item["slug"] == self.category.slug)
+        self.assertEqual(category["product_count"], 1)
 
     def test_admin_deactivate_category(self):
         cat = make_category(name="ToDeactivate")

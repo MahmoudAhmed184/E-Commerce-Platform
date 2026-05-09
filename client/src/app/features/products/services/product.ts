@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+
+import { ApiService } from '../../../core/services/api.service';
 
 export interface Category {
   id: number;
@@ -52,28 +52,27 @@ export interface ProductFilters {
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private http = inject(HttpClient);
-  private apiUrl = `${environment.apiBaseUrl}/products`;
+  private readonly api = inject(ApiService);
 
   getProducts(filters?: ProductFilters): Observable<PaginatedResponse<Product>> {
-    let params = new HttpParams();
+    const params: Record<string, string | number> = {};
     if (filters) {
-      if (filters.category__slug) params = params.set('category__slug', filters.category__slug);
-      if (filters.search) params = params.set('search', filters.search);
-      if (filters.min_price != null) params = params.set('min_price', filters.min_price);
-      if (filters.max_price != null) params = params.set('max_price', filters.max_price);
-      if (filters.ordering) params = params.set('ordering', filters.ordering);
-      if (filters.page) params = params.set('page', filters.page);
-      if (filters.page_size) params = params.set('page_size', filters.page_size);
+      if (filters.category__slug) params['category__slug'] = filters.category__slug;
+      if (filters.search) params['search'] = filters.search;
+      if (filters.min_price != null) params['min_price'] = filters.min_price;
+      if (filters.max_price != null) params['max_price'] = filters.max_price;
+      if (filters.ordering) params['ordering'] = filters.ordering;
+      if (filters.page) params['page'] = filters.page;
+      if (filters.page_size) params['page_size'] = filters.page_size;
     }
-    return this.http.get<PaginatedResponse<Product>>(`${this.apiUrl}/products/`, { params });
+    return this.api.get<PaginatedResponse<Product>>('/products/products/', params);
   }
 
   getProduct(slug: string): Observable<Product> {
-    return this.http.get<Product>(`${this.apiUrl}/products/${slug}/`);
+    return this.api.get<Product>(`/products/products/${slug}/`);
   }
 
   getCategories(): Observable<Category[]> {
-    return this.http.get<Category[]>(`${this.apiUrl}/categories/`);
+    return this.api.get<Category[]>('/products/categories/');
   }
 }

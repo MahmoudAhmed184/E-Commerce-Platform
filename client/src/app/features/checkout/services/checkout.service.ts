@@ -18,8 +18,7 @@ export interface CheckoutPayload {
   phone: string;
   shipping_address: CheckoutAddress;
   payment_method: PaymentMethod;
-  // guest only
-  items?: { product: number; quantity: number }[];
+  items: { product: number; quantity: number }[];
 }
 
 export interface OrderItem {
@@ -41,6 +40,12 @@ export interface Order {
   discount_amount: string;
   total_amount: string;
   items: OrderItem[];
+  payment?: {
+    method: PaymentMethod;
+    status: 'pending' | 'paid' | 'failed' | 'cod_pending';
+    provider_reference: string | null;
+    failure_reason: string;
+  };
   created_at: string;
 }
 

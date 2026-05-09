@@ -1,5 +1,6 @@
+import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -7,7 +8,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [UpperCasePipe, ReactiveFormsModule],
   template: `
     <div class="max-w-4xl mx-auto px-4 py-8">
       <div class="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -90,7 +91,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                 </div>
 
                 <div class="sm:col-span-1">
-                  <label class="block text-sm font-medium text-gray-700">Role</label>
+                  <p class="block text-sm font-medium text-gray-700">Role</p>
                   <div class="mt-1">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
                           [class.bg-purple-100]="user()?.role === 'admin'"
@@ -103,7 +104,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                 </div>
 
                 <div class="sm:col-span-1">
-                  <label class="block text-sm font-medium text-gray-700">Status</label>
+                  <p class="block text-sm font-medium text-gray-700">Status</p>
                   <div class="mt-1">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                           [class.bg-green-100]="user()?.status === 'active'"

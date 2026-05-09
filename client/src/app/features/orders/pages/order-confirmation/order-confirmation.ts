@@ -29,21 +29,21 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
             @for (item of o.items; track item.id) {
               <div class="flex justify-between px-6 py-4 text-sm">
                 <span class="text-slate-700">{{ item.product_name }} × {{ item.quantity }}</span>
-                <span class="font-medium text-slate-900">${{ item.line_total }}</span>
+                <span class="font-medium text-slate-900">&#36;{{ item.line_total }}</span>
               </div>
             }
           </div>
           <div class="border-t border-slate-200 px-6 py-4">
             <div class="flex justify-between text-sm text-slate-600">
-              <span>Subtotal</span><span>${{ o.subtotal }}</span>
+              <span>Subtotal</span><span>&#36;{{ o.subtotal }}</span>
             </div>
             @if (o.shipping_amount !== '0.00') {
               <div class="flex justify-between text-sm text-slate-600 mt-1">
-                <span>Shipping</span><span>${{ o.shipping_amount }}</span>
+                <span>Shipping</span><span>&#36;{{ o.shipping_amount }}</span>
               </div>
             }
             <div class="mt-2 flex justify-between text-base font-semibold text-slate-900">
-              <span>Total</span><span>${{ o.total_amount }}</span>
+              <span>Total</span><span>&#36;{{ o.total_amount }}</span>
             </div>
           </div>
           <div class="border-t border-slate-200 px-6 py-3 flex gap-4 text-xs text-slate-500">

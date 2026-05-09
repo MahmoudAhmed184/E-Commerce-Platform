@@ -37,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                 <tr class="hover:bg-slate-50">
                   <td class="px-4 py-3 font-medium text-slate-900">{{ product.name }}</td>
                   <td class="px-4 py-3 text-slate-500">{{ product.category_name }}</td>
-                  <td class="px-4 py-3 text-slate-700">${{ product.price }}</td>
+                  <td class="px-4 py-3 text-slate-700">$ {{ product.price }}</td>
                   <td class="px-4 py-3">
                     @if (editingStockId() === product.id) {
                       <div class="flex items-center gap-2">
@@ -75,9 +75,29 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                     <div class="flex gap-2">
                       <button type="button" (click)="startEditStock(product)"
                         class="text-xs font-medium text-indigo-600 hover:text-indigo-800">Edit Stock</button>
+                      <button type="button" (click)="startUploadImage(product)"
+                        class="text-xs font-medium text-sky-600 hover:text-sky-800">Upload Image</button>
                       <button type="button" (click)="deleteProduct(product)"
                         class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
                     </div>
+                    @if (uploadingImageId() === product.id) {
+                      <div class="mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <input type="file" accept="image/*" (change)="onImageSelected($event)"
+                          class="block w-full text-xs text-slate-600" />
+                        <input type="text" [(ngModel)]="imageAltText" placeholder="Alt text"
+                          class="block w-full rounded border border-slate-300 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500" />
+                        <label class="flex items-center gap-2 text-xs text-slate-600">
+                          <input type="checkbox" [(ngModel)]="imageIsPrimary" />
+                          Set as primary image
+                        </label>
+                        <div class="flex items-center gap-2">
+                          <button type="button" (click)="uploadImage(product)"
+                            class="text-xs font-medium text-green-600 hover:text-green-800">Save Image</button>
+                          <button type="button" (click)="cancelUploadImage()"
+                            class="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                        </div>
+                      </div>
+                    }
                   </td>
                 </tr>
               } @empty {
@@ -111,7 +131,11 @@ export class AdminProductsPage implements OnInit {
   protected readonly currentPage = signal(1);
   protected readonly totalCount = signal(0);
   protected readonly editingStockId = signal<number | null>(null);
+  protected readonly uploadingImageId = signal<number | null>(null);
   protected stockInput = 0;
+  protected imageAltText = '';
+  protected imageIsPrimary = false;
+  protected selectedImageFile: File | null = null;
   protected readonly pageSize = 20;
   protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
 
@@ -135,8 +159,20 @@ export class AdminProductsPage implements OnInit {
     this.stockInput = product.stock_quantity;
   }
 
+  protected startUploadImage(product: AdminProduct): void {
+    this.uploadingImageId.set(product.id);
+    this.selectedImageFile = null;
+    this.imageAltText = '';
+    this.imageIsPrimary = false;
+  }
+
+  protected onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedImageFile = input.files?.[0] ?? null;
+  }
+
   protected saveStock(product: AdminProduct): void {
-    this.adminService.updateStock(product.id, this.stockInput).subscribe({
+    this.adminService.updateStock(product.slug, this.stockInput).subscribe({
       next: (updated) => {
         this.products.update((list) => list.map((p) => (p.id === updated.id ? updated : p)));
         this.editingStockId.set(null);
@@ -146,7 +182,7 @@ export class AdminProductsPage implements OnInit {
   }
 
   protected toggleActive(product: AdminProduct): void {
-    this.adminService.toggleProductActive(product.id, !product.is_active).subscribe({
+    this.adminService.toggleProductActive(product).subscribe({
       next: (updated) =>
         this.products.update((list) => list.map((p) => (p.id === updated.id ? updated : p))),
       error: () => this.error.set('Could not update product.'),
@@ -154,9 +190,36 @@ export class AdminProductsPage implements OnInit {
   }
 
   protected deleteProduct(product: AdminProduct): void {
-    this.adminService.deleteProduct(product.id).subscribe({
+    this.adminService.deleteProduct(product.slug).subscribe({
       next: () => this.products.update((list) => list.filter((p) => p.id !== product.id)),
       error: () => this.error.set('Could not delete product.'),
     });
+  }
+
+  protected uploadImage(product: AdminProduct): void {
+    if (!this.selectedImageFile) {
+      this.error.set('Select an image before uploading.');
+      return;
+    }
+
+    this.adminService
+      .uploadProductImage(product.id, this.selectedImageFile, {
+        altText: this.imageAltText || undefined,
+        isPrimary: this.imageIsPrimary,
+      })
+      .subscribe({
+        next: () => {
+          this.error.set('');
+          this.cancelUploadImage();
+        },
+        error: () => this.error.set('Could not upload image.'),
+      });
+  }
+
+  protected cancelUploadImage(): void {
+    this.uploadingImageId.set(null);
+    this.selectedImageFile = null;
+    this.imageAltText = '';
+    this.imageIsPrimary = false;
   }
 }

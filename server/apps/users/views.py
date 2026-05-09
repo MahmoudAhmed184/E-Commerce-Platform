@@ -11,8 +11,23 @@ from rest_framework.views import APIView
 
 from .models import CustomUser
 from .selectors import get_current_user_data
-from .serializers import ConfirmEmailSerializer, CurrentUserSerializer, LoginSerializer, LogoutSerializer, RegisterSerializer
-from .services import AuthBlockedError, authenticate_user, blacklist_refresh_token, confirm_email, create_user, issue_auth_tokens
+from .serializers import (
+    ConfirmEmailSerializer,
+    CurrentUserSerializer,
+    LoginSerializer,
+    LogoutSerializer,
+    RegisterSerializer,
+    UpdateCurrentUserSerializer,
+)
+from .services import (
+    AuthBlockedError,
+    authenticate_user,
+    blacklist_refresh_token,
+    confirm_email,
+    create_user,
+    issue_auth_tokens,
+    update_user_profile,
+)
 
 
 def _raise_serializer_error(error: DjangoValidationError) -> NoReturn:
@@ -104,4 +119,16 @@ class CurrentUserView(APIView):
 
     def get(self, request: Request) -> Response:
         user = cast(CustomUser, request.user)
+        return Response(get_current_user_data(user), status=status.HTTP_200_OK)
+
+    def patch(self, request: Request) -> Response:
+        user = cast(CustomUser, request.user)
+        serializer = UpdateCurrentUserSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            update_user_profile(user, **serializer.validated_data)
+        except DjangoValidationError as exc:
+            _raise_serializer_error(exc)
+
         return Response(get_current_user_data(user), status=status.HTTP_200_OK)

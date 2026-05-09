@@ -3,6 +3,7 @@ products/views.py — HTTP request/response orchestration (NFR-MNT-005).
 
 Views delegate reads to selectors and writes to services.
 """
+from django.db.models import Count
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -91,7 +92,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AdminCategoryViewSet(viewsets.ModelViewSet):
     """Admin CRUD for categories (FR-ADM-009)."""
-    queryset = Category.objects.all()
+    queryset = Category.objects.annotate(product_count=Count('products')).order_by('name')
     serializer_class = AdminCategorySerializer
     permission_classes = [IsAdminUser]
     lookup_field = 'slug'
