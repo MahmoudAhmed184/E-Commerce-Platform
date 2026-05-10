@@ -48,6 +48,13 @@
           <div class="category-badge">{{ product.category.name }}</div>
           <h1 class="title">{{ product.name }}</h1>
 
+          <div class="rating-summary-row" *ngIf="product.review_count >= 0">
+            <app-rating-widget [rating]="product.average_rating" size="sm" [readonly]="true" />
+            <span class="avg-text">{{ product.average_rating | number:'1.1-1' }}</span>
+            <span class="count-text">({{ product.review_count }} reviews)</span>
+            <a routerLink="/reviews/{{ product.slug }}" class="view-reviews-link">Read reviews</a>
+          </div>
+
           <div class="price-stock">
             <span class="price">${{ product.price }}</span>
             <span class="stock-badge" [class.in-stock]="product.stock > 0" [class.out-of-stock]="product.stock === 0">

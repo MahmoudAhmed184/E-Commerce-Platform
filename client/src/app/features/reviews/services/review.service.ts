@@ -11,6 +11,7 @@ export interface Review {
   rating: number;
   comment: string | null;
   is_visible: boolean;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
