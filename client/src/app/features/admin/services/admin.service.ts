@@ -15,6 +15,8 @@ export interface AdminUser {
   full_name: string;
   role: UserRole;
   status: UserStatus;
+  is_email_confirmed: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -35,6 +37,7 @@ export interface AdminReview {
   rating: number;
   comment: string | null;
   is_visible: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -137,7 +140,7 @@ export class AdminService {
   }
 
   // Orders
-  getOrders(params?: { page?: number }): Observable<PaginatedResponse<AdminOrder>> {
+  getOrders(params?: { page?: number; status?: string; payment_status?: string }): Observable<PaginatedResponse<AdminOrder>> {
     return this.api.get<PaginatedResponse<AdminOrder>>('/admin/orders/', params);
   }
 
@@ -152,6 +155,10 @@ export class AdminService {
 
   hideReview(id: number): Observable<AdminReview> {
     return this.api.patch<AdminReview>(`/admin/reviews/${id}/hide/`, {});
+  }
+
+  unhideReview(id: number): Observable<AdminReview> {
+    return this.api.patch<AdminReview>(`/admin/reviews/${id}/unhide/`, {});
   }
 
   deleteReview(id: number): Observable<void> {
@@ -227,7 +234,7 @@ export class AdminService {
   }
 
   // Payments
-  getPayments(params?: { page?: number }): Observable<PaginatedResponse<AdminPayment>> {
+  getPayments(params?: { page?: number; status?: string }): Observable<PaginatedResponse<AdminPayment>> {
     return this.api.get<PaginatedResponse<AdminPayment>>('/admin/payments/', params);
   }
 }
