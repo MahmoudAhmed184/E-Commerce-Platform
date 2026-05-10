@@ -117,8 +117,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pagination_class = ReviewPagination
 
     def get_queryset(self):
-        """Delegate to the selector — returns only the user's active reviews."""
-        return get_user_active_reviews(self.request.user)
+        """Return all active (non-deleted) reviews.
+
+        We intentionally return ALL reviews here (not just the user's)
+        so that ``get_object()`` can find the review by ID. If we filtered
+        by ``user=request.user``, a non-owner would get 404 instead of 403.
+
+        Object-level ownership is enforced by the ``IsReviewOwner`` permission
+        class, which checks ``obj.user_id == request.user.id`` and returns
+        403 Forbidden for non-owners.
+        """
+        return (
+            Review.objects.filter(deleted_at__isnull=True)
+            .select_related("user", "product")
+        )
 
     def get_serializer_class(self):
         if self.action in {"partial_update", "update"}:

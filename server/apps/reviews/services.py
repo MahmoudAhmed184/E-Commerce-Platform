@@ -13,6 +13,7 @@ Why a separate module?
 """
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -62,7 +63,10 @@ def create_review(
         review.full_clean()
         review.save()
         return review
-    except IntegrityError as exc:
+    except (IntegrityError, DjangoValidationError) as exc:
+        # Django 6+ validates constraints in full_clean(), so a duplicate
+        # active review raises DjangoValidationError before hitting the DB.
+        # We catch both just in case full_clean is ever bypassed.
         raise ValidationError(
             {"product": ["You have already reviewed this product."]}
         ) from exc
