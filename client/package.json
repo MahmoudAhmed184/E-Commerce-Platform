@@ -38,7 +38,7 @@
     "eslint": "^10.3.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.59.1",
-    "postcss": "^8.5.3",
+    "postcss": "^8.5.14",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.2.4",
     "typescript": "~5.9.2",
