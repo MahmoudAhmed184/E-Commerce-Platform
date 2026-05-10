@@ -1,5 +1,6 @@
 import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AdminService, AdminPayment } from '../../services/admin.service';
@@ -9,11 +10,28 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 @Component({
   selector: 'app-admin-payments',
   standalone: true,
-  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
       <h2 class="text-xl font-semibold text-slate-900">Payments</h2>
+
+      <!-- Status Filter -->
+      <div class="mt-4">
+        <select
+          [(ngModel)]="statusFilter"
+          (ngModelChange)="load()"
+          aria-label="Filter by payment status"
+          class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+          <option value="cod_pending">COD Pending</option>
+        </select>
+      </div>
+
       <app-error-message [message]="error()" />
 
       @if (isLoading()) {
@@ -92,6 +110,8 @@ export class AdminPaymentsPage implements OnInit {
   protected readonly pageSize = 20;
   protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
 
+  protected statusFilter = '';
+
   ngOnInit(): void { this.load(); }
 
   protected load(page = 1): void {
@@ -99,7 +119,7 @@ export class AdminPaymentsPage implements OnInit {
     this.isLoading.set(true);
     this.currentPage.set(page);
     this.adminService
-      .getPayments({ page })
+      .getPayments({ page, status: this.statusFilter || undefined })
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (res) => { this.payments.set(res.results); this.totalCount.set(res.count); },
