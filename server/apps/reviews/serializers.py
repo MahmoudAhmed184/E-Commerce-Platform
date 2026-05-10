@@ -1,6 +1,18 @@
+"""
+reviews/serializers.py — Request/response serialization for reviews.
+
+These serializers handle VALIDATION ONLY. They do NOT create or update
+database objects — that responsibility belongs to services.py (NFR-MNT-003).
+
+The flow is:
+  1. View receives HTTP request
+  2. Serializer validates the incoming data
+  3. View calls a service function with the validated data
+  4. Service creates/updates the model
+  5. View uses a read serializer to format the response
+"""
 from __future__ import annotations
 
-from django.db import IntegrityError
 from rest_framework import serializers
 
 from apps.products.models import Product
@@ -9,6 +21,12 @@ from .models import Review
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Read serializer — used for API responses.
+
+    Includes computed display fields (user_name, product_name) so the
+    frontend doesn't need separate API calls to show who wrote the review.
+    """
+
     user_name = serializers.CharField(source="user.full_name", read_only=True)
     product_name = serializers.CharField(source="product.name", read_only=True)
 
@@ -23,34 +41,59 @@ class ReviewSerializer(serializers.ModelSerializer):
             "rating",
             "comment",
             "is_visible",
+            "deleted_at",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "user", "user_name", "product_name", "is_visible", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "user",
+            "user_name",
+            "product_name",
+            "is_visible",
+            "deleted_at",
+            "created_at",
+            "updated_at",
+        )
 
 
-class ReviewCreateSerializer(serializers.ModelSerializer):
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True), required=False)
+class ReviewCreateSerializer(serializers.Serializer):
+    """Write serializer for creating reviews — VALIDATION ONLY.
 
-    class Meta:
-        model = Review
-        fields = ("product", "rating", "comment")
+    Does NOT call .save() or .create(). The view passes validated data
+    to ``services.create_review()`` which handles the database write.
+
+    The ``product`` field is optional here because when creating via the
+    product slug URL (``/api/v1/products/{slug}/reviews/``), the product
+    is resolved from the URL and injected via serializer context.
+    """
+
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(is_active=True),
+        required=False,
+    )
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField(required=False, default="", allow_blank=True)
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
+        # If product wasn't in the request body, pull it from context
+        # (set by ProductReviewListCreateView from the URL slug).
         product = attrs.get("product") or self.context.get("product")
         if product is None:
-            raise serializers.ValidationError({"product": ["This field is required."]})
+            raise serializers.ValidationError(
+                {"product": ["This field is required."]}
+            )
         attrs["product"] = product
         return attrs
 
-    def create(self, validated_data: dict[str, object]) -> Review:
-        try:
-            return Review.objects.create(user=self.context["request"].user, **validated_data)
-        except IntegrityError as exc:
-            raise serializers.ValidationError({"product": ["You have already reviewed this product."]}) from exc
 
+class ReviewUpdateSerializer(serializers.Serializer):
+    """Write serializer for updating reviews — VALIDATION ONLY.
 
-class ReviewUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = ("rating", "comment")
+    Both fields are optional because PATCH requests allow partial updates.
+    The view passes validated data to ``services.update_review()``.
+    """
+
+    rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
+    comment = serializers.CharField(required=False, allow_blank=True)
+
