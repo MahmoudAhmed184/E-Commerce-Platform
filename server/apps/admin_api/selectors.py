@@ -14,6 +14,7 @@ from django.db.models import Q, QuerySet
 
 from apps.orders.models import Order
 from apps.payments.models import Payment
+from apps.products.models import Product
 from apps.reviews.models import Review
 from apps.users.models import CustomUser
 
@@ -86,3 +87,30 @@ def get_admin_reviews() -> QuerySet[Review]:
         Review.objects.select_related("user", "product")
         .order_by("-created_at")
     )
+
+
+def get_admin_dashboard_stats() -> dict:
+    """Return aggregated statistics for the admin dashboard."""
+    from django.db.models import Sum
+    
+    total_users = CustomUser.objects.exclude(status=CustomUser.Status.SOFT_DELETED).count()
+    pending_users_count = CustomUser.objects.filter(status=CustomUser.Status.PENDING_APPROVAL).count()
+    
+    total_products = Product.objects.count()
+    total_orders = Order.objects.count()
+    
+    # Calculate total revenue from paid orders
+    total_revenue = Order.objects.filter(
+        payment_status=Order.PaymentStatus.PAID
+    ).aggregate(total=Sum("total_amount"))["total"] or 0
+    
+    recent_orders = Order.objects.all().order_by("-created_at")[:5]
+    
+    return {
+        "total_users": total_users,
+        "total_products": total_products,
+        "total_orders": total_orders,
+        "total_revenue": total_revenue,
+        "pending_users_count": pending_users_count,
+        "recent_orders": recent_orders,
+    }

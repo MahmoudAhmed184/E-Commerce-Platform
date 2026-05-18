@@ -113,10 +113,23 @@ export interface AdminProductImage {
   created_at: string;
 }
 
+export interface DashboardStats {
+  total_users: number;
+  total_products: number;
+  total_orders: number;
+  total_revenue: string;
+  pending_users_count: number;
+  recent_orders: AdminOrder[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly api = inject(ApiService);
+
+  // Dashboard
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.api.get<DashboardStats>('/admin/dashboard/');
+  }
 
   // Users
   getUsers(params?: { search?: string; page?: number }): Observable<PaginatedResponse<AdminUser>> {

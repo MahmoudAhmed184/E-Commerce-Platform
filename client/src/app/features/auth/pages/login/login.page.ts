@@ -119,7 +119,7 @@ export class LoginPage {
           if (returnUrl) {
             void this.router.navigateByUrl(returnUrl);
           } else {
-            const path = this.authService.isAdmin() ? '/admin/dashboard' : '/products';
+            const path = this.authService.isAdmin() ? '/admin/overview' : '/products';
             void this.router.navigateByUrl(path);
           }
         },

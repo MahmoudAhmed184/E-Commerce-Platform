@@ -35,6 +35,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 })
 export class AdminDashboardPage {
   protected readonly navLinks = [
+    { path: 'overview',   label: 'Overview',   icon: '📊' },
     { path: 'users',      label: 'Users',      icon: '👤' },
     { path: 'orders',     label: 'Orders',     icon: '📦' },
     { path: 'products',   label: 'Products',   icon: '🛍️' },

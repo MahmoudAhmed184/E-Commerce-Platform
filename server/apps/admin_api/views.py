@@ -15,8 +15,10 @@ from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .selectors import (
+    get_admin_dashboard_stats,
     get_admin_orders,
     get_admin_payments,
     get_admin_reviews,
@@ -48,6 +50,24 @@ class AdminPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = "page_size"
     max_page_size = 100
+
+
+# ─── Dashboard (FR-ADM-002) ─────────────────────────────────────────
+
+
+class AdminDashboardAPIView(APIView):
+    """Admin dashboard statistics.
+    
+    GET /api/v1/admin/dashboard/
+    """
+    
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request, *args, **kwargs):
+        stats = get_admin_dashboard_stats()
+        # Serialize the recent orders using existing serializer
+        stats["recent_orders"] = AdminOrderSerializer(stats["recent_orders"], many=True).data
+        return Response(stats)
 
 
 # ─── User Management (FR-ADM-001 to FR-ADM-005) ─────────────────────
