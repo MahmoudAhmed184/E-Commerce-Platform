@@ -5,6 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 
 import { FooterComponent } from './layout/footer/footer.component';
 import { HeaderComponent } from './layout/header/header.component';
+import { ThemeService } from './core/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,7 @@ import { HeaderComponent } from './layout/header/header.component';
 })
 export class App {
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService); // Initialize theme
 
   protected readonly isAdminRoute$ = this.router.events.pipe(
     filter((event) => event instanceof NavigationEnd),

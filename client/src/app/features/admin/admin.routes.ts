@@ -8,6 +8,7 @@ import { AdminReviewsPage } from './pages/admin-reviews/admin-reviews';
 import { AdminProductsPage } from './pages/admin-products/admin-products';
 import { AdminCategoriesPage } from './pages/admin-categories/admin-categories';
 import { AdminPaymentsPage } from './pages/admin-payments/admin-payments';
+import { AdminProfilePage } from './pages/admin-profile/admin-profile';
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -22,6 +23,7 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'categories', component: AdminCategoriesPage },
       { path: 'payments',   component: AdminPaymentsPage },
       { path: 'reviews',    component: AdminReviewsPage },
+      { path: 'profile',    component: AdminProfilePage },
     ],
   },
 ];
