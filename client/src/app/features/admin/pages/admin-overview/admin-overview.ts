@@ -100,53 +100,129 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 
         </div>
 
-        <!-- Recent Orders -->
-        <h3 class="text-lg font-semibold text-slate-900 mb-4">Recent Orders</h3>
-        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th class="px-4 py-3">Order #</th>
-                <th class="px-4 py-3">Customer</th>
-                <th class="px-4 py-3">Total</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Payment</th>
-                <th class="px-4 py-3">Date</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              @for (order of stats()?.recent_orders; track order.id) {
-                <tr class="hover:bg-slate-50">
-                  <td class="px-4 py-3 font-mono text-slate-900">{{ order.order_number }}</td>
-                  <td class="px-4 py-3 text-slate-600">{{ order.customer_email }}</td>
-                  <td class="px-4 py-3 font-semibold text-slate-900">{{ order.total_amount | currency:'USD':'symbol' }}</td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-green-100]="order.status === 'confirmed'"
-                      [class.text-green-700]="order.status === 'confirmed'"
-                      [class.bg-amber-100]="order.status === 'pending'"
-                      [class.text-amber-700]="order.status === 'pending'"
-                      [class.bg-red-100]="order.status === 'cancelled' || order.status === 'failed'"
-                      [class.text-red-700]="order.status === 'cancelled' || order.status === 'failed'">
-                      {{ order.status }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-green-100]="order.payment_status === 'paid'"
-                      [class.text-green-700]="order.payment_status === 'paid'"
-                      [class.bg-slate-100]="order.payment_status !== 'paid'"
-                      [class.text-slate-600]="order.payment_status !== 'paid'">
-                      {{ order.payment_status }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-500">{{ order.created_at | date:'mediumDate' }}</td>
+        <!-- Tables Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          
+          <!-- Recent Orders -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">Recent Orders</h3>
+              <a routerLink="/admin/orders" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">View All</a>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">Order #</th>
+                    <th class="px-4 py-3">Total</th>
+                    <th class="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (order of stats()?.recent_orders; track order.id) {
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-4 py-3 font-mono text-slate-900">{{ order.order_number }}</td>
+                      <td class="px-4 py-3 font-semibold text-slate-900">{{ order.total_amount | currency:'USD':'symbol' }}</td>
+                      <td class="px-4 py-3">
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          [class.bg-green-100]="order.status === 'confirmed'"
+                          [class.text-green-700]="order.status === 'confirmed'"
+                          [class.bg-amber-100]="order.status === 'pending'"
+                          [class.text-amber-700]="order.status === 'pending'"
+                          [class.bg-red-100]="order.status === 'cancelled' || order.status === 'failed'"
+                          [class.text-red-700]="order.status === 'cancelled' || order.status === 'failed'">
+                          {{ order.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">No recent orders.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Payments -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">Recent Payments</h3>
+              <a routerLink="/admin/payments" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">View All</a>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">Order #</th>
+                    <th class="px-4 py-3">Amount</th>
+                    <th class="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (payment of stats()?.recent_payments; track payment.id) {
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-4 py-3 font-mono text-slate-900">{{ payment.order_number }}</td>
+                      <td class="px-4 py-3 font-semibold text-slate-900">{{ payment.amount | currency:'USD':'symbol' }}</td>
+                      <td class="px-4 py-3">
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          [class.bg-green-100]="payment.status === 'paid'"
+                          [class.text-green-700]="payment.status === 'paid'"
+                          [class.bg-amber-100]="payment.status === 'pending' || payment.status === 'cod_pending'"
+                          [class.text-amber-700]="payment.status === 'pending' || payment.status === 'cod_pending'"
+                          [class.bg-red-100]="payment.status === 'failed'"
+                          [class.text-red-700]="payment.status === 'failed'">
+                          {{ payment.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">No recent payments.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Latest Reviews -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Latest Reviews</h3>
+            <a routerLink="/admin/reviews" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">View All</a>
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Product</th>
+                  <th class="px-4 py-3">User</th>
+                  <th class="px-4 py-3">Rating</th>
+                  <th class="px-4 py-3">Comment</th>
                 </tr>
-              } @empty {
-                <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No recent orders.</td></tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (review of stats()?.recent_reviews; track review.id) {
+                  <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-slate-900 font-medium">{{ review.product_name | slice:0:30 }}{{ review.product_name.length > 30 ? '...' : '' }}</td>
+                    <td class="px-4 py-3 text-slate-600">{{ review.user_name }}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center text-amber-400">
+                        @for (star of [1, 2, 3, 4, 5]; track star) {
+                          <svg class="h-4 w-4" [class.text-slate-200]="star > review.rating" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        }
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-slate-600 truncate max-w-xs">{{ review.comment || '-' }}</td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No recent reviews.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       }
     </div>

@@ -65,8 +65,10 @@ class AdminDashboardAPIView(APIView):
     
     def get(self, request, *args, **kwargs):
         stats = get_admin_dashboard_stats()
-        # Serialize the recent orders using existing serializer
+        # Serialize the recent records using existing serializers
         stats["recent_orders"] = AdminOrderSerializer(stats["recent_orders"], many=True).data
+        stats["recent_payments"] = AdminPaymentSerializer(stats["recent_payments"], many=True).data
+        stats["recent_reviews"] = AdminReviewSerializer(stats["recent_reviews"], many=True).data
         return Response(stats)
 
 

@@ -93,8 +93,8 @@ def get_admin_dashboard_stats() -> dict:
     """Return aggregated statistics for the admin dashboard."""
     from django.db.models import Sum
     
-    total_users = CustomUser.objects.exclude(status=CustomUser.Status.SOFT_DELETED).count()
-    pending_users_count = CustomUser.objects.filter(status=CustomUser.Status.PENDING_APPROVAL).count()
+    total_users = CustomUser.objects.exclude(status=CustomUser.Status.DELETED).count()
+    pending_users_count = CustomUser.objects.filter(status=CustomUser.Status.PENDING).count()
     
     total_products = Product.objects.count()
     total_orders = Order.objects.count()
@@ -105,6 +105,8 @@ def get_admin_dashboard_stats() -> dict:
     ).aggregate(total=Sum("total_amount"))["total"] or 0
     
     recent_orders = Order.objects.all().order_by("-created_at")[:5]
+    recent_payments = Payment.objects.select_related("order").order_by("-created_at")[:5]
+    recent_reviews = Review.objects.select_related("user", "product").order_by("-created_at")[:5]
     
     return {
         "total_users": total_users,
@@ -113,4 +115,6 @@ def get_admin_dashboard_stats() -> dict:
         "total_revenue": total_revenue,
         "pending_users_count": pending_users_count,
         "recent_orders": recent_orders,
+        "recent_payments": recent_payments,
+        "recent_reviews": recent_reviews,
     }

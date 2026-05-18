@@ -120,6 +120,8 @@ export interface DashboardStats {
   total_revenue: string;
   pending_users_count: number;
   recent_orders: AdminOrder[];
+  recent_payments: AdminPayment[];
+  recent_reviews: AdminReview[];
 }
 
 @Injectable({ providedIn: 'root' })
