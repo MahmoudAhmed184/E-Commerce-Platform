@@ -61,8 +61,23 @@ describe('ReviewsPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     
+    // Handle product fetch
+    const prodReq = http.expectOne(`${environment.apiBaseUrl}/products/products/${slug}/`);
+    prodReq.flush({
+      id: 101,
+      name: 'Test Product',
+      slug: slug,
+      average_rating: reviews.length > 0 ? reviews[0].rating : 0,
+      review_count: reviews.length
+    });
+
     const req = http.expectOne(`${environment.apiBaseUrl}/products/${slug}/reviews/`);
-    req.flush(reviews);
+    req.flush({
+      count: reviews.length,
+      next: null,
+      previous: null,
+      results: reviews
+    });
     
     fixture.detectChanges();
     await fixture.whenStable();
@@ -99,9 +114,12 @@ describe('ReviewsPage', () => {
     expect(req.request.body).toEqual({ rating: 5, comment: 'Amazing!' });
     req.flush(mockReview);
 
-    // Should reload reviews after submission
+    // Should reload reviews and product after submission
+    const reloadProdReq = http.expectOne(`${environment.apiBaseUrl}/products/products/test-slug/`);
+    reloadProdReq.flush({ id: 101, name: 'Test Product', slug: 'test-slug', average_rating: 5, review_count: 1 });
+
     const reloadReq = http.expectOne(`${environment.apiBaseUrl}/products/test-slug/reviews/`);
-    reloadReq.flush([mockReview]);
+    reloadReq.flush({ count: 1, next: null, previous: null, results: [mockReview] });
   });
 
   it('allows users to delete their own review', async () => {
@@ -118,6 +136,11 @@ describe('ReviewsPage', () => {
     const req = http.expectOne(`${environment.apiBaseUrl}/reviews/1/`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
+
+    // Refresh after delete
+    http.expectOne(`${environment.apiBaseUrl}/products/products/test-slug/`).flush({ average_rating: 0, review_count: 0 });
+    http.expectOne(`${environment.apiBaseUrl}/products/test-slug/reviews/`).flush({ count: 0, results: [] });
+
     fixture.detectChanges();
     await fixture.whenStable();
 

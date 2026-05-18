@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
+import { PaginatedResponse } from '../../../core/models/pagination.model';
+export type { PaginatedResponse };
 
 export type UserStatus = 'pending_approval' | 'active' | 'restricted' | 'soft_deleted';
 export type UserRole = 'customer' | 'admin';
@@ -111,12 +113,6 @@ export interface AdminProductImage {
   created_at: string;
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -165,11 +161,24 @@ export class AdminService {
     return this.api.delete<void>(`/admin/reviews/${id}/`);
   }
 
+
   // Products
   getAdminProducts(params?: { page?: number }): Observable<PaginatedResponse<AdminProduct>> {
     return this.api
       .get<PaginatedResponse<BackendAdminProduct>>('/products/admin/products/', params)
       .pipe(map((response) => mapPaginatedResponse(response, mapAdminProduct)));
+  }
+
+  createProduct(payload: {
+    name: string;
+    description: string;
+    price: string;
+    stock: number;
+    category_id: number;
+  }): Observable<AdminProduct> {
+    return this.api
+      .post<BackendAdminProduct>('/products/admin/products/', payload)
+      .pipe(map(mapAdminProduct));
   }
 
   updateStock(productSlug: string, quantity: number): Observable<AdminProduct> {

@@ -9,6 +9,7 @@ import { ReviewService, Review } from '../../services/review.service';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { RatingWidgetComponent } from '../../../../shared/components/rating-widget/rating-widget.component';
+import { ProductService, Product } from '../../../products/services/product';
 
 type ReviewForm = FormGroup<{
   rating: FormControl<number>;
@@ -32,14 +33,13 @@ type ReviewForm = FormGroup<{
       <div class="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Sidebar: Summary & Form -->
         <aside class="lg:col-span-4 space-y-6">
-          <!-- Average Rating Summary -->
           <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Summary</h2>
             <div class="mt-4 flex items-center gap-4">
-              <span class="text-5xl font-bold text-slate-950">{{ averageRating() | number:'1.1-1' }}</span>
+              <span class="text-5xl font-bold text-slate-950">{{ (product()?.average_rating ?? 0) | number:'1.1-1' }}</span>
               <div>
-                <app-rating-widget [rating]="averageRating()" size="sm" />
-                <p class="text-sm text-slate-500 mt-1">{{ reviews().length }} reviews</p>
+                <app-rating-widget [rating]="product()?.average_rating ?? 0" size="sm" />
+                <p class="text-sm text-slate-500 mt-1">{{ product()?.review_count ?? 0 }} reviews</p>
               </div>
             </div>
           </div>
@@ -158,15 +158,12 @@ type ReviewForm = FormGroup<{
 export class ReviewsPage implements OnInit {
   protected readonly authService = inject(AuthService);
   private readonly reviewService = inject(ReviewService);
+  private readonly productService = inject(ProductService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly reviews = signal<Review[]>([]);
-  protected readonly averageRating = computed(() => {
-    const list = this.reviews();
-    if (list.length === 0) return 0;
-    return list.reduce((acc, r) => acc + r.rating, 0) / list.length;
-  });
+  protected readonly product = signal<Product | null>(null);
   protected readonly isLoading = signal(false);
   protected readonly loadError = signal('');
   protected readonly submitting = signal(false);
@@ -182,7 +179,14 @@ export class ReviewsPage implements OnInit {
 
   ngOnInit(): void {
     this.productSlug = this.route.snapshot.paramMap.get('slug') ?? '';
+    this.loadProduct();
     this.loadReviews();
+  }
+
+  private loadProduct(): void {
+    this.productService.getProduct(this.productSlug).subscribe({
+      next: (p) => this.product.set(p),
+    });
   }
 
   private loadReviews(): void {
@@ -191,7 +195,7 @@ export class ReviewsPage implements OnInit {
       .getProductReviews(this.productSlug)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (r) => this.reviews.set(r),
+        next: (res) => this.reviews.set(res.results),
         error: () => this.loadError.set('Could not load reviews.'),
       });
   }
@@ -209,7 +213,11 @@ export class ReviewsPage implements OnInit {
       : this.reviewService.createProductReview(this.productSlug, { rating, comment: comment || undefined });
 
     req.pipe(finalize(() => this.submitting.set(false))).subscribe({
-      next: () => { this.cancelEdit(); this.loadReviews(); },
+      next: () => { 
+        this.cancelEdit(); 
+        this.loadReviews(); 
+        this.loadProduct(); // Refresh aggregates
+      },
       error: () => this.formError.set('Could not save review. Please try again.'),
     });
   }
@@ -226,7 +234,11 @@ export class ReviewsPage implements OnInit {
 
   protected deleteReview(review: Review): void {
     this.reviewService.deleteReview(review.id).subscribe({
-      next: () => this.reviews.update((list) => list.filter((r) => r.id !== review.id)),
+      next: () => {
+        this.reviews.update((list) => list.filter((r) => r.id !== review.id));
+        this.loadReviews();
+        this.loadProduct(); // Refresh aggregates
+      },
       error: () => this.loadError.set('Could not delete review.'),
     });
   }

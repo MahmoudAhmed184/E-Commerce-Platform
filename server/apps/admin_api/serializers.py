@@ -60,7 +60,13 @@ class AdminOrderSerializer(serializers.ModelSerializer):
             "total_amount",
             "created_at",
         )
-        read_only_fields = fields
+        read_only_fields = (
+            "id",
+            "order_number",
+            "customer_email",
+            "total_amount",
+            "created_at",
+        )
 
 
 class AdminPaymentSerializer(serializers.ModelSerializer):

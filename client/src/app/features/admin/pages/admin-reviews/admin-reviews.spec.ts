@@ -83,7 +83,8 @@ describe('AdminReviewsPage', () => {
     flushInitialLoad([makeReview({ is_visible: true })]);
 
     const el = fixture.nativeElement as HTMLElement;
-    const hideBtn = el.querySelector('button') as HTMLButtonElement;
+    const hideBtn = Array.from(el.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Hide');
+    expect(hideBtn).toBeTruthy();
     expect(hideBtn?.textContent?.trim()).toBe('Hide');
   });
 

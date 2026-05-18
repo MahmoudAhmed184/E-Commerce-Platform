@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
+import { PaginatedResponse } from '../../../core/models/pagination.model';
+export type { PaginatedResponse };
 
 export interface Category {
   id: number;
@@ -33,12 +35,6 @@ export interface Product {
   primary_image?: string | null;
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
 
 export interface ProductFilters {
   category__slug?: string;

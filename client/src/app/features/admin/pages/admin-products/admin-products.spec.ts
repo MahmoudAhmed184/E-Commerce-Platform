@@ -31,9 +31,13 @@ describe('AdminProductsPage', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [FormsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      imports: [FormsModule, AdminProductsPage],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
 
     fixture = TestBed.createComponent(AdminProductsPage);
@@ -41,14 +45,56 @@ describe('AdminProductsPage', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    TestBed.resetTestingModule();
+  });
 
   function flushInitialLoad(products: any[] = [makeBackendProduct()]): void {
     fixture.detectChanges();
-    const req = http.expectOne((r) => r.url.endsWith('/products/admin/products/') && r.params.get('page') === '1');
-    req.flush(makePaginatedResponse(products));
+    
+    // Expect products list
+    const prodReq = http.expectOne((r) => r.url.endsWith('/products/admin/products/') && r.params.get('page') === '1');
+    prodReq.flush(makePaginatedResponse(products));
+
+    // Expect categories list
+    const catReq = http.expectOne((r) => r.url.endsWith('/products/admin/categories/') && r.params.get('page_size') === '100');
+    catReq.flush({ count: 1, next: null, previous: null, results: [{ id: 1, name: 'Test Category', slug: 'test-cat', description: '', product_count: 0 }] });
+    
     fixture.detectChanges();
   }
+
+  it('allows creating a new product', async () => {
+    flushInitialLoad([]);
+    
+    const addBtn = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find(b => b.textContent?.trim() === 'Add Product');
+    expect(addBtn).toBeTruthy();
+    addBtn?.click();
+    fixture.detectChanges();
+
+    component['newProduct'] = {
+      name: 'New Item',
+      description: 'Cool stuff',
+      price: '19.99',
+      stock: 50,
+      category_id: 1
+    };
+    fixture.detectChanges();
+
+    const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find(b => b.textContent?.trim() === 'Create Product');
+    expect(submitBtn).toBeTruthy();
+    submitBtn?.click();
+
+    const req = http.expectOne(`${environment.apiBaseUrl}/products/admin/products/`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.name).toBe('New Item');
+    req.flush(makeBackendProduct({ name: 'New Item' }));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('New Item');
+  });
 
   it('renders the product list correctly', () => {
     flushInitialLoad([makeBackendProduct({ name: 'Gadget', price: '49.99' })]);

@@ -5,10 +5,11 @@ import { finalize } from 'rxjs';
 import { AdminService, AdminReview } from '../../services/admin.service';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { RatingWidgetComponent } from '../../../../shared/components/rating-widget/rating-widget.component';
 
 @Component({
   selector: 'app-admin-reviews',
-  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent, RatingWidgetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
@@ -41,8 +42,8 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                 >
                   <td class="px-4 py-3 text-slate-900">{{ review.user_name }}</td>
                   <td class="px-4 py-3 text-slate-600">{{ review.product_name }}</td>
-                  <td class="px-4 py-3 text-amber-500">
-                    {{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}
+                  <td class="px-4 py-3">
+                    <app-rating-widget [rating]="review.rating" size="sm" />
                   </td>
                   <td class="max-w-xs px-4 py-3 text-slate-600 truncate">{{ review.comment ?? '—' }}</td>
                   <td class="px-4 py-3">

@@ -13,8 +13,60 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-slate-900">Products & Stock</h2>
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="text-xl font-semibold text-slate-900">Products & Stock</h2>
+        <button type="button" (click)="showCreateForm.set(!showCreateForm())"
+          class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+          {{ showCreateForm() ? 'Cancel' : 'Add Product' }}
+        </button>
+      </div>
+
       <app-error-message [message]="error()" />
+
+      @if (showCreateForm()) {
+        <div class="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-lg font-medium text-slate-900">Create New Product</h3>
+          <form class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5" (ngSubmit)="createProduct()">
+            <div class="space-y-1">
+              <label class="text-sm font-medium text-slate-700">Name</label>
+              <input type="text" [(ngModel)]="newProduct.name" name="name" required
+                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-sm font-medium text-slate-700">Category</label>
+              <select [(ngModel)]="newProduct.category_id" name="category_id" required
+                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                <option [value]="0" disabled>Select a category</option>
+                @for (cat of categories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-sm font-medium text-slate-700">Price</label>
+              <input type="text" [(ngModel)]="newProduct.price" name="price" required
+                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-sm font-medium text-slate-700">Initial Stock</label>
+              <input type="number" [(ngModel)]="newProduct.stock" name="stock" min="0" required
+                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-sm font-medium text-slate-700">Description</label>
+              <textarea [(ngModel)]="newProduct.description" name="description" rows="3"
+                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <button type="submit" [disabled]="submitting()"
+                class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all disabled:opacity-70">
+                @if (submitting()) { <app-loading-spinner size="sm" /> }
+                Create Product
+              </button>
+            </div>
+          </form>
+        </div>
+      }
 
       @if (isLoading()) {
         <div class="mt-10 flex justify-center"><app-loading-spinner size="md" /></div>
@@ -132,6 +184,18 @@ export class AdminProductsPage implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly editingStockId = signal<number | null>(null);
   protected readonly uploadingImageId = signal<number | null>(null);
+  protected readonly showCreateForm = signal(false);
+  protected readonly submitting = signal(false);
+  protected readonly categories = signal<{ id: number; name: string }[]>([]);
+
+  protected newProduct = {
+    name: '',
+    description: '',
+    price: '',
+    stock: 0,
+    category_id: 0,
+  };
+
   protected stockInput = 0;
   protected imageAltText = '';
   protected imageIsPrimary = false;
@@ -139,7 +203,16 @@ export class AdminProductsPage implements OnInit {
   protected readonly pageSize = 20;
   protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void { 
+    this.load();
+    this.loadCategories();
+  }
+
+  private loadCategories(): void {
+    this.adminService.getAdminCategories({ page_size: 100 } as any).subscribe({
+      next: (res) => this.categories.set(res.results),
+    });
+  }
 
   protected load(page = 1): void {
     this.error.set('');
@@ -151,6 +224,26 @@ export class AdminProductsPage implements OnInit {
       .subscribe({
         next: (res) => { this.products.set(res.results); this.totalCount.set(res.count); },
         error: () => this.error.set('Could not load products.'),
+      });
+  }
+
+  protected createProduct(): void {
+    if (!this.newProduct.name || !this.newProduct.price || !this.newProduct.category_id) {
+      this.error.set('Please fill in all required fields.');
+      return;
+    }
+
+    this.error.set('');
+    this.submitting.set(true);
+    this.adminService.createProduct(this.newProduct)
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe({
+        next: (p) => {
+          this.products.update(list => [p, ...list]);
+          this.showCreateForm.set(false);
+          this.newProduct = { name: '', description: '', price: '', stock: 0, category_id: 0 };
+        },
+        error: () => this.error.set('Could not create product. Ensure slug is unique and price is valid.'),
       });
   }
 
