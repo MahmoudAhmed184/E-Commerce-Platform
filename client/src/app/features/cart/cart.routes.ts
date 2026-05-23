@@ -1,10 +1,8 @@
-import { Routes } from '@angular/router';
-
-import { CartPage } from './pages/cart-page/cart-page';
+import type { Routes } from '@angular/router';
 
 export const CART_ROUTES: Routes = [
   {
     path: '',
-    component: CartPage,
+    loadComponent: () => import('./pages/cart-page/cart-page').then((m) => m.CartPage),
   },
 ];

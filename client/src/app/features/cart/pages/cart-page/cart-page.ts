@@ -1,183 +1,213 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import { AuthService } from '../../../../core/services/auth.service';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
-import { CartService, CartItem, GuestCartItem } from '../../services/cart.service';
+import { AuthService } from '../../../../core/services/auth/auth.service';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
+import type { UiCartItem, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import { type CartItem, CartService, type GuestCartItem } from '../../../../core/services/cart/cart.service';
+import { CartItemRowComponent } from '../../components/cart-item-row/cart-item-row.component';
+import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
 
 @Component({
   selector: 'app-cart-page',
   standalone: true,
-  imports: [RouterLink, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [
+    AlertBannerComponent,
+    CartItemRowComponent,
+    EmptyStateComponent,
+    OrderSummaryCardComponent,
+    RouterLink,
+    SkeletonLoaderComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-4xl px-4 py-10">
-      <h1 class="text-2xl font-semibold text-slate-950">Your Cart</h1>
-
-      @if (isLoading()) {
-        <div class="mt-10 flex justify-center">
-          <app-loading-spinner size="md" />
-        </div>
-      } @else if (error()) {
-        <div class="mt-6">
-          <app-error-message [message]="error()" />
-        </div>
-      } @else if (isEmpty()) {
-        <div class="mt-16 flex flex-col items-center gap-4 text-center">
-          <p class="text-slate-500">Your cart is empty.</p>
-          <a
-            routerLink="/products"
-            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >Browse Products</a>
-        </div>
-      } @else {
-        <div class="mt-8 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-sm">
-          @if (authService.isLoggedIn()) {
-            @for (item of authCart()?.items ?? []; track item.id) {
-              <div class="flex items-center gap-4 px-6 py-4">
-                @if (item.primary_image) {
-                  <img [src]="item.primary_image" [alt]="item.product_name" class="h-16 w-16 rounded-md object-cover" />
-                } @else {
-                  <div class="flex h-16 w-16 items-center justify-center rounded-md bg-slate-100 text-slate-400 text-xs">No image</div>
-                }
-                <div class="flex-1 min-w-0">
-                  <p class="truncate font-medium text-slate-900">{{ item.product_name }}</p>
-                  <p class="text-sm text-slate-500">&#36;{{ item.unit_price_snapshot }} each</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                    [disabled]="item.quantity <= 1"
-                    (click)="changeQty(item, item.quantity - 1)"
-                  >−</button>
-                  <span class="w-6 text-center text-sm font-medium">{{ item.quantity }}</span>
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50"
-                    (click)="changeQty(item, item.quantity + 1)"
-                  >+</button>
-                </div>
-                <p class="w-20 text-right text-sm font-semibold text-slate-900">&#36;{{ item.line_total }}</p>
-                <button
-                  type="button"
-                  class="ml-2 text-sm text-red-500 hover:text-red-700"
-                  (click)="removeItem(item)"
-                >Remove</button>
-              </div>
-            }
-          } @else {
-            @for (item of guestCart(); track item.product) {
-              <div class="flex items-center gap-4 px-6 py-4">
-                @if (item.primary_image) {
-                  <img [src]="item.primary_image" [alt]="item.product_name" class="h-16 w-16 rounded-md object-cover" />
-                } @else {
-                  <div class="flex h-16 w-16 items-center justify-center rounded-md bg-slate-100 text-slate-400 text-xs">No image</div>
-                }
-                <div class="flex-1 min-w-0">
-                  <p class="truncate font-medium text-slate-900">{{ item.product_name }}</p>
-                  <p class="text-sm text-slate-500">&#36;{{ item.product_price }} each</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                    [disabled]="item.quantity <= 1"
-                    (click)="changeGuestQty(item, item.quantity - 1)"
-                  >−</button>
-                  <span class="w-6 text-center text-sm font-medium">{{ item.quantity }}</span>
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50"
-                    (click)="changeGuestQty(item, item.quantity + 1)"
-                  >+</button>
-                </div>
-                <p class="w-20 text-right text-sm font-semibold text-slate-900">
-                  &#36;{{ (parseFloat(item.product_price) * item.quantity).toFixed(2) }}
-                </p>
-                <button
-                  type="button"
-                  class="ml-2 text-sm text-red-500 hover:text-red-700"
-                  (click)="removeGuestItem(item)"
-                >Remove</button>
-              </div>
-            }
-          }
-        </div>
-
-        <!-- Summary -->
-        <div class="mt-6 flex flex-col items-end gap-4">
-          <div class="w-full max-w-xs rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div class="flex justify-between text-sm text-slate-600">
-              <span>Subtotal</span>
-              <span class="font-semibold text-slate-900">
-                @if (authService.isLoggedIn()) {
-                  &#36;{{ cartService.cart()?.subtotal ?? '0.00' }}
-                } @else {
-                  &#36;{{ cartService.guestSubtotal.toFixed(2) }}
-                }
-              </span>
-            </div>
+    <main class="bg-transparent">
+      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-lg px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
+        <header class="flex flex-wrap items-end justify-between gap-md">
+          <div class="grid gap-xs">
+            <p class="type-label-sm text-text-muted">Shopping cart</p>
+            <h1 class="type-heading-xl text-text-primary">Your cart</h1>
+            <p class="type-body-md text-text-secondary">Review items, quantities, and totals before starting checkout.</p>
           </div>
-          <a
-            routerLink="/checkout"
-            class="rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >Proceed to Checkout</a>
-        </div>
-      }
-    </section>
+          @if (!isEmpty()) {
+            <p class="glass-panel glass-depth-raised rounded-full px-sm py-xs type-label-md text-text-secondary">
+              {{ itemCountLabel() }}
+            </p>
+          }
+        </header>
+
+        @if (error()) {
+          <app-alert-banner tone="error" title="Cart issue" [message]="error()" [dismissible]="true" (dismissed)="error.set('')" />
+        }
+
+        @if (isLoading()) {
+          <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-checkout-grid)]" aria-label="Loading cart">
+            <div class="grid gap-md">
+              @for (item of loadingRows; track item.id) {
+                <app-cart-item-row [loading]="true" />
+              }
+            </div>
+            <app-skeleton-loader shape="block" [count]="4" label="Loading order summary" />
+          </section>
+        } @else if (isEmpty()) {
+          <app-empty-state
+            type="cart"
+            title="Your cart is empty"
+            message="Add products to compare totals and continue to checkout."
+            [action]="{ label: 'Shop products', variant: 'primary' }"
+            (actionPressed)="browseProducts()"
+          />
+        } @else {
+          <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
+            <div class="grid gap-md" aria-label="Cart items">
+              @for (item of cartItems(); track item.id) {
+                <app-cart-item-row
+                  [item]="item"
+                  [quantity]="item.quantity"
+                  [maxQuantity]="item.maxQuantity"
+                  [updating]="updatingLineId() === item.id"
+                  [removing]="updatingLineId() === item.id"
+                  (quantityChange)="changeQuantity(item.id, $event)"
+                  (remove)="removeLine($event)"
+                />
+              }
+            </div>
+
+            <div class="grid gap-md">
+              <app-order-summary-card
+                [lines]="summaryLines()"
+                [subtotal]="subtotal()"
+                [total]="subtotal()"
+                currency="USD"
+                [sticky]="true"
+              />
+              <a
+                class="inline-flex min-h-control-lg items-center justify-center rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-lg py-sm type-label-lg text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
+                routerLink="/checkout/review"
+              >
+                Continue to checkout
+              </a>
+              <p class="type-body-sm text-text-muted">Shipping, taxes, discounts, and payment options are confirmed during checkout.</p>
+            </div>
+          </section>
+        }
+      </div>
+    </main>
   `,
 })
 export class CartPage implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly cartService = inject(CartService);
+  private readonly router = inject(Router);
 
+  protected readonly loadingRows = [{ id: 'cart-loading-1' }, { id: 'cart-loading-2' }, { id: 'cart-loading-3' }] as const;
   protected readonly isLoading = signal(false);
+  protected readonly updatingLineId = signal<string | null>(null);
   protected readonly error = signal('');
 
-  protected readonly authCart = this.cartService.cart;
-  protected readonly guestCart = this.cartService.guestItems;
-
-  protected readonly parseFloat = parseFloat;
-
-  protected isEmpty(): boolean {
+  protected readonly cartItems = computed<readonly UiCartItem[]>(() => {
     if (this.authService.isLoggedIn()) {
-      return (this.cartService.cart()?.items.length ?? 0) === 0;
+      return (this.cartService.cart()?.items ?? []).map((item) => this.authLine(item));
     }
-    return this.cartService.guestItems().length === 0;
-  }
+
+    return this.cartService.guestItems().map((item) => this.guestLine(item));
+  });
+  protected readonly itemCount = computed(() => this.cartItems().reduce((count, item) => count + item.quantity, 0));
+  protected readonly itemCountLabel = computed(() => `${this.itemCount()} ${this.itemCount() === 1 ? 'item' : 'items'}`);
+  protected readonly subtotal = computed(() => this.cartItems().reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
+  protected readonly summaryLines = computed<readonly UiPriceLine[]>(() =>
+    this.cartItems().map((item) => ({
+      id: item.id,
+      label: `${item.productName} x ${item.quantity}`,
+      amount: item.unitPrice * item.quantity,
+    })),
+  );
+  protected readonly isEmpty = computed(() => !this.isLoading() && this.cartItems().length === 0);
 
   ngOnInit(): void {
-    if (this.authService.isLoggedIn()) {
-      this.isLoading.set(true);
-      this.cartService
-        .loadCart()
-        .pipe(finalize(() => this.isLoading.set(false)))
-        .subscribe({
-          error: () => this.error.set('Could not load your cart. Please try again.'),
-        });
+    if (!this.authService.isLoggedIn()) {
+      return;
     }
+
+    this.isLoading.set(true);
+    this.cartService
+      .loadCart()
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        error: () => this.error.set('Could not load your cart. Try again.'),
+      });
   }
 
-  protected changeQty(item: CartItem, quantity: number): void {
-    this.cartService.updateItem(item.id, quantity).subscribe({
-      error: () => this.error.set('Could not update quantity.'),
-    });
+  protected changeQuantity(lineId: string, quantity: number): void {
+    const item = this.cartItems().find((line) => line.id === lineId);
+    if (!item || quantity < 1 || quantity > item.maxQuantity || this.updatingLineId() === lineId) {
+      return;
+    }
+
+    this.error.set('');
+    if (lineId.startsWith('guest-')) {
+      this.cartService.updateGuestItem(Number(lineId.slice('guest-'.length)), quantity);
+      return;
+    }
+
+    this.updatingLineId.set(lineId);
+    this.cartService
+      .updateItem(Number(lineId.slice('auth-'.length)), quantity)
+      .pipe(finalize(() => this.updatingLineId.set(null)))
+      .subscribe({
+        error: () => this.error.set('Could not update quantity. Try again.'),
+      });
   }
 
-  protected removeItem(item: CartItem): void {
-    this.cartService.removeItem(item.id).subscribe({
-      error: () => this.error.set('Could not remove item.'),
-    });
+  protected removeLine(item: UiCartItem): void {
+    this.error.set('');
+    if (item.id.startsWith('guest-')) {
+      this.cartService.removeGuestItem(Number(item.id.slice('guest-'.length)));
+      return;
+    }
+
+    this.updatingLineId.set(item.id);
+    this.cartService
+      .removeItem(Number(item.id.slice('auth-'.length)))
+      .pipe(finalize(() => this.updatingLineId.set(null)))
+      .subscribe({
+        error: () => this.error.set('Could not remove item. Try again.'),
+      });
   }
 
-  protected changeGuestQty(item: GuestCartItem, quantity: number): void {
-    this.cartService.updateGuestItem(item.product, quantity);
+  protected browseProducts(): void {
+    void this.router.navigateByUrl('/products');
   }
 
-  protected removeGuestItem(item: GuestCartItem): void {
-    this.cartService.removeGuestItem(item.product);
+  private authLine(item: CartItem): UiCartItem {
+    return {
+      id: `auth-${item.id}`,
+      productName: item.product_name,
+      productSlug: item.product_slug,
+      imageUrl: item.primary_image ?? '',
+      unitPrice: Number.parseFloat(item.unit_price_snapshot),
+      currency: 'USD',
+      quantity: item.quantity,
+      maxQuantity: 99,
+      stockStatus: 'Validated before checkout',
+    };
+  }
+
+  private guestLine(item: GuestCartItem): UiCartItem {
+    const availableStock = item.available_stock ?? 99;
+    return {
+      id: `guest-${item.product}`,
+      productName: item.product_name,
+      productSlug: item.product_slug,
+      imageUrl: item.primary_image ?? '',
+      unitPrice: Number.parseFloat(item.product_price),
+      currency: 'USD',
+      quantity: item.quantity,
+      maxQuantity: availableStock,
+      stockStatus: item.available_stock === null ? 'Validated before checkout' : `${availableStock} available`,
+    };
   }
 }
