@@ -1,7 +1,7 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, type HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
-import type { UserStatus } from '../models/user.model';
+import type { UserStatus } from '../../models/user/user.model';
 
 export interface AppError {
   status: number;
@@ -11,7 +11,7 @@ export interface AppError {
   fieldErrors?: Record<string, string[]>;
 }
 
-export const errorInterceptor: HttpInterceptorFn = (request, next) =>
+export const errorInterceptor: HttpInterceptorFn = (request, next): ReturnType<HttpInterceptorFn> =>
   next(request).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
@@ -50,8 +50,8 @@ function toErrorBody(value: unknown): Record<string, unknown> {
     return { detail: value };
   }
 
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+  if (isRecord(value)) {
+    return value;
   }
 
   return {};
@@ -76,7 +76,7 @@ function collectFieldErrors(body: Record<string, unknown>): Record<string, strin
 }
 
 function findErrorMessage(body: Record<string, unknown>): string | null {
-  const candidates = [body['detail'], body['message'], body['non_field_errors']];
+  const candidates = [body['detail'], body['message'], body['error'], body['non_field_errors']];
 
   for (const candidate of candidates) {
     const messages = toMessages(candidate);
@@ -124,4 +124,8 @@ function defaultMessage(status: number): string {
   }
 
   return 'The request could not be completed.';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }

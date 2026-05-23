@@ -10,12 +10,6 @@ export interface User {
   status: UserStatus;
 }
 
-export interface AuthTokens {
-  access: string;
-  refresh: string;
-  user: User;
-}
-
 export interface LoginPayload {
   identifier: string;
   password: string;

@@ -2,7 +2,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import type { AppError } from './error.interceptor';
 import { errorInterceptor } from './error.interceptor';
 
@@ -28,7 +28,7 @@ describe('errorInterceptor', () => {
 
   it('preserves blocked-account code and account status', async () => {
     const errorPromise = new Promise<AppError>((resolve) => {
-      client.post(`${environment.apiBaseUrl}/auth/login/`, {}).subscribe({
+      client.post<unknown>(`${environment.apiBaseUrl}/auth/login/`, {}).subscribe({
         error: (error: AppError) => resolve(error),
       });
     });
