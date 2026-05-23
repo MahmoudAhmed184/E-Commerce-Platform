@@ -1,10 +1,16 @@
-import { Routes } from '@angular/router';
-
-import { OrderConfirmationPage } from './pages/order-confirmation/order-confirmation';
+import type { Routes } from '@angular/router';
 
 export const ORDERS_ROUTES: Routes = [
   {
+    path: '',
+    loadComponent: () => import('./pages/orders-page/orders-page').then((m) => m.OrdersPage),
+  },
+  {
     path: ':orderNumber',
-    component: OrderConfirmationPage,
+    loadComponent: () => import('./pages/order-confirmation/order-confirmation').then((m) => m.OrderConfirmationPage),
+  },
+  {
+    path: ':orderNumber/confirmation',
+    loadComponent: () => import('./pages/order-confirmation/order-confirmation').then((m) => m.OrderConfirmationPage),
   },
 ];
