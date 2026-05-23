@@ -1,60 +1,82 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, type OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import type { AppError } from '../../../../core/interceptors/error.interceptor';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
+import { AuthFlowService } from '../../services/auth-flow/auth-flow.service';
 
 @Component({
   selector: 'app-confirm-email-page',
-  imports: [ErrorMessageComponent, LoadingSpinnerComponent, RouterLink],
+  standalone: true,
+  imports: [AlertBannerComponent, RouterLink, SpinnerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto flex min-h-[70vh] w-full max-w-lg items-center px-4 py-10">
-      <div class="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p class="text-sm font-medium uppercase tracking-wide text-indigo-600">Email confirmation</p>
+    <main class="bg-surface-page">
+      <section class="mx-auto grid min-h-[var(--ui-layout-min-screen-minus-header)] max-w-[var(--ui-container-sm)] place-items-center px-gutter-xs py-2xl md:px-gutter-sm">
+        <div class="grid w-full gap-lg rounded-md border-hairline border-border-default bg-surface-raised p-lg shadow-xs">
+          <header class="grid gap-xs">
+            <p class="type-label-sm text-text-muted">Email confirmation</p>
+            @if (hasConfirmationToken()) {
+              <h1 class="type-heading-xl text-text-primary">Confirming email</h1>
+              <p class="type-body-md text-text-secondary">Keep this page open while we confirm your account.</p>
+            } @else {
+              <h1 class="type-heading-xl text-text-primary">Check your email</h1>
+              <p class="type-body-md text-text-secondary">Open the confirmation link sent to your inbox before signing in.</p>
+            }
+          </header>
 
-        @if (token()) {
-          <h1 class="mt-2 text-2xl font-semibold text-slate-950">Confirming email</h1>
-
-          <div class="mt-6 space-y-4">
+          @if (hasConfirmationToken()) {
             @if (isLoading()) {
-              <div class="flex items-center gap-3 text-slate-700">
-                <app-loading-spinner />
-                <span>Confirming your account.</span>
+              <div class="flex items-center gap-sm rounded-md border-hairline border-border-default bg-surface-subtle p-md" role="status" aria-live="polite">
+                <app-spinner size="sm" label="Confirming account" />
+                <span class="type-body-sm text-text-secondary">Confirming your account...</span>
               </div>
             }
 
             @if (successMessage()) {
-              <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-                {{ successMessage() }}
-              </div>
-              <a routerLink="/auth/login" class="inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Go to login</a>
+              <app-alert-banner tone="success" title="Email confirmed" [message]="successMessage()" />
+              <a
+                class="inline-flex min-h-control-md items-center justify-center rounded-md bg-surface-primary px-md py-xs type-label-md text-text-on-primary interactive-transition hover:bg-primary-600 focus-visible:focus-ring"
+                routerLink="/auth/login"
+              >
+                Go to sign in
+              </a>
             }
 
-            <app-error-message [message]="errorMessage()" />
-          </div>
-        } @else {
-          <h1 class="mt-2 text-2xl font-semibold text-slate-950">Check your email</h1>
-          <p class="mt-3 text-slate-600">Check your email for a confirmation link.</p>
-          @if (email()) {
-            <p class="mt-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">Confirmation email sent to {{ email() }}.</p>
+            @if (errorMessage()) {
+              <app-alert-banner
+                tone="error"
+                title="Confirmation failed"
+                [message]="errorMessage()"
+                [action]="{ label: 'Back to sign in', variant: 'secondary' }"
+                (actionPressed)="goToLogin()"
+              />
+            }
+          } @else {
+            @if (email()) {
+              <app-alert-banner tone="success" title="Confirmation email sent" [message]="'Check ' + email() + ' for the confirmation link.'" />
+            }
+            <a
+              class="inline-flex min-h-control-md items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
+              routerLink="/auth/login"
+            >
+              Back to sign in
+            </a>
           }
-          <a routerLink="/auth/login" class="mt-6 inline-flex rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Back to login</a>
-        }
-      </div>
-    </section>
+        </div>
+      </section>
+    </main>
   `,
 })
 export class ConfirmEmailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly authFlow = inject(AuthFlowService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly token = signal<string | null>(null);
+  protected readonly hasConfirmationToken = signal(false);
   protected readonly email = signal<string | null>(null);
   protected readonly isLoading = signal(false);
   protected readonly successMessage = signal('');
@@ -62,7 +84,7 @@ export class ConfirmEmailPage implements OnInit {
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
-    this.token.set(token);
+    this.hasConfirmationToken.set(!!token);
     this.email.set(this.route.snapshot.queryParamMap.get('email'));
 
     if (token) {
@@ -70,11 +92,15 @@ export class ConfirmEmailPage implements OnInit {
     }
   }
 
+  protected goToLogin(): void {
+    void this.router.navigateByUrl('/auth/login');
+  }
+
   private confirmToken(token: string): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.authService
+    this.authFlow
       .confirmEmail(token)
       .pipe(
         finalize(() => this.isLoading.set(false)),
@@ -82,18 +108,7 @@ export class ConfirmEmailPage implements OnInit {
       )
       .subscribe({
         next: () => this.successMessage.set('Your email has been confirmed.'),
-        error: (error: unknown) => {
-          if (isAppError(error)) {
-            this.errorMessage.set(error.message);
-            return;
-          }
-
-          this.errorMessage.set('This confirmation link is invalid, expired, or has already been used.');
-        },
+        error: (error: unknown) => this.errorMessage.set(this.authFlow.confirmationError(error)),
       });
   }
-}
-
-function isAppError(error: unknown): error is AppError {
-  return !!error && typeof error === 'object' && 'status' in error && 'message' in error;
 }

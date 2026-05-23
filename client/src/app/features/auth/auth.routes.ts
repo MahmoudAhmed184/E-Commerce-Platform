@@ -1,8 +1,4 @@
-import { Routes } from '@angular/router';
-
-import { ConfirmEmailPage } from './pages/confirm-email/confirm-email.page';
-import { LoginPage } from './pages/login/login.page';
-import { RegisterPage } from './pages/register/register.page';
+import type { Routes } from '@angular/router';
 
 export const AUTH_ROUTES: Routes = [
   {
@@ -12,14 +8,18 @@ export const AUTH_ROUTES: Routes = [
   },
   {
     path: 'register',
-    component: RegisterPage,
+    loadComponent: () => import('./pages/register/register.page').then((m) => m.RegisterPage),
   },
   {
     path: 'login',
-    component: LoginPage,
+    loadComponent: () => import('./pages/login/login.page').then((m) => m.LoginPage),
   },
   {
     path: 'confirm-email',
-    component: ConfirmEmailPage,
+    loadComponent: () => import('./pages/confirm-email/confirm-email.page').then((m) => m.ConfirmEmailPage),
+  },
+  {
+    path: 'confirm-pending',
+    loadComponent: () => import('./pages/confirm-pending/confirm-pending.page').then((m) => m.ConfirmPendingPage),
   },
 ];

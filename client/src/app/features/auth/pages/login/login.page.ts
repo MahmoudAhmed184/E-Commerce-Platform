@@ -1,88 +1,120 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
-import type { AppError } from '../../../../core/interceptors/error.interceptor';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
+import type { LoginPayload, User } from '../../../../core/models/user/user.model';
+import { AuthService } from '../../../../core/services/auth/auth.service';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { AuthFlowService, type AuthFlowError } from '../../services/auth-flow/auth-flow.service';
+
+export { loginErrorMessage } from '../../services/auth-flow/auth-flow.service';
 
 type LoginForm = FormGroup<{
   identifier: FormControl<string>;
   password: FormControl<string>;
 }>;
 
+const requiredValidator: ValidatorFn = (control) => Validators.required(control);
+
 @Component({
   selector: 'app-login-page',
-  imports: [ErrorMessageComponent, LoadingSpinnerComponent, ReactiveFormsModule, RouterLink],
+  standalone: true,
+  imports: [AlertBannerComponent, ButtonComponent, ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto flex min-h-[70vh] w-full max-w-md items-center px-4 py-10">
-      <div class="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div>
-          <p class="text-sm font-medium uppercase tracking-wide text-indigo-600">Welcome back</p>
-          <h1 class="mt-2 text-2xl font-semibold text-slate-950">Login</h1>
+    <main class="bg-background">
+      <section class="mx-auto grid min-h-[var(--ui-layout-min-screen-minus-header)] max-w-[var(--ui-container-xl)] px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
+        <div class="grid overflow-hidden rounded-md border border-border bg-card shadow-sm lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+          <aside class="hidden content-between gap-xl border-e border-border bg-muted p-xl lg:grid">
+            <div class="grid gap-sm">
+              <p class="type-label-sm text-muted-foreground">Customer access</p>
+              <h1 class="type-heading-xl text-card-foreground">Sign in</h1>
+              <p class="max-w-[32rem] type-body-md text-muted-foreground">Access your saved cart, delivery details, and order history from one secure account.</p>
+            </div>
+
+            <dl class="grid gap-sm md:grid-cols-3">
+              <div class="rounded-lg border border-border bg-card p-sm">
+                <dt class="type-label-sm text-muted-foreground">Checkout</dt>
+                <dd class="mt-2xs type-heading-sm text-card-foreground">Resume saved details</dd>
+              </div>
+              <div class="rounded-lg border border-border bg-card p-sm">
+                <dt class="type-label-sm text-muted-foreground">Orders</dt>
+                <dd class="mt-2xs type-heading-sm text-card-foreground">Track every order</dd>
+              </div>
+              <div class="rounded-lg border border-border bg-card p-sm">
+                <dt class="type-label-sm text-muted-foreground">Support</dt>
+                <dd class="mt-2xs type-heading-sm text-card-foreground">Get account help</dd>
+              </div>
+            </dl>
+          </aside>
+
+          <div class="grid content-center gap-lg p-lg md:p-xl">
+            <header class="grid gap-xs">
+              <p class="type-label-sm text-muted-foreground">Welcome back</p>
+              <h2 class="type-heading-xl text-card-foreground">Sign in to continue</h2>
+              <p class="type-body-md text-muted-foreground">Use your email or phone number to continue shopping and track orders.</p>
+            </header>
+
+            <form class="grid gap-md" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+              @if (formError()) {
+                <app-alert-banner tone="error" title="Sign in failed" [message]="formError()" />
+              }
+
+              <div class="grid gap-xs">
+                <label class="type-label-md text-card-foreground" for="identifier">Email or phone</label>
+	                <input
+	                  id="identifier"
+	                  class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition placeholder:text-muted-foreground focus-visible:focus-ring aria-invalid:border-border-error"
+	                  type="text"
+	                  formControlName="identifier"
+	                  autocomplete="username"
+	                  [attr.aria-invalid]="identifierAriaInvalid"
+	                  [attr.aria-describedby]="identifierAriaDescribedBy"
+	                />
+	                @if (identifierApiError(); as message) {
+	                  <p id="identifier-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
+	                } @else if (identifierRequiredVisible) {
+	                  <p id="identifier-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
+	                }
+	              </div>
+
+              <div class="grid gap-xs">
+                <label class="type-label-md text-card-foreground" for="password">Password</label>
+	                <input
+	                  id="password"
+	                  class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition placeholder:text-muted-foreground focus-visible:focus-ring aria-invalid:border-border-error"
+	                  type="password"
+	                  formControlName="password"
+	                  autocomplete="current-password"
+	                  [attr.aria-invalid]="passwordAriaInvalid"
+	                  [attr.aria-describedby]="passwordAriaDescribedBy"
+	                />
+	                @if (passwordApiError(); as message) {
+	                  <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
+	                } @else if (passwordRequiredVisible) {
+	                  <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
+	                }
+	              </div>
+
+              <app-button type="submit" [loading]="isLoading()" [fullWidth]="true">Sign in</app-button>
+            </form>
+
+            <p class="type-body-sm text-muted-foreground">
+              Need an account?
+              <a class="type-label-md text-text-info focus-visible:focus-ring" routerLink="/auth/register">Create one</a>
+            </p>
+          </div>
         </div>
-
-        <form class="mt-8 space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <app-error-message [message]="formError()" [fieldErrors]="fieldErrors()" />
-
-          <div>
-            <label for="identifier" class="block text-sm font-medium text-slate-700">Email or Phone</label>
-            <input
-              id="identifier"
-              type="text"
-              formControlName="identifier"
-              autocomplete="username"
-              class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              [attr.aria-invalid]="hasFieldError('identifier')"
-              aria-describedby="identifier-error"
-            />
-            @if (fieldMessage('identifier'); as message) {
-              <p id="identifier-error" class="mt-2 text-sm text-red-700">{{ message }}</p>
-            }
-          </div>
-
-          <div>
-            <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
-            <input
-              id="password"
-              type="password"
-              formControlName="password"
-              autocomplete="current-password"
-              class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              [attr.aria-invalid]="hasFieldError('password')"
-              aria-describedby="password-error"
-            />
-            @if (fieldMessage('password'); as message) {
-              <p id="password-error" class="mt-2 text-sm text-red-700">{{ message }}</p>
-            }
-          </div>
-
-          <button
-            type="submit"
-            class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-            [disabled]="isLoading()"
-          >
-            @if (isLoading()) {
-              <app-loading-spinner size="sm" />
-            }
-            Login
-          </button>
-        </form>
-
-        <p class="mt-6 text-center text-sm text-slate-600">
-          Need an account?
-          <a routerLink="/auth/register" class="font-medium text-indigo-700 hover:text-indigo-800">Register</a>
-        </p>
-      </div>
-    </section>
+      </section>
+    </main>
   `,
 })
 export class LoginPage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly authFlow = inject(AuthFlowService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -91,9 +123,37 @@ export class LoginPage {
   protected readonly fieldErrors = signal<Record<string, string[]> | null>(null);
 
   protected readonly form: LoginForm = this.fb.group({
-    identifier: ['', [Validators.required]],
-    password: ['', [Validators.required]],
+    identifier: ['', [requiredValidator]],
+    password: ['', [requiredValidator]],
   });
+  protected readonly identifierControl = this.form.controls.identifier;
+  protected readonly passwordControl = this.form.controls.password;
+  protected readonly identifierApiError = computed(() => this.fieldErrors()?.['identifier']?.[0] ?? null);
+  protected readonly passwordApiError = computed(() => this.fieldErrors()?.['password']?.[0] ?? null);
+
+  protected get identifierRequiredVisible(): boolean {
+    return shouldShowControlError(this.identifierControl, 'required');
+  }
+
+  protected get identifierAriaInvalid(): 'true' | null {
+    return this.identifierApiError() || this.identifierRequiredVisible ? 'true' : null;
+  }
+
+  protected get identifierAriaDescribedBy(): 'identifier-error' | null {
+    return this.identifierAriaInvalid ? 'identifier-error' : null;
+  }
+
+  protected get passwordRequiredVisible(): boolean {
+    return shouldShowControlError(this.passwordControl, 'required');
+  }
+
+  protected get passwordAriaInvalid(): 'true' | null {
+    return this.passwordApiError() || this.passwordRequiredVisible ? 'true' : null;
+  }
+
+  protected get passwordAriaDescribedBy(): 'password-error' | null {
+    return this.passwordAriaInvalid ? 'password-error' : null;
+  }
 
   protected submit(): void {
     this.formError.set('');
@@ -104,89 +164,52 @@ export class LoginPage {
       return;
     }
 
-    const value = this.form.getRawValue();
     this.isLoading.set(true);
-
-    this.authService
-      .login({
-        identifier: value.identifier.trim(),
-        password: value.password,
-      })
+    this.authFlow
+      .login(toLoginPayload(this.form.getRawValue()))
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: () => {
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/products';
-          void this.router.navigateByUrl(returnUrl);
-        },
-        error: (error: unknown) => this.applyError(error),
+        next: () => this.navigateAfterLogin(),
+        error: (error: unknown) => this.applyError(this.authFlow.loginError(error)),
       });
   }
 
-  protected hasFieldError(field: keyof LoginForm['controls']): boolean {
-    return !!this.fieldMessage(field);
+  private applyError(error: AuthFlowError): void {
+    this.fieldErrors.set(error.fieldErrors);
+    this.formError.set(error.message);
   }
 
-  protected fieldMessage(field: keyof LoginForm['controls']): string | null {
-    const apiError = this.fieldErrors()?.[field]?.[0];
+  private navigateAfterLogin(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    void this.router.navigateByUrl(loginRedirectUrl(this.authService.currentUser(), returnUrl));
+  }
+}
 
-    if (apiError) {
-      return apiError;
-    }
+export function loginRedirectUrl(user: User | null, returnUrl: string | null): string {
+  const safeReturnUrl = internalReturnUrl(returnUrl);
+  if (safeReturnUrl) {
+    return safeReturnUrl;
+  }
 
-    const control = this.form.controls[field];
+  return user?.role === 'admin' ? '/admin' : '/products';
+}
 
-    if ((control.touched || control.dirty) && control.hasError('required')) {
-      return 'This field is required.';
-    }
+function toLoginPayload(value: { identifier: string; password: string }): LoginPayload {
+  return {
+    identifier: value.identifier.trim(),
+    password: value.password,
+  };
+}
 
+function internalReturnUrl(returnUrl: string | null): string | null {
+  const trimmed = returnUrl?.trim();
+  if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//')) {
     return null;
   }
 
-  private applyError(error: unknown): void {
-    if (isAppError(error)) {
-      this.fieldErrors.set(error.fieldErrors ?? null);
-      this.formError.set(loginErrorMessage(error));
-      return;
-    }
-
-    this.formError.set('Login could not be completed.');
-  }
+  return trimmed;
 }
 
-export function loginErrorMessage(error: AppError): string {
-  if (error.status === 401) {
-    return 'Invalid credentials.';
-  }
-
-  if (error.status === 403) {
-    if (error.code === 'account_restricted' || error.accountStatus === 'restricted') {
-      return 'Your account has been restricted. Contact support.';
-    }
-
-    if (error.code === 'account_deleted' || error.accountStatus === 'soft_deleted') {
-      return 'This account no longer exists.';
-    }
-
-    if (error.code === 'email_confirmation_required' || error.accountStatus === 'pending_approval') {
-      return 'Please confirm your email before logging in.';
-    }
-
-    const message = error.message.toLowerCase();
-
-    if (message.includes('restricted')) {
-      return 'Your account has been restricted. Contact support.';
-    }
-
-    if (message.includes('deleted') || message.includes('soft_deleted')) {
-      return 'This account no longer exists.';
-    }
-
-    return 'Please confirm your email before logging in.';
-  }
-
-  return error.message;
-}
-
-function isAppError(error: unknown): error is AppError {
-  return !!error && typeof error === 'object' && 'status' in error && 'message' in error;
+function shouldShowControlError(control: FormControl<string>, errorName: string): boolean {
+  return (control.touched || control.dirty) && control.hasError(errorName);
 }
