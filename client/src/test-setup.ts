@@ -25,15 +25,9 @@ function createMemoryStorage(): Storage {
 
 function ensureStorage(name: 'localStorage' | 'sessionStorage'): void {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, name);
-  const storage = descriptor && 'value' in descriptor ? descriptor.value : undefined;
+  const storage: unknown = descriptor && 'value' in descriptor ? descriptor.value : undefined;
 
-  if (
-    storage &&
-    typeof storage.clear === 'function' &&
-    typeof storage.getItem === 'function' &&
-    typeof storage.setItem === 'function' &&
-    typeof storage.removeItem === 'function'
-  ) {
+  if (hasStorageMethods(storage)) {
     return;
   }
 
@@ -46,3 +40,11 @@ function ensureStorage(name: 'localStorage' | 'sessionStorage'): void {
 
 ensureStorage('localStorage');
 ensureStorage('sessionStorage');
+
+function hasStorageMethods(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  return ['clear', 'getItem', 'setItem', 'removeItem'].every((methodName) => typeof Reflect.get(value, methodName) === 'function');
+}
