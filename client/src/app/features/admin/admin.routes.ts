@@ -1,25 +1,41 @@
-import { Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
 
-import { AdminDashboardPage } from './pages/admin-dashboard/admin-dashboard';
-import { AdminUsersPage } from './pages/admin-users/admin-users';
-import { AdminOrdersPage } from './pages/admin-orders/admin-orders';
-import { AdminReviewsPage } from './pages/admin-reviews/admin-reviews';
-import { AdminProductsPage } from './pages/admin-products/admin-products';
-import { AdminCategoriesPage } from './pages/admin-categories/admin-categories';
-import { AdminPaymentsPage } from './pages/admin-payments/admin-payments';
+import { adminGuard } from '../../core/guards/admin/admin.guard';
 
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
-    component: AdminDashboardPage,
+    loadComponent: () => import('./pages/admin-dashboard/admin-dashboard').then((m) => m.AdminDashboardPage),
+    canActivateChild: [adminGuard],
     children: [
-      { path: '', redirectTo: 'users', pathMatch: 'full' },
-      { path: 'users',      component: AdminUsersPage },
-      { path: 'orders',     component: AdminOrdersPage },
-      { path: 'products',   component: AdminProductsPage },
-      { path: 'categories', component: AdminCategoriesPage },
-      { path: 'payments',   component: AdminPaymentsPage },
-      { path: 'reviews',    component: AdminReviewsPage },
+      {
+        path: '',
+        loadComponent: () => import('./pages/dashboard-page/dashboard-page').then((m) => m.DashboardPage),
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./pages/admin-users/admin-users').then((m) => m.AdminUsersPage),
+      },
+      {
+        path: 'orders',
+        loadComponent: () => import('./pages/admin-orders/admin-orders').then((m) => m.AdminOrdersPage),
+      },
+      {
+        path: 'products',
+        loadComponent: () => import('./pages/admin-products/admin-products').then((m) => m.AdminProductsPage),
+      },
+      {
+        path: 'categories',
+        loadComponent: () => import('./pages/admin-categories/admin-categories').then((m) => m.AdminCategoriesPage),
+      },
+      {
+        path: 'payments',
+        loadComponent: () => import('./pages/admin-payments/admin-payments').then((m) => m.AdminPaymentsPage),
+      },
+      {
+        path: 'reviews',
+        loadComponent: () => import('./pages/admin-reviews/admin-reviews').then((m) => m.AdminReviewsPage),
+      },
     ],
   },
 ];

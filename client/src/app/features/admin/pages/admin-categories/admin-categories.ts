@@ -1,181 +1,269 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
+import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { AdminService, AdminCategory } from '../../services/admin.service';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { DropdownMenuComponent } from '../../../../shared/components/dropdown-menu/dropdown-menu.component';
+import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
+import type { UiAction, UiMenuItem, UiTableColumn } from '../../../../shared/components/ui.types';
+import { AdminService, type AdminCategory } from '../../../../core/services/admin/admin.service';
+import { AdminWorkflowService, type AdminCategorySaveResult } from '../../services/admin-workflow/admin-workflow.service';
+
+interface CategoryFormMode {
+  eyebrow: string;
+  title: string;
+  submitLabel: string;
+}
 
 type CategoryForm = FormGroup<{
   name: FormControl<string>;
   description: FormControl<string>;
 }>;
 
+const requiredValidator: ValidatorFn = (control) => Validators.required(control);
+
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [AlertBannerComponent, AlertDialogComponent, ButtonComponent, DropdownMenuComponent, ReactiveFormsModule, SkeletonLoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex gap-6">
-      <!-- Category list -->
-      <div class="flex-1">
-        <h2 class="text-xl font-semibold text-slate-900">Categories</h2>
-        <app-error-message [message]="error()" />
+    <section class="grid gap-lg">
+      <header class="grid gap-xs">
+        <p class="type-label-sm text-text-muted">Admin</p>
+        <h2 class="type-heading-xl text-text-primary">Categories</h2>
+        <p class="type-body-md text-text-secondary">Maintain product departments used by customers to browse and filter the catalog.</p>
+      </header>
 
-        @if (isLoading()) {
-          <div class="mt-6 flex justify-center"><app-loading-spinner size="md" /></div>
-        } @else {
-          <div class="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
-              <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+      @if (statusMessage()) {
+        <app-alert-banner tone="success" title="Category updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
+      }
+      @if (formError()) {
+        <app-alert-banner tone="error" title="Category issue" [message]="formError()" [dismissible]="true" (dismissed)="formError.set('')" />
+      }
+
+      <section class="grid gap-lg xl:grid-cols-[var(--ui-layout-admin-editor-grid)] xl:items-start">
+        <section class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs" aria-labelledby="categories-table-title">
+          <h3 id="categories-table-title" class="sr-only">Category management</h3>
+          @if (isLoading()) {
+            <div class="p-md">
+              <app-skeleton-loader shape="block" [count]="5" label="Loading categories" />
+            </div>
+          } @else {
+            <table class="w-full min-w-container-md border-collapse text-start">
+              <caption class="sr-only">Category management</caption>
+              <thead class="bg-surface-subtle text-text-secondary">
                 <tr>
-                  <th class="px-4 py-3">Name</th>
-                  <th class="px-4 py-3">Slug</th>
-                  <th class="px-4 py-3">Products</th>
-                  <th class="px-4 py-3">Actions</th>
+                  @for (column of columns; track column.id) {
+                    <th class="p-sm text-start type-label-sm">{{ column.header }}</th>
+                  }
+                  <th class="p-sm text-end type-label-sm">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                @for (cat of categories(); track cat.id) {
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-3 font-medium text-slate-900">{{ cat.name }}</td>
-                    <td class="px-4 py-3 font-mono text-slate-500">{{ cat.slug }}</td>
-                    <td class="px-4 py-3 text-slate-600">{{ cat.product_count }}</td>
-                    <td class="px-4 py-3">
-                      <div class="flex gap-2">
-                        <button type="button" (click)="startEdit(cat)"
-                          class="text-xs font-medium text-indigo-600 hover:text-indigo-800">Edit</button>
-                        <button type="button" (click)="deleteCategory(cat)"
-                          class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
-                      </div>
+              <tbody class="divide-y-hairline divide-border-default">
+                @for (category of sortedCategories(); track category.slug) {
+                  <tr class="interactive-transition hover:bg-surface-subtle">
+                    <td class="p-sm type-body-sm text-text-primary">{{ category.name }}</td>
+                    <td class="p-sm type-body-sm text-text-primary">{{ category.slug }}</td>
+                    <td class="p-sm type-body-sm text-text-primary">{{ category.description }}</td>
+                    <td class="p-sm type-body-sm text-text-primary">{{ category.product_count }}</td>
+                    <td class="p-sm text-end">
+                      <app-dropdown-menu label="Row actions" [items]="rowActions" (selected)="handleRowAction(category.slug, $event)" />
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No categories yet.</td></tr>
+                  <tr>
+                    <td class="p-xl text-center type-body-md text-text-muted" colspan="5">No rows to display.</td>
+                  </tr>
                 }
               </tbody>
             </table>
+          }
+        </section>
+
+        <aside class="grid gap-md rounded-md border-hairline border-border-default bg-surface-raised p-md shadow-xs" aria-labelledby="category-form-title">
+          <div>
+            <p class="type-label-sm text-text-muted">{{ formMode().eyebrow }}</p>
+            <h3 id="category-form-title" class="type-heading-lg text-text-primary">{{ formMode().title }}</h3>
           </div>
+
+          <form class="grid gap-md" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
+            <label class="grid gap-xs type-label-md text-text-primary">
+              Name
+              <input
+                class="min-h-control-md rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring aria-invalid:border-border-error"
+                type="text"
+                [attr.aria-invalid]="nameAriaInvalid()"
+                formControlName="name"
+              />
+            </label>
+
+            <label class="grid gap-xs type-label-md text-text-primary">
+              Description
+              <textarea
+                class="min-h-thumbnail-sm rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring"
+                formControlName="description"
+              ></textarea>
+            </label>
+
+            <div class="flex flex-wrap gap-sm">
+              <app-button type="submit" size="sm" [loading]="isSaving()">{{ formMode().submitLabel }}</app-button>
+              @if (editingSlug()) {
+                <app-button variant="secondary" size="sm" (pressed)="resetForm()">Cancel</app-button>
+              }
+            </div>
+          </form>
+        </aside>
+      </section>
+
+      <app-alert-dialog
+        [open]="!!deleteSlug()"
+        title="Delete category"
+        description="Delete only categories that no longer contain products."
+        [destructive]="true"
+        [confirmAction]="deleteConfirmAction()"
+        [cancelAction]="{ label: 'Cancel', variant: 'secondary' }"
+        (confirmPressed)="confirmDelete()"
+        (cancelPressed)="deleteSlug.set(null)"
+        (closed)="deleteSlug.set(null)"
+      >
+        @if (deleteTarget(); as category) {
+          <p>{{ deleteDialogMessage() }}</p>
         }
-      </div>
-
-      <!-- Create / Edit form -->
-      <div class="w-72 shrink-0">
-        <h3 class="text-base font-semibold text-slate-800">
-          {{ editingSlug() ? 'Edit Category' : 'New Category' }}
-        </h3>
-        <form class="mt-4 space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-          [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <app-error-message [message]="formError()" />
-          <div>
-            <label for="cat-name" class="block text-sm font-medium text-slate-700">Name</label>
-            <input id="cat-name" type="text" formControlName="name"
-              class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label for="cat-desc" class="block text-sm font-medium text-slate-700">Description</label>
-            <textarea id="cat-desc" rows="3" formControlName="description"
-              class="mt-1 block w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-          </div>
-          <div class="flex gap-2">
-              <button type="submit"
-              class="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
-              [disabled]="submitting()">
-              @if (submitting()) { Saving... } @else { {{ editingSlug() ? 'Update' : 'Create' }} }
-            </button>
-            @if (editingSlug()) {
-              <button type="button" (click)="cancelEdit()"
-                class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                Cancel
-              </button>
-            }
-          </div>
-        </form>
-      </div>
-    </div>
-
-    @if (totalPages() > 1) {
-      <div class="mt-4 flex items-center gap-2 text-sm">
-        <button type="button" [disabled]="currentPage() === 1"
-          class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-          (click)="load(currentPage() - 1)">← Prev</button>
-        <span class="text-slate-600">Page {{ currentPage() }} of {{ totalPages() }}</span>
-        <button type="button" [disabled]="currentPage() === totalPages()"
-          class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-          (click)="load(currentPage() + 1)">Next →</button>
-      </div>
-    }
+      </app-alert-dialog>
+    </section>
   `,
 })
 export class AdminCategoriesPage implements OnInit {
-  private readonly adminService = inject(AdminService);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly adminService = inject(AdminService);
+  private readonly adminWorkflow = inject(AdminWorkflowService);
 
-  protected readonly categories = signal<AdminCategory[]>([]);
-  protected readonly isLoading = signal(false);
-  protected readonly submitting = signal(false);
-  protected readonly error = signal('');
-  protected readonly formError = signal('');
-  protected readonly currentPage = signal(1);
-  protected readonly totalCount = signal(0);
+  protected readonly columns: readonly UiTableColumn[] = [
+    { id: 'name', header: 'Name', sortable: true },
+    { id: 'slug', header: 'Slug' },
+    { id: 'description', header: 'Description' },
+    { id: 'products', header: 'Products', sortable: true },
+  ];
+  protected readonly rowActions: readonly UiMenuItem[] = [
+    { id: 'edit-category', label: 'Edit category' },
+    { id: 'delete-category', label: 'Delete category', destructive: true },
+  ];
+
+  protected readonly categories = signal<readonly AdminCategory[]>([]);
   protected readonly editingSlug = signal<string | null>(null);
-  protected readonly pageSize = 20;
-  protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
-
-  protected readonly form: CategoryForm = this.fb.group({
-    name: ['', [Validators.required]],
-    description: [''],
+  protected readonly deleteSlug = signal<string | null>(null);
+  protected readonly formError = signal('');
+  protected readonly statusMessage = signal('');
+  protected readonly isLoading = signal(false);
+  protected readonly isSaving = signal(false);
+  protected readonly categoryForm: CategoryForm = this.fb.group({
+    name: this.fb.control('', { validators: [requiredValidator] }),
+    description: this.fb.control(''),
   });
 
-  ngOnInit(): void { this.load(); }
+  protected readonly sortedCategories = computed(() => [...this.categories()].sort((left, right) => left.name.localeCompare(right.name)));
+  protected readonly deleteTarget = computed(() => this.categories().find((category) => category.slug === this.deleteSlug()) ?? null);
+  protected readonly editingName = computed(() => this.categories().find((category) => category.slug === this.editingSlug())?.name ?? '');
+  protected readonly formMode = computed<CategoryFormMode>(() => ({
+    eyebrow: this.editingSlug() ? 'Edit category' : 'New category',
+    title: this.editingName() || 'Create category',
+    submitLabel: this.editingSlug() ? 'Update category' : 'Create category',
+  }));
+  protected readonly nameAriaInvalid = computed(() => (this.formError() ? 'true' : null));
+  protected readonly deleteConfirmAction = computed<UiAction>(() => ({
+    label: 'Delete category',
+    variant: 'danger',
+    disabled: (this.deleteTarget()?.product_count ?? 0) !== 0,
+    loading: this.isSaving(),
+  }));
+  protected readonly deleteDialogMessage = computed(() =>
+    this.deleteTarget()?.product_count === 0
+      ? 'This category has no products and can be deleted.'
+      : 'Move products out of this category before deleting it.',
+  );
 
-  protected load(page = 1): void {
-    this.isLoading.set(true);
-    this.currentPage.set(page);
+  ngOnInit(): void {
+    this.loadCategories();
+  }
+
+  protected handleRowAction(categorySlug: string, action: UiMenuItem): void {
+    const category = this.categories().find((item) => item.slug === categorySlug);
+    if (!category) {
+      return;
+    }
+
+    if (action.id === 'edit-category') {
+      this.editingSlug.set(category.slug);
+      this.categoryForm.setValue({ name: category.name, description: category.description });
+    } else if (action.id === 'delete-category') {
+      this.deleteSlug.set(category.slug);
+    }
+  }
+
+  protected saveCategory(): void {
+    this.formError.set('');
+    if (this.categoryForm.invalid) {
+      this.categoryForm.markAllAsTouched();
+      this.formError.set('Category name is required.');
+      return;
+    }
+
+    const formValue = this.categoryForm.getRawValue();
+    this.isSaving.set(true);
+    this.adminWorkflow
+      .saveCategory(this.editingSlug(), formValue.name, formValue.description)
+      .pipe(finalize(() => this.isSaving.set(false)))
+      .subscribe((result) => this.applyCategorySave(result));
+  }
+
+  protected resetForm(): void {
+    this.editingSlug.set(null);
+    this.categoryForm.setValue({ name: '', description: '' });
+    this.formError.set('');
+  }
+
+  protected confirmDelete(): void {
+    const target = this.deleteTarget();
+    if (target?.product_count !== 0) {
+      return;
+    }
+
+    this.isSaving.set(true);
     this.adminService
-      .getAdminCategories({ page })
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .deleteCategory(target.slug)
+      .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
-        next: (response) => {
-          this.categories.set(response.results);
-          this.totalCount.set(response.count);
+        next: () => {
+          this.deleteSlug.set(null);
+          this.statusMessage.set('Category deleted.');
+          this.loadCategories();
         },
-        error: () => this.error.set('Could not load categories.'),
+        error: () => this.formError.set('The category could not be deleted.'),
       });
   }
 
-  protected submit(): void {
-    this.formError.set('');
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-
-    const { name, description } = this.form.getRawValue();
-    this.submitting.set(true);
-    const slug = this.editingSlug();
-    const req = slug
-      ? this.adminService.updateCategory(slug, { name, description: description || undefined })
-      : this.adminService.createCategory({ name, description: description || undefined });
-
-    req.pipe(finalize(() => this.submitting.set(false))).subscribe({
-      next: () => { this.cancelEdit(); this.load(); },
-      error: () => this.formError.set('Could not save category.'),
-    });
+  private loadCategories(): void {
+    this.isLoading.set(true);
+    this.adminService
+      .getAdminCategories({ page: 1, page_size: 100 })
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (response) => this.categories.set(response.results),
+        error: () => this.formError.set('Categories could not be loaded.'),
+      });
   }
 
-  protected startEdit(cat: AdminCategory): void {
-    this.editingSlug.set(cat.slug);
-    this.form.setValue({ name: cat.name, description: cat.description });
-  }
+  private applyCategorySave(result: AdminCategorySaveResult): void {
+    if (result.status === 'invalid' || result.status === 'failed') {
+      this.formError.set(result.message);
+      return;
+    }
 
-  protected cancelEdit(): void {
-    this.editingSlug.set(null);
-    this.form.reset();
-  }
-
-  protected deleteCategory(cat: AdminCategory): void {
-    this.adminService.deleteCategory(cat.slug).subscribe({
-      next: () => this.categories.update((list) => list.filter((c) => c.id !== cat.id)),
-      error: () => this.error.set('Could not delete category.'),
-    });
+    this.statusMessage.set(result.message);
+    this.resetForm();
+    this.loadCategories();
   }
 }

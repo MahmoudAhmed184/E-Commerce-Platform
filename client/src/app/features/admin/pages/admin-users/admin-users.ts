@@ -1,166 +1,308 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { ChangeDetectionStrategy, Component, type OnInit, computed, inject } from '@angular/core';
 
-import { AdminService, AdminUser } from '../../services/admin.service';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import type { AdminUser } from '../../../../core/services/admin/admin.service';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
+import { DropdownMenuComponent } from '../../../../shared/components/dropdown-menu/dropdown-menu.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { SearchBarComponent } from '../../../../shared/components/search-bar/search-bar.component';
+import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
+import type { UiMenuItem, UiSortState, UiTableColumn } from '../../../../shared/components/ui.types';
+import { AdminUsersFacade } from '../../services/admin-users/admin-users.facade';
+
+interface UserTableColumn extends UiTableColumn {
+  ariaSort: 'ascending' | 'descending' | 'none' | null;
+  sortIcon: '↑' | '↓' | '';
+}
+
+interface UserTableRow {
+  user: AdminUser;
+  selected: boolean;
+  statusLabel: string;
+  joinedDate: string;
+}
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [FormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [AlertBannerComponent, CheckboxComponent, DropdownMenuComponent, EmptyStateComponent, PaginationComponent, SearchBarComponent, SkeletonLoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div>
-      <h2 class="text-xl font-semibold text-slate-900">Users</h2>
-
-      <!-- Search -->
-      <div class="mt-4 flex gap-3">
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          placeholder="Search by email or phone…"
-          class="w-72 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <button type="button"
-          class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          (click)="load()">Search</button>
-      </div>
-
-      <app-error-message [message]="error()" />
-
-      @if (isLoading()) {
-        <div class="mt-10 flex justify-center"><app-loading-spinner size="md" /></div>
-      } @else {
-        <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th class="px-4 py-3">Email</th>
-                <th class="px-4 py-3">Phone</th>
-                <th class="px-4 py-3">Role</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              @for (user of users(); track user.id) {
-                <tr class="hover:bg-slate-50">
-                  <td class="px-4 py-3 text-slate-900">{{ user.email }}</td>
-                  <td class="px-4 py-3 text-slate-500">{{ user.phone ?? '—' }}</td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-purple-100]="user.role === 'admin'"
-                      [class.text-purple-700]="user.role === 'admin'"
-                      [class.bg-slate-100]="user.role !== 'admin'"
-                      [class.text-slate-600]="user.role !== 'admin'">
-                      {{ user.role }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-green-100]="user.status === 'active'"
-                      [class.text-green-700]="user.status === 'active'"
-                      [class.bg-amber-100]="user.status === 'pending_approval'"
-                      [class.text-amber-700]="user.status === 'pending_approval'"
-                      [class.bg-red-100]="user.status === 'restricted' || user.status === 'soft_deleted'"
-                      [class.text-red-700]="user.status === 'restricted' || user.status === 'soft_deleted'">
-                      {{ user.status }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <div class="flex gap-2">
-                      @if (user.status === 'pending_approval') {
-                        <button type="button" (click)="approve(user)"
-                          class="text-xs font-medium text-green-600 hover:text-green-800">Approve</button>
-                      }
-                      @if (user.status === 'active') {
-                        <button type="button" (click)="restrict(user)"
-                          class="text-xs font-medium text-amber-600 hover:text-amber-800">Restrict</button>
-                      }
-                      @if (user.status !== 'soft_deleted') {
-                        <button type="button" (click)="softDelete(user)"
-                          class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No users found.</td></tr>
-              }
-            </tbody>
-          </table>
+    <section class="grid gap-lg">
+      <header class="grid gap-md lg:grid-cols-[var(--ui-layout-search-header-grid)] lg:items-end">
+        <div class="grid gap-xs">
+          <p class="type-label-sm text-text-muted">Admin</p>
+          <h2 class="type-heading-xl text-text-primary">Users</h2>
+          <p class="type-body-md text-text-secondary">Approve customers, restrict risky accounts, and keep admin access visible.</p>
         </div>
+        <app-search-bar
+          scope="User"
+          placeholder="Search by name, email, or phone"
+          [query]="query()"
+          [resultCount]="totalItems()"
+          [suggestions]="[]"
+          [loading]="isLoading()"
+          (queryChange)="setQuery($event)"
+          (submitted)="submitSearch()"
+          (cleared)="clearSearch()"
+        />
+      </header>
 
-        <!-- Pagination -->
-        @if (totalPages() > 1) {
-          <div class="mt-4 flex items-center gap-2 text-sm">
-            <button type="button" [disabled]="currentPage() === 1"
-              class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-              (click)="goToPage(currentPage() - 1)">← Prev</button>
-            <span class="text-slate-600">Page {{ currentPage() }} of {{ totalPages() }}</span>
-            <button type="button" [disabled]="currentPage() === totalPages()"
-              class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-              (click)="goToPage(currentPage() + 1)">Next →</button>
-          </div>
-        }
+      @if (statusMessage()) {
+        <app-alert-banner tone="success" title="User updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="clearStatusMessage()" />
       }
-    </div>
+      @if (errorMessage()) {
+        <app-alert-banner tone="error" title="User issue" [message]="errorMessage()" [dismissible]="true" (dismissed)="clearErrorMessage()" />
+      }
+
+      @if (!isLoading() && users().length === 0) {
+        <app-empty-state
+          type="admin"
+          title="No users found"
+          message="Clear search or wait for new customer registrations."
+          [action]="{ label: 'Clear search', variant: 'secondary' }"
+          (actionPressed)="clearSearch()"
+        />
+      } @else {
+        <section class="grid gap-md" aria-labelledby="users-table-title">
+          <div class="flex flex-wrap items-center justify-between gap-sm">
+            <h3 id="users-table-title" class="type-heading-md text-text-primary">User records</h3>
+            @if (selectedIds().length) {
+              <div class="flex flex-wrap items-center gap-xs rounded-md border-hairline border-border-default bg-surface-subtle p-xs">
+                <p class="px-xs type-body-sm text-text-secondary">{{ selectedIds().length }} selected</p>
+                @for (action of bulkActions; track action.id) {
+                  <button class="min-h-control-sm rounded-md border-hairline border-border-default bg-surface-raised px-sm type-label-sm interactive-transition hover:bg-surface-subtle focus-visible:focus-ring" type="button" [disabled]="action.disabled" (click)="handleBulkAction(action)">
+                    {{ action.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs">
+            @if (isLoading()) {
+              <div class="p-md">
+                <app-skeleton-loader shape="block" [count]="5" label="Loading users" />
+              </div>
+            } @else {
+              <table class="w-full min-w-container-md border-collapse text-start">
+                <caption class="sr-only">User management</caption>
+                <thead class="bg-surface-subtle text-text-secondary">
+                  <tr>
+                    <th class="p-sm text-start">
+                      <app-checkbox label="Select all users" [checked]="allUsersSelected()" (checkedChange)="toggleAllUsers($event)" />
+                    </th>
+                    @for (column of displayColumns(); track column.id) {
+                      <th class="p-sm text-start type-label-sm" [attr.aria-sort]="column.ariaSort">
+                        @if (column.sortable) {
+                          <button class="inline-flex items-center gap-2xs rounded-sm type-label-sm text-text-secondary interactive-transition hover:text-text-primary focus-visible:focus-ring" type="button" (click)="sortBy(column)">
+                            {{ column.header }}
+                            @if (column.sortIcon) {
+                              <span aria-hidden="true">{{ column.sortIcon }}</span>
+                            }
+                          </button>
+                        } @else {
+                          {{ column.header }}
+                        }
+                      </th>
+                    }
+                    <th class="p-sm text-end type-label-sm">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y-hairline divide-border-default">
+                  @for (row of userRows(); track row.user.id) {
+                    <tr class="interactive-transition hover:bg-surface-subtle">
+                      <td class="p-sm">
+                        <app-checkbox [label]="'Select ' + row.user.email" [checked]="row.selected" (checkedChange)="toggleUser(row.user.id, $event)" />
+                      </td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.full_name }}</td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.email }}</td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.phone ?? '—' }}</td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.role }}</td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.statusLabel }}</td>
+                      <td class="p-sm type-body-sm text-text-primary">{{ row.joinedDate }}</td>
+                      <td class="p-sm text-end">
+                        <app-dropdown-menu label="Row actions" [items]="rowActions" (selected)="handleRowAction(row.user.id, $event)" />
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </section>
+
+        <app-pagination [page]="page()" [pageSize]="pageSize" [totalItems]="totalItems()" [loading]="isLoading()" (pageChange)="setPage($event)" />
+      }
+    </section>
   `,
 })
 export class AdminUsersPage implements OnInit {
-  private readonly adminService = inject(AdminService);
+  private readonly adminUsers = inject(AdminUsersFacade);
 
-  protected readonly users = signal<AdminUser[]>([]);
-  protected readonly isLoading = signal(false);
-  protected readonly error = signal('');
-  protected readonly currentPage = signal(1);
-  protected readonly totalCount = signal(0);
-  protected readonly pageSize = 20;
-  protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
+  protected readonly pageSize = this.adminUsers.pageSize;
+  protected readonly columns: readonly UiTableColumn[] = [
+    { id: 'name', header: 'Name', sortable: true },
+    { id: 'email', header: 'Email', sortable: true },
+    { id: 'phone', header: 'Phone' },
+    { id: 'role', header: 'Role', sortable: true },
+    { id: 'status', header: 'Status', sortable: true },
+    { id: 'joined', header: 'Joined', sortable: true },
+  ];
+  protected readonly rowActions: readonly UiMenuItem[] = [
+    { id: 'approve-user', label: 'Approve user' },
+    { id: 'restrict-user', label: 'Restrict user' },
+    { id: 'delete-user', label: 'Delete user', destructive: true },
+  ];
+  protected readonly bulkActions: readonly UiMenuItem[] = [
+    { id: 'approve-selected-users', label: 'Approve selected' },
+    { id: 'restrict-selected-users', label: 'Restrict selected' },
+  ];
 
-  protected searchQuery = '';
+  protected readonly users = this.adminUsers.users;
+  protected readonly query = this.adminUsers.query;
+  protected readonly sort = this.adminUsers.sort;
+  protected readonly page = this.adminUsers.page;
+  protected readonly totalItems = this.adminUsers.totalItems;
+  protected readonly selectedIds = this.adminUsers.selectedIds;
+  protected readonly isLoading = this.adminUsers.isLoading;
+  protected readonly statusMessage = this.adminUsers.statusMessage;
+  protected readonly errorMessage = this.adminUsers.errorMessage;
 
-  ngOnInit(): void { this.load(); }
+  protected readonly sortedUsers = computed(() => sortUsers(this.users(), this.sort()));
+  protected readonly allUsersSelected = computed(() => this.sortedUsers().length > 0 && this.sortedUsers().every((user) => this.selectedIds().includes(user.id)));
+  protected readonly displayColumns = computed<readonly UserTableColumn[]>(() =>
+    this.columns.map((column) => ({
+      ...column,
+      ariaSort: columnAriaSort(column, this.sort()),
+      sortIcon: columnSortIcon(column, this.sort()),
+    })),
+  );
+  protected readonly userRows = computed<readonly UserTableRow[]>(() =>
+    this.sortedUsers().map((user) => ({
+      user,
+      selected: this.selectedIds().includes(user.id),
+      statusLabel: statusLabel(user.status),
+      joinedDate: formatDate(user.created_at),
+    })),
+  );
 
-  protected load(page = 1): void {
-    this.error.set('');
-    this.isLoading.set(true);
-    this.currentPage.set(page);
-    this.adminService
-      .getUsers({ search: this.searchQuery || undefined, page })
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: (res) => { this.users.set(res.results); this.totalCount.set(res.count); },
-        error: () => this.error.set('Could not load users.'),
-      });
+  ngOnInit(): void {
+    this.adminUsers.loadUsers();
   }
 
-  protected goToPage(page: number): void { this.load(page); }
-
-  protected approve(user: AdminUser): void {
-    this.adminService.approveUser(user.id).subscribe({
-      next: (updated) => this.updateUser(updated),
-      error: () => this.error.set('Could not approve user.'),
-    });
+  protected setQuery(query: string): void {
+    this.adminUsers.setQuery(query);
   }
 
-  protected restrict(user: AdminUser): void {
-    this.adminService.restrictUser(user.id).subscribe({
-      next: (updated) => this.updateUser(updated),
-      error: () => this.error.set('Could not restrict user.'),
-    });
+  protected submitSearch(): void {
+    this.adminUsers.submitSearch();
   }
 
-  protected softDelete(user: AdminUser): void {
-    this.adminService.softDeleteUser(user.id).subscribe({
-      next: (updated) => this.updateUser(updated),
-      error: () => this.error.set('Could not delete user.'),
-    });
+  protected clearSearch(): void {
+    this.adminUsers.clearSearch();
   }
 
-  private updateUser(updated: AdminUser): void {
-    this.users.update((list) => list.map((u) => (u.id === updated.id ? updated : u)));
+  protected setPage(page: number): void {
+    this.adminUsers.setPage(page);
   }
+
+  protected handleRowAction(userId: string, action: UiMenuItem): void {
+    this.adminUsers.runUserAction(userId, action.id);
+  }
+
+  protected handleBulkAction(action: UiMenuItem): void {
+    this.adminUsers.runBulkUserAction(action.id);
+  }
+
+  protected sortBy(column: UiTableColumn): void {
+    if (!column.sortable) {
+      return;
+    }
+    const direction = this.sort()?.columnId === column.id && this.sort()?.direction === 'asc' ? 'desc' : 'asc';
+    this.adminUsers.setSort({ columnId: column.id, direction });
+  }
+
+  protected toggleAllUsers(checked: boolean): void {
+    this.adminUsers.toggleAllUsers(
+      this.sortedUsers().map((user) => user.id),
+      checked,
+    );
+  }
+
+  protected toggleUser(userId: string, checked: boolean): void {
+    this.adminUsers.toggleUser(userId, checked);
+  }
+
+  protected clearStatusMessage(): void {
+    this.adminUsers.clearStatusMessage();
+  }
+
+  protected clearErrorMessage(): void {
+    this.adminUsers.clearErrorMessage();
+  }
+}
+
+function sortUsers(users: readonly AdminUser[], sort: UiSortState | null): readonly AdminUser[] {
+  if (!sort) {
+    return users;
+  }
+
+  return [...users].sort((left, right) => {
+    const leftValue = userSortValue(left, sort.columnId);
+    const rightValue = userSortValue(right, sort.columnId);
+    return sort.direction === 'asc' ? leftValue.localeCompare(rightValue) : rightValue.localeCompare(leftValue);
+  });
+}
+
+function userSortValue(user: AdminUser, columnId: string): string {
+  switch (columnId) {
+    case 'name':
+      return user.full_name;
+    case 'email':
+      return user.email;
+    case 'role':
+      return user.role;
+    case 'status':
+      return statusLabel(user.status);
+    case 'joined':
+      return user.created_at;
+    default:
+      return '';
+  }
+}
+
+function statusLabel(status: AdminUser['status']): string {
+  switch (status) {
+    case 'pending_approval':
+      return 'pending approval';
+    case 'soft_deleted':
+      return 'soft deleted';
+    default:
+      return status;
+  }
+}
+
+function columnAriaSort(column: UiTableColumn, sort: UiSortState | null): 'ascending' | 'descending' | 'none' | null {
+  if (!column.sortable) {
+    return null;
+  }
+  if (sort?.columnId !== column.id) {
+    return 'none';
+  }
+
+  return sort.direction === 'asc' ? 'ascending' : 'descending';
+}
+
+function columnSortIcon(column: UiTableColumn, sort: UiSortState | null): '↑' | '↓' | '' {
+  if (sort?.columnId !== column.id) {
+    return '';
+  }
+
+  return sort.direction === 'asc' ? '↑' : '↓';
+}
+
+function formatDate(value: string): string {
+  return value.slice(0, 10);
 }

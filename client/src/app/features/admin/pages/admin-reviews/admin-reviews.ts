@@ -1,127 +1,193 @@
-import { SlicePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 
-import { AdminService, AdminReview } from '../../services/admin.service';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { SearchBarComponent } from '../../../../shared/components/search-bar/search-bar.component';
+import type { UiReview } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import type { UiAction, UiMenuItem } from '../../../../shared/components/ui.types';
+import { AdminService, type AdminReview } from '../../../../core/services/admin/admin.service';
+import { ReviewCardComponent } from '../../../reviews/components/review-card/review-card.component';
+
+interface AdminReviewListItem {
+  review: UiReview;
+  moderationActions: readonly UiMenuItem[];
+}
 
 @Component({
   selector: 'app-admin-reviews',
   standalone: true,
-  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [AlertBannerComponent, AlertDialogComponent, EmptyStateComponent, ReviewCardComponent, SearchBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div>
-      <h2 class="text-xl font-semibold text-slate-900">Review Moderation</h2>
-      <app-error-message [message]="error()" />
-
-      @if (isLoading()) {
-        <div class="mt-10 flex justify-center"><app-loading-spinner size="md" /></div>
-      } @else {
-        <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th class="px-4 py-3">User</th>
-                <th class="px-4 py-3">Product</th>
-                <th class="px-4 py-3">Rating</th>
-                <th class="px-4 py-3">Comment</th>
-                <th class="px-4 py-3">Visible</th>
-                <th class="px-4 py-3">Date</th>
-                <th class="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              @for (review of reviews(); track review.id) {
-                <tr class="hover:bg-slate-50">
-                  <td class="px-4 py-3 text-slate-900">{{ review.user_name }}</td>
-                  <td class="px-4 py-3 text-slate-600">{{ review.product_name }}</td>
-                  <td class="px-4 py-3 text-amber-500">
-                    {{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}
-                  </td>
-                  <td class="max-w-xs px-4 py-3 text-slate-600 truncate">{{ review.comment ?? '—' }}</td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-green-100]="review.is_visible"
-                      [class.text-green-700]="review.is_visible"
-                      [class.bg-red-100]="!review.is_visible"
-                      [class.text-red-600]="!review.is_visible">
-                      {{ review.is_visible ? 'Visible' : 'Hidden' }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-500">{{ review.created_at | slice:0:10 }}</td>
-                  <td class="px-4 py-3">
-                    <div class="flex gap-2">
-                      @if (review.is_visible) {
-                        <button type="button" (click)="hide(review)"
-                          class="text-xs font-medium text-amber-600 hover:text-amber-800">Hide</button>
-                      }
-                      <button type="button" (click)="remove(review)"
-                        class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No reviews found.</td></tr>
-              }
-            </tbody>
-          </table>
+    <section class="grid gap-lg">
+      <header class="grid gap-md lg:grid-cols-[var(--ui-layout-search-header-grid)] lg:items-end">
+        <div class="grid gap-xs">
+          <p class="type-label-sm text-text-muted">Admin</p>
+          <h2 class="type-heading-xl text-text-primary">Review moderation</h2>
+          <p class="type-body-md text-text-secondary">Moderate review visibility according to marketplace policy and product context.</p>
         </div>
+        <app-search-bar
+          scope="Review"
+          placeholder="Search reviews"
+          [query]="query()"
+          [resultCount]="filteredReviews().length"
+          [suggestions]="[]"
+          [loading]="isLoading()"
+          (queryChange)="query.set($event)"
+          (cleared)="query.set('')"
+        />
+      </header>
 
-        @if (totalPages() > 1) {
-          <div class="mt-4 flex items-center gap-2 text-sm">
-            <button type="button" [disabled]="currentPage() === 1"
-              class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-              (click)="load(currentPage() - 1)">← Prev</button>
-            <span class="text-slate-600">Page {{ currentPage() }} of {{ totalPages() }}</span>
-            <button type="button" [disabled]="currentPage() === totalPages()"
-              class="rounded border border-slate-300 px-3 py-1 disabled:opacity-40 hover:bg-slate-50"
-              (click)="load(currentPage() + 1)">Next →</button>
-          </div>
-        }
+      @if (statusMessage()) {
+        <app-alert-banner tone="success" title="Review updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
       }
-    </div>
+      @if (errorMessage()) {
+        <app-alert-banner tone="error" title="Review issue" [message]="errorMessage()" [dismissible]="true" (dismissed)="errorMessage.set('')" />
+      }
+
+      @if (!isLoading() && filteredReviews().length === 0) {
+        <app-empty-state
+          type="reviews"
+          title="No reviews found"
+          message="Clear the search or wait for new review submissions."
+          [action]="{ label: 'Clear search', variant: 'secondary' }"
+          (actionPressed)="query.set('')"
+        />
+      } @else {
+        <div class="grid gap-md lg:grid-cols-2">
+          @for (item of reviewItems(); track item.review.id) {
+            <app-review-card
+              [review]="item.review"
+              [moderationActions]="item.moderationActions"
+              (moderationAction)="handleModeration($event.review.id, $event.action)"
+            />
+          }
+        </div>
+      }
+
+      <app-alert-dialog
+        [open]="!!deleteReviewId()"
+        title="Delete review"
+        description="Delete only reviews that violate moderation policy. Hidden reviews can still be restored later."
+        [destructive]="true"
+        [confirmAction]="deleteConfirmAction()"
+        [cancelAction]="{ label: 'Cancel', variant: 'secondary' }"
+        (confirmPressed)="confirmDelete()"
+        (cancelPressed)="deleteReviewId.set(null)"
+        (closed)="deleteReviewId.set(null)"
+      />
+    </section>
   `,
 })
 export class AdminReviewsPage implements OnInit {
   private readonly adminService = inject(AdminService);
 
-  protected readonly reviews = signal<AdminReview[]>([]);
+  protected readonly reviews = signal<readonly AdminReview[]>([]);
+  protected readonly query = signal('');
+  protected readonly statusMessage = signal('');
+  protected readonly errorMessage = signal('');
+  protected readonly deleteReviewId = signal<number | null>(null);
   protected readonly isLoading = signal(false);
-  protected readonly error = signal('');
-  protected readonly currentPage = signal(1);
-  protected readonly totalCount = signal(0);
-  protected readonly pageSize = 20;
-  protected readonly totalPages = () => Math.ceil(this.totalCount() / this.pageSize) || 1;
+  protected readonly isSaving = signal(false);
+  protected readonly filteredReviews = computed(() => {
+    const query = this.query().trim().toLowerCase();
+    return this.reviews()
+      .map(mapReview)
+      .filter((review) => !query || `${review.authorName} ${review.title ?? ''} ${review.body}`.toLowerCase().includes(query));
+  });
+  protected readonly reviewItems = computed<readonly AdminReviewListItem[]>(() =>
+    this.filteredReviews().map((review) => ({ review, moderationActions: reviewModerationActions(review) })),
+  );
+  protected readonly deleteConfirmAction = computed<UiAction>(() => ({ label: 'Delete review', variant: 'danger', loading: this.isSaving() }));
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.loadReviews();
+  }
 
-  protected load(page = 1): void {
-    this.error.set('');
-    this.isLoading.set(true);
-    this.currentPage.set(page);
+  protected handleModeration(reviewId: string, action: UiMenuItem): void {
+    const numericId = Number(reviewId);
+    if (action.id === 'hide-review') {
+      this.updateVisibility(numericId, false, 'Review hidden.');
+    } else if (action.id === 'show-review') {
+      this.updateVisibility(numericId, true, 'Review restored.');
+    } else if (action.id === 'delete-review') {
+      this.deleteReviewId.set(numericId);
+    }
+  }
+
+  protected confirmDelete(): void {
+    const id = this.deleteReviewId();
+    if (!id) {
+      return;
+    }
+
+    this.isSaving.set(true);
     this.adminService
-      .getReviews({ page })
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .deleteReview(id)
+      .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
-        next: (res) => { this.reviews.set(res.results); this.totalCount.set(res.count); },
-        error: () => this.error.set('Could not load reviews.'),
+        next: () => {
+          this.deleteReviewId.set(null);
+          this.statusMessage.set('Review deleted.');
+          this.loadReviews();
+        },
+        error: () => this.errorMessage.set('The review could not be deleted.'),
       });
   }
 
-  protected hide(review: AdminReview): void {
-    this.adminService.hideReview(review.id).subscribe({
-      next: (updated) =>
-        this.reviews.update((list) => list.map((r) => (r.id === updated.id ? updated : r))),
-      error: () => this.error.set('Could not hide review.'),
-    });
+  private loadReviews(): void {
+    this.errorMessage.set('');
+    this.isLoading.set(true);
+    this.adminService
+      .getReviews({ page: 1, page_size: 100 })
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (response) => this.reviews.set(response.results),
+        error: () => this.errorMessage.set('Reviews could not be loaded.'),
+      });
   }
 
-  protected remove(review: AdminReview): void {
-    this.adminService.deleteReview(review.id).subscribe({
-      next: () => this.reviews.update((list) => list.filter((r) => r.id !== review.id)),
-      error: () => this.error.set('Could not delete review.'),
+  private updateVisibility(id: number, visible: boolean, successMessage: string): void {
+    this.errorMessage.set('');
+    this.isSaving.set(true);
+    const request = visible ? this.adminService.unhideReview(id) : this.adminService.hideReview(id);
+    request.pipe(finalize(() => this.isSaving.set(false))).subscribe({
+      next: () => {
+        this.statusMessage.set(successMessage);
+        this.loadReviews();
+      },
+      error: () => this.errorMessage.set('The review could not be updated.'),
     });
   }
+}
+
+function mapReview(review: AdminReview): UiReview {
+  return {
+    id: String(review.id),
+    authorName: review.user_name,
+    createdAt: review.created_at,
+    rating: review.rating,
+    title: review.product_name,
+    body: nonEmptyText(review.comment, 'No written comment.'),
+    moderationState: review.is_visible ? 'visible' : 'hidden',
+  };
+}
+
+function reviewModerationActions(review: UiReview): readonly UiMenuItem[] {
+  const hidden = review.moderationState === 'hidden';
+  return [
+    { id: hidden ? 'show-review' : 'hide-review', label: hidden ? 'Show review' : 'Hide review' },
+    { id: 'delete-review', label: 'Delete review', destructive: true },
+  ];
+}
+
+function nonEmptyText(value: string | null | undefined, fallback: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  return trimmed;
 }
