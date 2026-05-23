@@ -2,6 +2,17 @@ import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import {
+  LucideCable,
+  LucideDumbbell,
+  LucideShoppingBasket,
+  LucideSmartphone,
+  LucideUtensilsCrossed,
+  LucideWatch,
+  LucideShieldCheck,
+  LucideTruck,
+  LucidePackageCheck,
+} from '@lucide/angular';
 
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
@@ -26,6 +37,15 @@ const HOME_CATEGORY_LIMIT = 6;
     CurrencyPipe,
     EmptyStateComponent,
     ErrorStateComponent,
+    LucideCable,
+    LucideDumbbell,
+    LucideShoppingBasket,
+    LucideSmartphone,
+    LucideUtensilsCrossed,
+    LucideWatch,
+    LucideShieldCheck,
+    LucideTruck,
+    LucidePackageCheck,
     ProductCardComponent,
     RouterLink,
     SkeletonLoaderComponent,
@@ -33,8 +53,8 @@ const HOME_CATEGORY_LIMIT = 6;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-transparent">
-      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-2xl px-gutter-xs py-lg md:px-gutter-sm lg:px-gutter-lg">
+    <main class="bg-neutral-50">
+      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-16 px-gutter-xs py-8 md:px-gutter-sm lg:px-gutter-lg">
         @if (state().kind === 'loading') {
           <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-home-hero-grid)]" aria-label="Loading storefront">
             <div class="grid content-center gap-md">
@@ -56,162 +76,177 @@ const HOME_CATEGORY_LIMIT = 6;
             (retryPressed)="load()"
           />
         } @else if (loaded(); as data) {
+          <!-- ═══ HERO SECTION ═══ -->
           @if (data.featured[0]; as heroProduct) {
-            <section class="glass-panel glass-depth-floating glass-border-shimmer overflow-hidden rounded-lg" aria-labelledby="home-title">
-              <div class="grid gap-xl p-md lg:grid-cols-[var(--ui-layout-home-hero-grid)] lg:items-center lg:p-xl">
-                <div class="grid gap-lg">
-                  <div class="flex flex-wrap items-center gap-xs">
-                    <app-badge tone="accent" label="Featured collection" />
-                    <span class="type-label-sm text-text-secondary">Ready to shop</span>
-                  </div>
+            <section class="min-h-[520px] overflow-hidden border-b border-neutral-100 bg-white rounded-2xl" aria-labelledby="home-title">
+              <div class="grid gap-8 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:p-10">
+                <!-- Left column -->
+                <div class="grid gap-6">
+                  <p class="text-xs font-medium uppercase tracking-widest text-indigo-600">
+                    Featured collection · Ready to shop
+                  </p>
 
-                  <div class="grid gap-sm">
-                    <h1 id="home-title" class="max-w-[var(--ui-container-md)] type-heading-xl text-text-primary md:type-display-lg">
-                      Shop reliable products for everyday life.
-                    </h1>
-                    <p class="max-w-[var(--ui-container-md)] type-body-lg text-text-secondary">
-                      Compare clear product details, see current availability, and move from cart to delivery with a checkout flow built for real orders.
-                    </p>
-                  </div>
+                  <h1 id="home-title" class="max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-neutral-950 md:text-5xl">
+                    Shop reliable products for
+                    <span class="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">everyday life.</span>
+                  </h1>
 
-                  <div class="flex flex-wrap gap-sm">
+                  <p class="max-w-md text-base leading-relaxed text-neutral-500">
+                    Compare clear product details, see current availability, and move from cart to delivery with a checkout flow built for real orders.
+                  </p>
+
+                  <div class="flex flex-wrap items-center gap-3">
                     <a
-                      class="inline-flex min-h-control-lg items-center rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-lg py-sm type-label-lg text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
+                      class="inline-flex h-10 items-center rounded-lg bg-indigo-600 px-6 text-sm font-medium text-white shadow-sm transition-all duration-150 ease-out hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                       routerLink="/products"
                     >
                       Shop products
                     </a>
                     <a
-                      class="glass-panel glass-depth-raised inline-flex min-h-control-lg items-center rounded-md px-lg py-sm type-label-lg text-text-primary interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
+                      class="inline-flex h-10 items-center rounded-lg px-6 text-sm font-medium text-neutral-600 transition-all duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                       [routerLink]="['/products', heroProduct.slug]"
                     >
-                      View featured product
+                      View featured →
                     </a>
                   </div>
 
-                  <dl class="grid gap-sm sm:grid-cols-3" aria-label="Storefront service details">
-                    <div class="border-t border-glass-border pt-sm">
-                      <dt class="type-label-sm text-text-muted">Inventory</dt>
-                      <dd class="mt-2xs type-heading-sm text-text-primary">Verified at checkout</dd>
+                  <!-- Trust strip -->
+                  <div class="flex flex-wrap items-center gap-6 pt-2">
+                    <div class="flex items-center gap-1.5">
+                      <svg lucideShieldCheck class="h-3.5 w-3.5 text-indigo-500" aria-hidden="true"></svg>
+                      <span class="text-xs text-neutral-500">Verified inventory</span>
                     </div>
-                    <div class="border-t border-glass-border pt-sm">
-                      <dt class="type-label-sm text-text-muted">Checkout</dt>
-                      <dd class="mt-2xs type-heading-sm text-text-primary">Review, delivery, payment</dd>
+                    <div class="h-3 w-px bg-neutral-200" aria-hidden="true"></div>
+                    <div class="flex items-center gap-1.5">
+                      <svg lucidePackageCheck class="h-3.5 w-3.5 text-indigo-500" aria-hidden="true"></svg>
+                      <span class="text-xs text-neutral-500">Secure checkout</span>
                     </div>
-                    <div class="border-t border-glass-border pt-sm">
-                      <dt class="type-label-sm text-text-muted">Support</dt>
-                      <dd class="mt-2xs type-heading-sm text-text-primary">Track every order</dd>
+                    <div class="h-3 w-px bg-neutral-200" aria-hidden="true"></div>
+                    <div class="flex items-center gap-1.5">
+                      <svg lucideTruck class="h-3.5 w-3.5 text-indigo-500" aria-hidden="true"></svg>
+                      <span class="text-xs text-neutral-500">Order tracking</span>
                     </div>
-                  </dl>
+                  </div>
                 </div>
 
-                <div class="grid gap-sm">
-                  <a class="glass-panel glass-depth-raised group block overflow-hidden rounded-lg focus-visible:focus-ring" [routerLink]="['/products', heroProduct.slug]">
-                    <img class="aspect-[var(--ui-ratio-hero-media)] max-h-[var(--ui-layout-home-hero-media-max-block)] w-full object-cover interactive-transition group-hover:scale-[var(--ui-scale-hover-subtle)]" [src]="heroProduct.imageUrl" [alt]="heroProduct.name" />
+                <!-- Right column: Product showcase card -->
+                <div class="overflow-hidden rounded-2xl bg-neutral-50 shadow-sm">
+                  <a class="block overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-t-2xl" [routerLink]="['/products', heroProduct.slug]">
+                    <img
+                      class="h-80 w-full object-contain transition-transform duration-300 hover:scale-[1.03]"
+                      [src]="heroProduct.imageUrl"
+                      [alt]="heroProduct.name"
+                    />
                   </a>
-
-                  <div class="glass-panel glass-depth-raised grid gap-2xs rounded-md p-sm">
-                    <p class="type-label-sm text-text-muted">{{ heroProduct.category }}</p>
-                    <div class="flex flex-wrap items-center justify-between gap-sm">
-                      <div class="grid gap-2xs">
-                        <h2 class="type-heading-sm text-text-primary">{{ heroProduct.name }}</h2>
-                        <p class="type-body-sm text-text-secondary">{{ heroProduct.price | currency: heroProduct.currency }}</p>
-                      </div>
-                      <app-badge
-                        [tone]="heroStockBadge().tone"
-                        [label]="heroStockBadge().label"
-                      />
+                  <div class="flex items-center justify-between gap-4 border-t border-neutral-200 p-4">
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold text-neutral-900 truncate">{{ heroProduct.name }}</p>
+                      <p class="font-mono text-sm text-neutral-500">{{ heroProduct.price | currency: heroProduct.currency }}</p>
                     </div>
+                    <app-badge
+                      [tone]="heroStockBadge().tone"
+                      [label]="heroStockBadge().label"
+                    />
                   </div>
                 </div>
               </div>
             </section>
           }
 
-          <section class="grid gap-md overflow-hidden rounded-lg border-hairline border-glass-border bg-[radial-gradient(circle_at_15%_10%,var(--ui-color-aurora-violet),transparent_35%),radial-gradient(circle_at_85%_20%,var(--ui-color-aurora-cyan),transparent_32%),radial-gradient(circle_at_50%_110%,var(--ui-color-aurora-emerald),transparent_40%),var(--ui-color-glass-white-6)] p-md shadow-glass-floating backdrop-blur-xl lg:p-lg" aria-labelledby="featured-title">
-            <div class="grid gap-md">
-              <div class="flex flex-wrap items-end justify-between gap-md">
-                <div class="grid gap-2xs">
-                  <p class="type-label-sm text-text-muted">Featured products</p>
-                  <h2 id="featured-title" class="type-heading-lg text-text-primary">Products worth a closer look</h2>
-                  <p class="max-w-[var(--ui-container-md)] type-body-sm text-text-secondary">Compare price, availability, and customer feedback before adding items to your cart.</p>
-                </div>
-                <a class="type-label-md text-text-info focus-visible:focus-ring" routerLink="/products">See all products</a>
+          <!-- ═══ FEATURED PRODUCTS SECTION ═══ -->
+          <section class="grid gap-6" aria-labelledby="featured-title">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div class="grid gap-1">
+                <p class="text-xs font-medium uppercase tracking-widest text-neutral-400">Featured products</p>
+                <h2 id="featured-title" class="text-3xl font-bold tracking-tight text-neutral-950">Products worth a closer look</h2>
+                <p class="max-w-lg text-sm text-neutral-500">Compare price, availability, and customer feedback before adding items to your cart.</p>
               </div>
-
-              @if (data.featured.length || data.newArrivals.length) {
-                <app-tabs [tabs]="collectionTabs" [activeId]="collectionTab()" (activeIdChange)="setCollectionTab($event)">
-                  @switch (collectionTab()) {
-                    @case ('new-arrivals') {
-                      <div class="grid gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        @for (product of data.newArrivals; track product.id) {
-                          <app-product-card
-                            [product]="product"
-                            [outOfStock]="product.stockStatus === 'out-of-stock'"
-                            [adding]="addingProductId() === product.id"
-                            (addToCart)="quickAdd(product)"
-                          />
-                        } @empty {
-                          <app-empty-state type="generic" title="No new arrivals" message="Recently published products will appear here." />
-                        }
-                      </div>
-                    }
-                    @default {
-                      <div class="grid gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        @for (product of data.featured; track product.id) {
-                          <app-product-card
-                            [product]="product"
-                            [outOfStock]="product.stockStatus === 'out-of-stock'"
-                            [adding]="addingProductId() === product.id"
-                            (addToCart)="quickAdd(product)"
-                          />
-                        } @empty {
-                          <app-empty-state type="generic" title="No featured products" message="Featured products will appear when the catalog is updated." />
-                        }
-                      </div>
-                      }
-                  }
-                </app-tabs>
-              } @else {
-                <app-empty-state
-                  type="generic"
-                  title="No featured products"
-                  message="Browse the full catalog for currently available items."
-                  [action]="{ label: 'Shop products', variant: 'primary' }"
-                  (actionPressed)="goToProducts()"
-                />
-              }
+              <a class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm" routerLink="/products">See all products</a>
             </div>
+
+            @if (data.featured.length || data.newArrivals.length) {
+              <app-tabs [tabs]="collectionTabs" [activeId]="collectionTab()" (activeIdChange)="setCollectionTab($event)">
+                @switch (collectionTab()) {
+                  @case ('new-arrivals') {
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      @for (product of data.newArrivals; track product.id) {
+                        <app-product-card
+                          [product]="product"
+                          [outOfStock]="product.stockStatus === 'out-of-stock'"
+                          [adding]="addingProductId() === product.id"
+                          (addToCart)="quickAdd(product)"
+                        />
+                      } @empty {
+                        <app-empty-state type="generic" title="No new arrivals" message="Recently published products will appear here." />
+                      }
+                    </div>
+                  }
+                  @default {
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      @for (product of data.featured; track product.id) {
+                        <app-product-card
+                          [product]="product"
+                          [outOfStock]="product.stockStatus === 'out-of-stock'"
+                          [adding]="addingProductId() === product.id"
+                          (addToCart)="quickAdd(product)"
+                        />
+                      } @empty {
+                        <app-empty-state type="generic" title="No featured products" message="Featured products will appear when the catalog is updated." />
+                      }
+                    </div>
+                    }
+                }
+              </app-tabs>
+            } @else {
+              <app-empty-state
+                type="generic"
+                title="No featured products"
+                message="Browse the full catalog for currently available items."
+                [action]="{ label: 'Shop products', variant: 'primary' }"
+                (actionPressed)="goToProducts()"
+              />
+            }
           </section>
 
-          <section class="grid gap-md" aria-labelledby="category-title">
-            <div class="flex flex-wrap items-end justify-between gap-md">
-              <div class="grid gap-2xs">
-                <p class="type-label-sm text-text-muted">Departments</p>
-                <h2 id="category-title" class="type-heading-lg text-text-primary">Shop by department</h2>
-                <p class="max-w-[var(--ui-container-md)] type-body-sm text-text-secondary">Find products organized by category, with item counts and availability kept easy to scan.</p>
+          <!-- ═══ DEPARTMENT / CATEGORY CARDS ═══ -->
+          <section class="grid gap-6" aria-labelledby="category-title">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div class="grid gap-1">
+                <p class="text-xs font-medium uppercase tracking-widest text-neutral-400">Departments</p>
+                <h2 id="category-title" class="text-3xl font-bold tracking-tight text-neutral-950">Shop by department</h2>
+                <p class="max-w-lg text-sm text-neutral-500">Find products organized by category, with item counts and availability kept easy to scan.</p>
               </div>
-              <a class="type-label-md text-text-info focus-visible:focus-ring" routerLink="/products">Browse all categories</a>
+              <a class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm" routerLink="/products">Browse all categories</a>
             </div>
 
-            <div class="grid gap-md sm:grid-cols-2 lg:grid-cols-3" aria-label="Featured categories">
-              @for (category of visibleCategories(); track category.id; let index = $index) {
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Featured categories">
+              @for (category of visibleCategories(); track category.id) {
                 <a
-                  [class]="categoryCardClasses(index)"
+                  class="group grid min-h-[11rem] content-between gap-4 rounded-xl border border-neutral-100 bg-white p-5 shadow-sm transition-all duration-150 cursor-pointer hover:border-indigo-200 hover:shadow-[0_2px_12px_rgba(79,70,229,0.07)] focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                   [routerLink]="['/products']"
                   [queryParams]="{ category: category.slug }"
                 >
-                  <div class="grid gap-sm">
-                    <p class="type-label-sm text-text-muted">0{{ index + 1 }}</p>
-                    <div class="grid gap-2xs">
-                      <span class="type-heading-sm text-text-primary">{{ category.name }}</span>
-                      <span class="type-body-sm text-text-secondary">{{ category.description || 'Shop available products in this department.' }}</span>
+                  <div class="grid gap-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-indigo-500" aria-hidden="true">
+                        @switch (categoryIcon(category.name)) {
+                          @case ('utensils-crossed') { <svg lucideUtensilsCrossed class="h-5 w-5"></svg> }
+                          @case ('shopping-basket') { <svg lucideShoppingBasket class="h-5 w-5"></svg> }
+                          @case ('dumbbell') { <svg lucideDumbbell class="h-5 w-5"></svg> }
+                          @case ('smartphone') { <svg lucideSmartphone class="h-5 w-5"></svg> }
+                          @case ('cable') { <svg lucideCable class="h-5 w-5"></svg> }
+                          @case ('watch') { <svg lucideWatch class="h-5 w-5"></svg> }
+                          @default { <svg lucideShoppingBasket class="h-5 w-5"></svg> }
+                        }
+                      </span>
+                      <app-badge tone="secondary" [label]="category.productCount + ' products'" />
+                    </div>
+                    <div class="grid gap-1">
+                      <span class="text-base font-semibold text-neutral-900">{{ category.name }}</span>
+                      <span class="text-sm leading-relaxed text-neutral-500 line-clamp-2">{{ category.description || 'Shop available products in this department.' }}</span>
                     </div>
                   </div>
-                  <div class="flex items-center justify-between gap-sm">
-                    <span class="type-label-sm text-text-muted">{{ category.productCount }} products</span>
-                    <span class="type-label-sm text-text-primary">Shop category</span>
-                  </div>
+                  <span class="text-xs font-medium text-indigo-600 transition-transform duration-150 group-hover:translate-x-1 inline-block">Shop category →</span>
                 </a>
               } @empty {
                 <app-empty-state type="generic" title="No categories available" message="Departments will appear when products are assigned to active categories." />
@@ -219,34 +254,35 @@ const HOME_CATEGORY_LIMIT = 6;
             </div>
 
             @if (remainingCategoryCount() > 0) {
-              <p class="type-body-sm text-text-muted">
+              <p class="text-sm text-neutral-400">
                 Showing the {{ visibleCategories().length }} largest departments. {{ remainingCategoryCount() }} more are available in product filters.
               </p>
             }
           </section>
 
-          <section class="grid gap-lg" aria-labelledby="category-shelves-title">
-            <div class="flex flex-wrap items-end justify-between gap-md">
-              <div class="grid gap-2xs">
-                <p class="type-label-sm text-text-muted">Category picks</p>
-                <h2 id="category-shelves-title" class="type-heading-lg text-text-primary">Popular departments</h2>
-                <p class="max-w-[var(--ui-container-md)] type-body-sm text-text-secondary">Browse a short selection from active departments with products ready to review.</p>
+          <!-- ═══ CATEGORY SHELVES (Popular departments) ═══ -->
+          <section class="grid gap-8" aria-labelledby="category-shelves-title">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div class="grid gap-1">
+                <p class="text-xs font-medium uppercase tracking-widest text-neutral-400">Category picks</p>
+                <h2 id="category-shelves-title" class="text-3xl font-bold tracking-tight text-neutral-950">Popular departments</h2>
+                <p class="max-w-lg text-sm text-neutral-500">Browse a short selection from active departments with products ready to review.</p>
               </div>
-              <a class="type-label-md text-text-info focus-visible:focus-ring" routerLink="/products">See all products</a>
+              <a class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm" routerLink="/products">See all products</a>
             </div>
 
-            <div class="grid gap-xl">
+            <div class="grid gap-12">
               @for (shelf of data.categoryShelves; track shelf.id) {
-                <section class="grid gap-sm" [attr.aria-labelledby]="'category-shelf-title-' + shelf.id">
-                  <div class="flex flex-wrap items-end justify-between gap-md">
-                    <div class="grid gap-2xs">
-                      <h3 [id]="'category-shelf-title-' + shelf.id" class="type-heading-md text-text-primary">{{ shelf.category.name }}</h3>
-                      <p class="max-w-[var(--ui-container-md)] type-body-sm text-text-secondary">
+                <section class="grid gap-4" [attr.aria-labelledby]="'category-shelf-title-' + shelf.id">
+                  <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div class="grid gap-1">
+                      <h3 [id]="'category-shelf-title-' + shelf.id" class="text-xl font-semibold tracking-tight text-neutral-950">{{ shelf.category.name }}</h3>
+                      <p class="max-w-lg text-sm text-neutral-500">
                         {{ shelf.category.description || 'A focused selection from this department.' }}
                       </p>
                     </div>
                     <a
-                      class="type-label-md text-text-info focus-visible:focus-ring"
+                      class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm"
                       routerLink="/products"
                       [queryParams]="{ category: shelf.category.slug }"
                     >
@@ -254,7 +290,7 @@ const HOME_CATEGORY_LIMIT = 6;
                     </a>
                   </div>
 
-                  <div class="grid gap-md sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @for (product of shelf.products; track product.id) {
                       <app-product-card
                         [product]="product"
@@ -274,7 +310,7 @@ const HOME_CATEGORY_LIMIT = 6;
           </section>
 
           @if (statusMessage()) {
-            <p class="glass-panel glass-depth-raised rounded-md p-sm type-body-sm text-text-success" role="status">
+            <p class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">
               {{ statusMessage() }}
             </p>
           }
@@ -349,34 +385,24 @@ export class HomePage implements OnInit {
     this.collectionTab.set(value === 'new-arrivals' ? 'new-arrivals' : 'featured');
   }
 
-  protected categoryCardClasses(index: number): string {
-    const accents = ['border-iridescent-violet/70', 'border-iridescent-cyan/70', 'border-iridescent-emerald/70'] as const;
-    const accent = accents[index % accents.length] ?? accents[0];
-
-    return [
-      'glass-panel',
-      'glass-depth-raised',
-      'grid',
-      'min-h-[11rem]',
-      'content-between',
-      'gap-md',
-      'rounded-md',
-      'border-t-2',
-      accent,
-      'p-md',
-      'interactive-transition',
-      'hover:shadow-glass-floating',
-      'focus-visible:focus-ring',
-    ].join(' ');
+  protected categoryIcon(name: string): string {
+    const lower = name.toLowerCase();
+    if (lower.includes('kitchen')) return 'utensils-crossed';
+    if (lower.includes('grocer')) return 'shopping-basket';
+    if (lower.includes('sport')) return 'dumbbell';
+    if (lower.includes('smartphone') || lower.includes('phone')) return 'smartphone';
+    if (lower.includes('mobile') || lower.includes('accessor')) return 'cable';
+    if (lower.includes('watch')) return 'watch';
+    return 'shopping-basket';
   }
 }
 
-function productStockBadge(status: CatalogProduct['stockStatus']): { tone: 'warning' | 'accent' | 'success'; label: string } {
+function productStockBadge(status: CatalogProduct['stockStatus']): { tone: 'warning' | 'info' | 'success'; label: string } {
   switch (status) {
     case 'out-of-stock':
       return { tone: 'warning', label: 'Out of stock' };
     case 'low-stock':
-      return { tone: 'accent', label: 'Low stock' };
+      return { tone: 'info', label: 'Low stock' };
     case 'in-stock':
       return { tone: 'success', label: 'Ready to ship' };
   }
