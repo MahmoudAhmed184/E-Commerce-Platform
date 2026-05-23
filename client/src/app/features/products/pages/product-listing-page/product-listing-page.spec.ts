@@ -1,21 +1,21 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { ProductListPage } from './product-list';
+import { ProductListingPage } from './product-listing-page';
 
-describe('ProductListPage', () => {
-  let component: ProductListPage;
-  let fixture: ComponentFixture<ProductListPage>;
+describe('ProductListingPage', () => {
+  let component: ProductListingPage;
+  let fixture: ComponentFixture<ProductListingPage>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProductListPage],
+      imports: [ProductListingPage],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ProductListPage);
+    fixture = TestBed.createComponent(ProductListingPage);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -1,15 +1,12 @@
-import { Routes } from '@angular/router';
-
-import { ProductDetailPage } from './pages/product-detail/product-detail';
-import { ProductListPage } from './pages/product-list/product-list';
+import type { Routes } from '@angular/router';
 
 export const PRODUCTS_ROUTES: Routes = [
   {
     path: '',
-    component: ProductListPage,
+    loadComponent: () => import('./pages/product-listing-page/product-listing-page').then((m) => m.ProductListingPage),
   },
   {
     path: ':slug',
-    component: ProductDetailPage,
+    loadComponent: () => import('./pages/product-detail-page/product-detail-page').then((m) => m.ProductDetailPage),
   },
 ];

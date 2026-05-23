@@ -1,8 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { Product } from '../../services/product';
-import { ProductCardComponent } from './product-card';
+import type { UiProductCardProduct } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import { ProductCardComponent } from './product-card.component';
 
 describe('ProductCardComponent', () => {
   let component: ProductCardComponent;
@@ -11,31 +13,21 @@ describe('ProductCardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProductCardComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProductCardComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('product', {
-      id: 1,
+      id: '1',
       name: 'Test Product',
       slug: 'test-product',
-      description: 'A product for tests',
-      price: '10.00',
-      stock: 3,
-      availability: 'in_stock',
-      average_rating: 0,
-      review_count: 0,
-      category: {
-        id: 1,
-        name: 'Category',
-        slug: 'category',
-        description: '',
-        product_count: 1,
-      },
-      images: [],
-      primary_image: null,
-    } satisfies Product);
+      category: 'Category',
+      imageUrl: '/product.png',
+      price: 10,
+      currency: 'USD',
+      stockStatus: 'in-stock',
+    } satisfies UiProductCardProduct);
     await fixture.whenStable();
   });
 
