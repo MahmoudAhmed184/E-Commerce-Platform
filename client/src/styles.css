@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 @import 'tailwindcss';
 @import './styles/tokens.css';
 
@@ -7,27 +8,6 @@
   --font-sans: var(--ui-font-family-sans);
   --font-mono: var(--ui-font-family-mono);
 
-  --color-obsidian: var(--ui-color-obsidian);
-  --color-obsidian-700: var(--ui-color-obsidian-700);
-  --color-obsidian-800: var(--ui-color-obsidian-800);
-  --color-obsidian-900: var(--ui-color-obsidian-900);
-  --color-obsidian-950: var(--ui-color-obsidian-950);
-  --color-glass-white-6: var(--ui-color-glass-white-6);
-  --color-glass-white-12: var(--ui-color-glass-white-12);
-  --color-glass-white-20: var(--ui-color-glass-white-20);
-  --color-glass-ink-55: var(--ui-color-glass-ink-55);
-  --color-glass-ink-72: var(--ui-color-glass-ink-72);
-  --color-glass-border: var(--ui-glass-border-color);
-  --color-iridescent-violet: var(--ui-color-iridescent-violet);
-  --color-iridescent-cyan: var(--ui-color-iridescent-cyan);
-  --color-iridescent-emerald: var(--ui-color-iridescent-emerald);
-  --color-aurora-violet: var(--ui-color-aurora-violet);
-  --color-aurora-cyan: var(--ui-color-aurora-cyan);
-  --color-aurora-emerald: var(--ui-color-aurora-emerald);
-  --color-success-neon: var(--ui-color-success-neon);
-  --color-warning-neon: var(--ui-color-warning-neon);
-  --color-error-neon: var(--ui-color-error-neon);
-  --color-info-neon: var(--ui-color-info-neon);
   --color-neutral-0: var(--ui-color-neutral-0);
   --color-neutral-50: var(--ui-color-neutral-50);
   --color-neutral-100: var(--ui-color-neutral-100);
@@ -40,33 +20,39 @@
   --color-neutral-800: var(--ui-color-neutral-800);
   --color-neutral-900: var(--ui-color-neutral-900);
   --color-neutral-950: var(--ui-color-neutral-950);
-  --color-primary-50: var(--ui-color-primary-50);
-  --color-primary-100: var(--ui-color-primary-100);
-  --color-primary-600: var(--ui-color-primary-600);
-  --color-primary-700: var(--ui-color-primary-700);
-  --color-primary-900: var(--ui-color-primary-900);
-  --color-secondary-50: var(--ui-color-secondary-50);
-  --color-secondary-600: var(--ui-color-secondary-600);
-  --color-secondary-700: var(--ui-color-secondary-700);
-  --color-secondary-900: var(--ui-color-secondary-900);
-  --color-accent-50: var(--ui-color-accent-50);
-  --color-accent-600: var(--ui-color-accent-600);
-  --color-accent-700: var(--ui-color-accent-700);
-  --color-accent-900: var(--ui-color-accent-900);
-  --color-success-50: var(--ui-color-success-50);
-  --color-success-600: var(--ui-color-success-600);
-  --color-success-700: var(--ui-color-success-700);
-  --color-warning-50: var(--ui-color-warning-50);
-  --color-warning-400: var(--ui-color-warning-400);
-  --color-warning-600: var(--ui-color-warning-600);
-  --color-warning-700: var(--ui-color-warning-700);
-  --color-error-50: var(--ui-color-error-50);
-  --color-error-600: var(--ui-color-error-600);
-  --color-error-700: var(--ui-color-error-700);
-  --color-error-900: var(--ui-color-error-900);
-  --color-info-50: var(--ui-color-info-50);
-  --color-info-600: var(--ui-color-info-600);
-  --color-info-700: var(--ui-color-info-700);
+
+  --color-indigo-50: var(--ui-color-indigo-50);
+  --color-indigo-100: var(--ui-color-indigo-100);
+  --color-indigo-200: var(--ui-color-indigo-200);
+  --color-indigo-400: var(--ui-color-indigo-400);
+  --color-indigo-500: var(--ui-color-indigo-500);
+  --color-indigo-600: var(--ui-color-indigo-600);
+  --color-indigo-700: var(--ui-color-indigo-700);
+  --color-indigo-800: var(--ui-color-indigo-800);
+  --color-indigo-900: var(--ui-color-indigo-900);
+
+  --color-emerald-50: var(--ui-color-emerald-50);
+  --color-emerald-200: var(--ui-color-emerald-200);
+  --color-emerald-600: var(--ui-color-emerald-600);
+  --color-emerald-700: var(--ui-color-emerald-700);
+
+  --color-amber-50: var(--ui-color-amber-50);
+  --color-amber-200: var(--ui-color-amber-200);
+  --color-amber-500: var(--ui-color-amber-500);
+  --color-amber-600: var(--ui-color-amber-600);
+  --color-amber-700: var(--ui-color-amber-700);
+
+  --color-red-50: var(--ui-color-red-50);
+  --color-red-200: var(--ui-color-red-200);
+  --color-red-600: var(--ui-color-red-600);
+  --color-red-700: var(--ui-color-red-700);
+
+  /* Legacy semantic color aliases — keep for existing component class references */
+  --color-glass-white-6: var(--ui-color-glass-white-6);
+  --color-glass-white-12: var(--ui-color-glass-white-12);
+  --color-glass-white-20: var(--ui-color-glass-white-20);
+  --color-glass-border: var(--ui-glass-border-color);
+
   --color-surface-page: var(--ui-color-surface-page);
   --color-surface-raised: var(--ui-color-surface-raised);
   --color-surface-subtle: var(--ui-color-surface-subtle);
@@ -192,6 +178,7 @@
   --radius-sm: var(--ui-radius-sm);
   --radius-md: var(--ui-radius-md);
   --radius-lg: var(--ui-radius-lg);
+  --radius-xl: var(--ui-radius-xl);
   --radius-full: var(--ui-radius-full);
 
   --shadow-none: var(--ui-shadow-none);
@@ -199,6 +186,7 @@
   --shadow-sm: var(--ui-shadow-sm);
   --shadow-md: var(--ui-shadow-md);
   --shadow-lg: var(--ui-shadow-lg);
+  --shadow-xl: var(--ui-shadow-xl);
   --shadow-glass-flat: var(--ui-glass-shadow-flat);
   --shadow-glass-raised: var(--ui-glass-shadow-raised);
   --shadow-glass-floating: var(--ui-glass-shadow-floating);
@@ -213,21 +201,17 @@
   --duration-toast: var(--ui-duration-toast);
   --duration-glass-reveal: var(--ui-duration-glass-reveal);
   --duration-glass-shimmer: var(--ui-duration-glass-shimmer);
-  --duration-aurora-drift: var(--ui-duration-aurora-drift);
   --ease-standard: var(--ui-ease-standard);
   --ease-enter: var(--ui-ease-enter);
   --ease-exit: var(--ui-ease-exit);
   --ease-emphasized: var(--ui-ease-emphasized);
   --ease-glass-reveal: var(--ui-ease-glass-reveal);
-  --ease-aurora-drift: var(--ui-ease-aurora-drift);
   --animate-glass-reveal: glass-reveal var(--ui-duration-glass-reveal) var(--ui-ease-glass-reveal) both;
-  --animate-glass-shimmer: glass-border-shimmer var(--ui-duration-glass-shimmer) linear infinite;
-  --animate-aurora-drift: aurora-drift var(--ui-duration-aurora-drift) var(--ui-ease-aurora-drift) infinite alternate;
+  --animate-shimmer: shimmer var(--ui-duration-glass-shimmer) ease-in-out infinite;
   --border-width-hairline: var(--ui-border-width-hairline);
   --border-width-focus: var(--ui-border-width-focus);
   --opacity-disabled: var(--ui-opacity-disabled);
   --opacity-loading: var(--ui-opacity-loading);
-  --z-aurora: var(--ui-z-aurora);
   --z-base: var(--ui-z-base);
   --z-sticky: var(--ui-z-sticky);
   --z-dropdown: var(--ui-z-dropdown);
@@ -237,45 +221,28 @@
   --z-skip-link: var(--ui-z-skip-link);
 }
 
-@property --ui-glass-shimmer-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 115deg;
-}
-
-@keyframes glass-border-shimmer {
-  to {
-    --ui-glass-shimmer-angle: 475deg;
+/* ── Shimmer animation for skeleton loaders ── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }
 
 @keyframes glass-reveal {
   from {
     opacity: 0;
-    transform: translateY(var(--ui-space-sm)) scale(0.98);
-    filter: blur(8px);
+    transform: translateY(6px) scale(0.99);
   }
-
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
-@keyframes aurora-drift {
-  0% {
-    transform: translate3d(-3vw, -2vh, 0) scale(1) rotate(0deg);
-  }
-
-  50% {
-    transform: translate3d(4vw, 3vh, 0) scale(1.08) rotate(9deg);
-  }
-
-  100% {
-    transform: translate3d(-1vw, 4vh, 0) scale(1.16) rotate(-7deg);
-  }
-}
+/* ── Reusable utilities ── */
 
 @utility state-disabled {
   pointer-events: none;
@@ -294,9 +261,9 @@
 }
 
 @utility interactive-transition {
-  transition-duration: var(--ui-duration-fast);
+  transition-duration: var(--ui-duration-base);
   transition-property: background-color, border-color, box-shadow, color, opacity, transform;
-  transition-timing-function: var(--ui-ease-standard);
+  transition-timing-function: ease-out;
 }
 
 @utility glass-panel {
@@ -304,62 +271,31 @@
   background: var(--glass-bg);
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: var(--glass-backdrop-filter);
-  -webkit-backdrop-filter: var(--glass-backdrop-filter);
 }
 
 @utility glass-depth-flat {
-  --glass-blur: var(--ui-glass-blur-flat);
-  --glass-bg: var(--ui-glass-bg-flat);
-  --glass-shadow: var(--ui-glass-shadow-flat);
+  --glass-shadow: var(--ui-shadow-xs);
 }
 
 @utility glass-depth-raised {
-  --glass-blur: var(--ui-glass-blur-raised);
-  --glass-bg: var(--ui-glass-bg-raised);
-  --glass-shadow: var(--ui-glass-shadow-raised);
+  --glass-shadow: var(--ui-shadow-sm);
 }
 
 @utility glass-depth-floating {
-  --glass-blur: var(--ui-glass-blur-floating);
-  --glass-bg: var(--ui-glass-bg-floating);
-  --glass-shadow: var(--ui-glass-shadow-floating);
+  --glass-shadow: var(--ui-shadow-md);
 }
 
 @utility glass-depth-modal {
-  --glass-blur: var(--ui-glass-blur-modal);
-  --glass-bg: var(--ui-glass-bg-modal);
-  --glass-shadow: var(--ui-glass-shadow-modal);
+  --glass-shadow: var(--ui-shadow-lg);
 }
 
 @utility glass-depth-overlay {
-  --glass-blur: var(--ui-glass-blur-overlay);
-  --glass-bg: var(--ui-glass-bg-overlay);
-  --glass-shadow: var(--ui-glass-shadow-overlay);
+  --glass-shadow: var(--ui-shadow-xl);
 }
 
 @utility glass-border-shimmer {
-  position: relative;
-  isolation: isolate;
-
-  &::before {
-    position: absolute;
-    inset: 0;
-    padding: var(--ui-border-width-hairline);
-    border-radius: inherit;
-    background: var(--ui-glass-border-gradient);
-    content: "";
-    pointer-events: none;
-    animation: glass-border-shimmer var(--ui-duration-glass-shimmer) linear infinite;
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
+  /* No-op in editorial theme — removes old gradient border animation */
+  --glass-border-shimmer: none;
 }
 
 @utility glass-reveal {
@@ -367,18 +303,8 @@
 }
 
 @utility aurora-layer {
-  position: fixed;
-  inset: -20vh -12vw;
-  z-index: var(--ui-z-aurora);
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 16% 22%, var(--ui-color-aurora-violet) 0 12%, transparent 32%),
-    radial-gradient(circle at 78% 18%, var(--ui-color-aurora-cyan) 0 13%, transparent 34%),
-    radial-gradient(circle at 58% 82%, var(--ui-color-aurora-emerald) 0 14%, transparent 36%);
-  filter: blur(var(--ui-aurora-blur));
-  opacity: var(--ui-aurora-opacity);
-  transform-origin: center;
-  animation: aurora-drift var(--ui-duration-aurora-drift) var(--ui-ease-aurora-drift) infinite alternate;
+  /* No-op in editorial light theme — no aurora */
+  display: none;
 }
 
 @utility tap-target {
@@ -424,10 +350,6 @@
   z-index: var(--ui-z-base);
 }
 
-@utility z-aurora {
-  z-index: var(--ui-z-aurora);
-}
-
 @utility z-sticky {
   z-index: var(--ui-z-sticky);
 }
@@ -466,22 +388,22 @@
 
 @utility type-display-lg {
   font: var(--ui-type-display-lg);
-  letter-spacing: var(--ui-letter-spacing-normal);
+  letter-spacing: -0.02em;
 }
 
 @utility type-heading-xl {
   font: var(--ui-type-heading-xl);
-  letter-spacing: var(--ui-letter-spacing-normal);
+  letter-spacing: -0.01em;
 }
 
 @utility type-heading-lg {
   font: var(--ui-type-heading-lg);
-  letter-spacing: var(--ui-letter-spacing-normal);
+  letter-spacing: -0.01em;
 }
 
 @utility type-heading-md {
   font: var(--ui-type-heading-md);
-  letter-spacing: var(--ui-letter-spacing-normal);
+  letter-spacing: -0.01em;
 }
 
 @utility type-heading-sm {
@@ -524,74 +446,86 @@
   letter-spacing: var(--ui-letter-spacing-normal);
 }
 
+/* Shimmer utility for skeleton loaders */
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--ui-color-neutral-200) 25%,
+    var(--ui-color-neutral-100) 50%,
+    var(--ui-color-neutral-200) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer var(--ui-duration-glass-shimmer) ease-in-out infinite;
+}
+
 @utility contrast-body {
-  background-color: var(--ui-contrast-body-background);
-  color: var(--ui-contrast-body-text);
+  background-color: var(--ui-color-surface-page);
+  color: var(--ui-color-text-primary);
 }
 
 @utility contrast-body-raised {
-  background-color: var(--ui-contrast-body-raised-background);
-  color: var(--ui-contrast-body-raised-text);
+  background-color: var(--ui-color-surface-raised);
+  color: var(--ui-color-text-primary);
 }
 
 @utility contrast-secondary {
-  background-color: var(--ui-contrast-secondary-background);
-  color: var(--ui-contrast-secondary-text);
+  background-color: var(--ui-color-surface-page);
+  color: var(--ui-color-text-secondary);
 }
 
 @utility contrast-muted {
-  background-color: var(--ui-contrast-muted-background);
-  color: var(--ui-contrast-muted-text);
+  background-color: var(--ui-color-surface-page);
+  color: var(--ui-color-text-muted);
 }
 
 @utility contrast-primary-action {
-  background-color: var(--ui-contrast-primary-action-background);
-  color: var(--ui-contrast-primary-action-text);
+  background-color: var(--ui-color-indigo-600);
+  color: var(--ui-color-neutral-0);
 }
 
 @utility contrast-primary-subtle {
-  background-color: var(--ui-contrast-primary-subtle-background);
-  color: var(--ui-contrast-primary-subtle-text);
+  background-color: var(--ui-color-indigo-50);
+  color: var(--ui-color-indigo-700);
 }
 
 @utility contrast-secondary-action {
-  background-color: var(--ui-contrast-secondary-action-background);
-  color: var(--ui-contrast-secondary-action-text);
+  background-color: var(--ui-color-neutral-700);
+  color: var(--ui-color-neutral-0);
 }
 
 @utility contrast-secondary-subtle {
-  background-color: var(--ui-contrast-secondary-subtle-background);
-  color: var(--ui-contrast-secondary-subtle-text);
+  background-color: var(--ui-color-neutral-100);
+  color: var(--ui-color-neutral-700);
 }
 
 @utility contrast-accent-action {
-  background-color: var(--ui-contrast-accent-action-background);
-  color: var(--ui-contrast-accent-action-text);
+  background-color: var(--ui-color-indigo-600);
+  color: var(--ui-color-neutral-0);
 }
 
 @utility contrast-accent-subtle {
-  background-color: var(--ui-contrast-accent-subtle-background);
-  color: var(--ui-contrast-accent-subtle-text);
+  background-color: var(--ui-color-indigo-50);
+  color: var(--ui-color-indigo-700);
 }
 
 @utility contrast-success {
-  background-color: var(--ui-contrast-success-background);
-  color: var(--ui-contrast-success-text);
+  background-color: var(--ui-color-emerald-50);
+  color: var(--ui-color-emerald-700);
 }
 
 @utility contrast-warning {
-  background-color: var(--ui-contrast-warning-background);
-  color: var(--ui-contrast-warning-text);
+  background-color: var(--ui-color-amber-50);
+  color: var(--ui-color-amber-700);
 }
 
 @utility contrast-error {
-  background-color: var(--ui-contrast-error-background);
-  color: var(--ui-contrast-error-text);
+  background-color: var(--ui-color-red-50);
+  color: var(--ui-color-red-700);
 }
 
 @utility contrast-info {
-  background-color: var(--ui-contrast-info-background);
-  color: var(--ui-contrast-info-text);
+  background-color: var(--ui-color-indigo-50);
+  color: var(--ui-color-indigo-700);
 }
 
 @utility no-number-spin {
@@ -630,27 +564,9 @@
     min-width: var(--ui-bp-xs);
     margin: var(--ui-space-0);
     overflow-x: hidden;
-    background:
-      radial-gradient(circle at 50% -12%, var(--ui-color-page-highlight), transparent 42rem),
-      linear-gradient(180deg, var(--ui-color-page-gradient-start) 0%, var(--ui-color-surface-page) 42%, var(--ui-color-page-gradient-end) 100%);
+    background: var(--ui-color-surface-page);
     color: var(--ui-color-text-primary);
     font: var(--ui-type-body-md);
-  }
-
-  body::before {
-    position: fixed;
-    inset: -20vh -12vw;
-    z-index: var(--ui-z-base);
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 16% 22%, var(--ui-color-aurora-violet) 0 12%, transparent 32%),
-      radial-gradient(circle at 78% 18%, var(--ui-color-aurora-cyan) 0 13%, transparent 34%),
-      radial-gradient(circle at 58% 82%, var(--ui-color-aurora-emerald) 0 14%, transparent 36%);
-    content: "";
-    filter: blur(var(--ui-aurora-blur));
-    opacity: var(--ui-aurora-opacity);
-    transform-origin: center;
-    animation: aurora-drift var(--ui-duration-aurora-drift) var(--ui-ease-aurora-drift) infinite alternate;
   }
 
   app-root {
@@ -675,16 +591,16 @@
   }
 
   :where(a) {
-    color: var(--ui-color-text-info);
+    color: var(--ui-color-indigo-600);
     text-decoration-color: currentcolor;
     text-underline-offset: var(--ui-space-3xs);
     transition-duration: var(--ui-duration-fast);
     transition-property: color, text-decoration-color, box-shadow;
-    transition-timing-function: var(--ui-ease-standard);
+    transition-timing-function: ease-out;
   }
 
   :where(a:hover) {
-    color: var(--ui-color-iridescent-cyan);
+    color: var(--ui-color-indigo-700);
   }
 
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
@@ -693,8 +609,8 @@
   }
 
   ::selection {
-    background: var(--ui-color-iridescent-cyan);
-    color: var(--ui-color-obsidian-950);
+    background: var(--ui-color-indigo-200);
+    color: var(--ui-color-neutral-950);
   }
 
   @media (prefers-reduced-motion: reduce) {
