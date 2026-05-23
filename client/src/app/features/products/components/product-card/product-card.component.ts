@@ -2,10 +2,8 @@ import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
-import { StarRatingComponent } from '../../../../shared/components/star-rating/star-rating.component';
 import type { UiProductCardProduct } from '../../../../core/models/commerce-ui/commerce-ui.model';
 
 export type ProductCardViewMode = 'grid' | 'list';
@@ -13,12 +11,12 @@ export type ProductCardViewMode = 'grid' | 'list';
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [BadgeComponent, ButtonComponent, CurrencyPipe, RouterLink, SkeletonLoaderComponent, StarRatingComponent],
+  imports: [ButtonComponent, CurrencyPipe, RouterLink, SkeletonLoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
     @if (loading()) {
-      <article class="glass-panel glass-depth-raised grid gap-sm overflow-hidden rounded-md p-sm" aria-busy="true">
+      <article class="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm" aria-busy="true">
         <app-skeleton-loader shape="media" label="Loading product image" />
         <app-skeleton-loader [rows]="3" label="Loading product details" />
       </article>
@@ -30,44 +28,48 @@ export type ProductCardViewMode = 'grid' | 'list';
           [attr.aria-label]="item.name + ', ' + (item.price | currency: item.currency)"
           (click)="selected.emit(item)"
         >
-          <img class="h-full w-full object-cover interactive-transition group-hover:scale-[var(--ui-scale-hover-subtle)]" [src]="item.imageUrl" [alt]="item.name" />
+          <img
+            class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+            [src]="item.imageUrl"
+            [alt]="item.name"
+          />
         </a>
 
-        <div class="grid min-w-0 flex-1 gap-sm p-md">
-          <div class="flex flex-wrap items-center gap-xs">
-            <p class="type-label-sm text-text-muted">{{ item.category }}</p>
-            @if (item.saleLabel) {
-              <app-badge tone="accent" [label]="item.saleLabel" />
-            }
-            @if (item.stockStatus === 'out-of-stock') {
-              <app-badge tone="warning" label="Out of stock" />
-            }
-          </div>
+        <div class="flex min-w-0 flex-1 flex-col gap-2 p-4">
+          <p class="font-mono text-xs font-medium uppercase tracking-wider text-neutral-400">
+            {{ item.category }}
+          </p>
 
-          <h3 class="type-heading-sm text-text-primary">
-            <a class="focus-visible:focus-ring" [routerLink]="['/products', item.slug]">{{ item.name }}</a>
+          <h3 class="text-sm font-semibold leading-snug text-neutral-900 line-clamp-2">
+            <a class="focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm" [routerLink]="['/products', item.slug]">{{ item.name }}</a>
           </h3>
 
-          <div class="flex flex-wrap items-center gap-xs">
-            @if ((item.reviewCount ?? 0) > 0 && item.rating !== undefined) {
-              <app-star-rating [value]="item.rating" [readonly]="true" size="sm" />
-              <p class="type-body-sm text-text-muted">{{ item.reviewCount }} reviews</p>
-            } @else {
-              <p class="type-body-sm text-text-muted">No reviews yet</p>
-            }
-          </div>
+          <p class="font-mono text-base font-bold text-neutral-900">
+            {{ item.price | currency: item.currency }}
+          </p>
 
-          <div class="mt-auto flex flex-wrap items-end justify-between gap-sm border-t-hairline border-glass-border pt-sm">
-            <div class="grid gap-2xs">
-              <p class="type-label-sm text-text-muted">Price</p>
-              <p class="type-heading-sm text-text-primary">{{ item.price | currency: item.currency }}</p>
+          @if (item.stockStatus === 'low-stock') {
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+              <span class="text-xs text-amber-600">Low stock</span>
             </div>
-            @if (showQuickAdd()) {
-              <app-button size="sm" [disabled]="isDisabled()" [loading]="adding()" (pressed)="addToCart.emit(item)">
+          } @else if (item.stockStatus === 'out-of-stock') {
+            <span class="text-xs text-neutral-400">Unavailable</span>
+          }
+
+          @if (showQuickAdd()) {
+            <div class="mt-auto pt-2">
+              <app-button
+                size="sm"
+                [fullWidth]="true"
+                [disabled]="isDisabled()"
+                [loading]="adding()"
+                (pressed)="addToCart.emit(item)"
+              >
                 Add to cart
               </app-button>
-            }
-          </div>
+            </div>
+          }
         </div>
       </article>
     }
@@ -88,24 +90,30 @@ export class ProductCardComponent {
   protected readonly imageClasses = computed(() => [
     'block',
     'overflow-hidden',
-    'bg-glass-white-6',
-    'focus-visible:focus-ring',
+    'bg-neutral-50',
+    'focus-visible:ring-2',
+    'focus-visible:ring-indigo-500',
+    'focus-visible:ring-offset-2',
     this.viewMode() === 'grid'
-      ? 'aspect-[var(--ui-ratio-product-media)] max-h-[var(--ui-layout-product-card-media-max-block)] rounded-t-md'
-      : 'w-thumbnail-lg shrink-0 rounded-s-md',
+      ? 'aspect-square rounded-t-xl'
+      : 'w-thumbnail-lg shrink-0 rounded-s-xl',
   ].join(' '));
   protected readonly cardClasses = computed(() => [
     'group',
     'relative',
     'overflow-hidden',
-    'rounded-md',
-    'glass-panel',
-    'glass-depth-raised',
-    'glass-border-shimmer',
-    'interactive-transition',
-    'hover:-translate-y-[var(--ui-space-2xs)]',
-    'hover:shadow-glass-floating',
-    this.viewMode() === 'grid' ? 'grid h-full' : 'flex',
-    this.isDisabled() ? 'opacity-disabled' : '',
+    'rounded-xl',
+    'border',
+    'border-neutral-100',
+    'bg-white',
+    'shadow-sm',
+    'transition-all',
+    'duration-150',
+    'cursor-pointer',
+    'hover:border-indigo-200',
+    'hover:shadow-[0_4px_16px_rgba(79,70,229,0.08)]',
+    'hover:-translate-y-0.5',
+    this.viewMode() === 'grid' ? 'flex flex-col h-full' : 'flex',
+    this.isDisabled() ? 'opacity-40' : '',
   ].filter(Boolean).join(' '));
 }
