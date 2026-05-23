@@ -23,16 +23,16 @@ export class BadgeComponent {
 
   protected readonly classes = computed(() => {
     const tones: Record<UiTone, string> = {
-      neutral: 'border-glass-border bg-glass-white-6 text-text-secondary shadow-glass-flat',
-      primary: 'border-iridescent-violet/60 bg-glass-white-12 text-primary-900 shadow-glass-flat',
-      secondary: 'border-iridescent-cyan/60 bg-glass-white-12 text-secondary-900 shadow-glass-flat',
-      success: 'border-success-600 bg-success-50 text-text-success shadow-glass-flat',
-      warning: 'border-warning-600 bg-warning-50 text-text-warning shadow-glass-flat',
-      error: 'border-border-error bg-error-50 text-text-error shadow-glass-flat',
-      info: 'border-info-600 bg-info-50 text-text-info shadow-glass-flat',
-      accent: 'border-iridescent-emerald/60 bg-glass-white-12 text-accent-900 shadow-glass-flat',
+      neutral: 'bg-neutral-100 text-neutral-700',
+      primary: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+      secondary: 'border border-neutral-200 text-neutral-600',
+      success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+      error: 'bg-red-50 text-red-700 border border-red-200',
+      info: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+      accent: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
     };
 
-    return `inline-flex items-center gap-2xs rounded-full border-hairline px-xs py-2xs type-label-sm backdrop-blur-md ${tones[this.tone()]}`;
+    return `inline-flex items-center rounded-full text-xs font-medium px-2.5 py-0.5 font-mono ${tones[this.tone()]}`;
   });
 }

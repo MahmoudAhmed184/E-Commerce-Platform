@@ -12,7 +12,7 @@ interface SkeletonItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="grid gap-sm" role="status" [attr.aria-label]="label()" aria-busy="true">
+    <div class="grid gap-3" role="status" [attr.aria-label]="label()" aria-busy="true">
       @for (item of items(); track item.id) {
         <span [class]="classes()" aria-hidden="true"></span>
       }
@@ -31,12 +31,12 @@ export class SkeletonLoaderComponent {
   );
   protected readonly classes = computed(() => {
     const shapes: Record<SkeletonShape, string> = {
-      line: 'min-h-md w-full rounded-full',
-      block: 'min-h-control-lg w-full rounded-md',
-      circle: 'aspect-square w-thumbnail-sm rounded-full',
-      media: 'aspect-square w-full rounded-md',
+      line: 'h-4 w-full rounded-full',
+      block: 'h-10 w-full rounded-lg',
+      circle: 'aspect-square w-14 rounded-full',
+      media: 'aspect-square w-full rounded-xl',
     };
 
-    return ['block', 'bg-glass-white-12', 'shadow-glass-flat', 'backdrop-blur-md', 'state-loading', shapes[this.shape()]].join(' ');
+    return ['block', 'shimmer', 'rounded-lg', shapes[this.shape()]].join(' ');
   });
 }
