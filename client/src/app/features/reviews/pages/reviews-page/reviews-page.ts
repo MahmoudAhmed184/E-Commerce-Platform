@@ -1,121 +1,135 @@
-import { SlicePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
+import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { AuthService } from '../../../../core/services/auth.service';
-import { ReviewService, Review } from '../../services/review.service';
-import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
-import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { AuthService } from '../../../../core/services/auth/auth.service';
+import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
+import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { StarRatingComponent } from '../../../../shared/components/star-rating/star-rating.component';
+import type { UiReview } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import type { UiAction } from '../../../../shared/components/ui.types';
+import { ReviewService, type Review } from '../../../../core/services/review/review.service';
+import { ReviewCardComponent } from '../../components/review-card/review-card.component';
+import { ReviewWorkflowService, type ReviewDeleteResult, type ReviewSubmitResult } from '../../services/review-workflow/review-workflow.service';
 
 type ReviewForm = FormGroup<{
   rating: FormControl<number>;
   comment: FormControl<string>;
 }>;
 
+const requiredValidator: ValidatorFn = (control) => Validators.required(control);
+
 @Component({
   selector: 'app-reviews-page',
   standalone: true,
-  imports: [SlicePipe, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [
+    AlertDialogComponent,
+    AlertBannerComponent,
+    ButtonComponent,
+    EmptyStateComponent,
+    ReactiveFormsModule,
+    ReviewCardComponent,
+    SkeletonLoaderComponent,
+    StarRatingComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-3xl px-4 py-10">
-      <h1 class="text-2xl font-semibold text-slate-950">Product Reviews</h1>
+    <main class="bg-surface-page">
+      <div class="mx-auto grid max-w-[var(--ui-container-md)] gap-lg px-gutter-xs py-xl md:px-gutter-sm">
+        <header class="grid gap-xs">
+          <p class="type-label-sm text-text-muted">Reviews</p>
+          <h1 class="type-heading-xl text-text-primary">Product reviews</h1>
+          <p class="type-body-md text-text-secondary">Read customer feedback or add your own review after signing in.</p>
+        </header>
 
-      <!-- Submit review (auth only) -->
-      @if (authService.isLoggedIn()) {
-        <div class="mt-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-base font-semibold text-slate-800">
-            {{ editingId() ? 'Edit Review' : 'Write a Review' }}
-          </h2>
-          <form class="mt-4 space-y-4" [formGroup]="form" (ngSubmit)="submitReview()" novalidate>
-            <app-error-message [message]="formError()" />
+        @if (authService.isLoggedIn()) {
+          <section class="grid gap-md rounded-md border-hairline border-border-default bg-surface-raised p-md shadow-xs" aria-labelledby="review-form-title">
+            <h2 id="review-form-title" class="type-heading-lg text-text-primary">{{ formMode().title }}</h2>
+            <form class="grid gap-md" [formGroup]="form" (ngSubmit)="submitReview()" novalidate>
+              @if (formError()) {
+                <app-alert-banner tone="error" title="Review could not be saved" [message]="formError()" />
+              }
 
-            <!-- Star rating -->
-            <div>
-              <span class="block text-sm font-medium text-slate-700 mb-2">Rating</span>
-              <div class="flex gap-1">
-                @for (star of stars; track star) {
-                  <button type="button"
-                    class="text-2xl transition-colors"
-                    [class.text-amber-400]="star <= form.controls.rating.value"
-                    [class.text-slate-300]="star > form.controls.rating.value"
-                    (click)="form.controls.rating.setValue(star)"
-                    [attr.aria-label]="star + ' stars'">★</button>
+              <app-star-rating
+                label="Rating"
+                [readonly]="false"
+                [value]="form.controls.rating.value"
+                [error]="ratingError"
+                (valueChange)="form.controls.rating.setValue($event)"
+              />
+
+              <label class="grid gap-xs type-label-md text-text-primary">
+                Comment
+                <textarea
+                  class="min-h-thumbnail-lg rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring"
+                  formControlName="comment"
+                ></textarea>
+              </label>
+
+              <div class="flex flex-wrap gap-sm">
+                <app-button type="submit" [loading]="submitting()">{{ formMode().submitLabel }}</app-button>
+                @if (editingId()) {
+                  <app-button variant="secondary" (pressed)="cancelEdit()">Cancel</app-button>
                 }
               </div>
-            </div>
+            </form>
+          </section>
+        }
 
-            <div>
-              <label for="comment" class="block text-sm font-medium text-slate-700">Comment (optional)</label>
-              <textarea id="comment" rows="3" formControlName="comment"
-                class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+        <section class="grid gap-md" aria-live="polite">
+          @if (isLoading()) {
+            <div class="grid gap-md" aria-label="Loading reviews">
+              <app-skeleton-loader [rows]="3" label="Loading review" />
+              <app-skeleton-loader [rows]="3" label="Loading review" />
             </div>
-
-            <div class="flex gap-3">
-              <button type="submit"
-                class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
-                [disabled]="submitting()">
-                @if (submitting()) { <app-loading-spinner size="sm" /> }
-                {{ editingId() ? 'Update' : 'Submit' }}
-              </button>
-              @if (editingId()) {
-                <button type="button" (click)="cancelEdit()"
-                  class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                  Cancel
-                </button>
+          } @else if (loadError()) {
+            <app-alert-banner tone="error" title="Reviews could not load" [message]="loadError()" />
+          } @else if (uiReviews().length === 0) {
+            <app-empty-state
+              type="reviews"
+              title="No reviews yet"
+              message="There are no visible reviews for this product."
+              [action]="{ label: 'Refresh reviews', variant: 'secondary' }"
+              (actionPressed)="loadReviews()"
+            />
+          } @else {
+            <div class="grid gap-md">
+	              @for (review of uiReviews(); track review.id) {
+	                <app-review-card
+	                  [review]="review"
+	                  [canEdit]="!!review.owner"
+	                  [canDelete]="!!review.owner"
+	                  (edit)="startEdit($event)"
+	                  (delete)="requestDelete($event)"
+	                />
               }
             </div>
-          </form>
-        </div>
-      }
-
-      <!-- Reviews list -->
-      <div class="mt-8">
-        @if (isLoading()) {
-          <div class="flex justify-center py-10"><app-loading-spinner size="md" /></div>
-        } @else if (loadError()) {
-          <app-error-message [message]="loadError()" />
-        } @else if (reviews().length === 0) {
-          <p class="text-center text-slate-500 py-10">No reviews yet. Be the first!</p>
-        } @else {
-          <div class="space-y-4">
-            @for (review of reviews(); track review.id) {
-              <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <p class="font-medium text-slate-900">{{ review.user_name }}</p>
-                    <div class="mt-1 flex gap-0.5 text-amber-400 text-lg">
-                      @for (star of stars; track star) {
-                        <span [class.text-slate-200]="star > review.rating">★</span>
-                      }
-                    </div>
-                  </div>
-                  <p class="text-xs text-slate-400">{{ review.created_at | slice:0:10 }}</p>
-                </div>
-                @if (review.comment) {
-                  <p class="mt-3 text-sm text-slate-700">{{ review.comment }}</p>
-                }
-                @if (authService.currentUser()?.id === review.user) {
-                  <div class="mt-4 flex gap-3 text-sm">
-                    <button type="button" (click)="startEdit(review)"
-                      class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                    <button type="button" (click)="deleteReview(review)"
-                      class="text-red-500 hover:text-red-700 font-medium">Delete</button>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        }
+          }
+        </section>
       </div>
-    </section>
+
+      <app-alert-dialog
+        [open]="!!deleteId()"
+        title="Delete review"
+        description="This removes your review from the product page."
+        [destructive]="true"
+        [confirmAction]="deleteConfirmAction()"
+        [cancelAction]="{ label: 'Cancel', variant: 'secondary' }"
+        (confirmPressed)="deleteReview()"
+        (cancelPressed)="deleteId.set(null)"
+        (closed)="deleteId.set(null)"
+      />
+    </main>
   `,
 })
 export class ReviewsPage implements OnInit {
   protected readonly authService = inject(AuthService);
   private readonly reviewService = inject(ReviewService);
+  private readonly reviewWorkflow = inject(ReviewWorkflowService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(NonNullableFormBuilder);
 
@@ -125,53 +139,60 @@ export class ReviewsPage implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly formError = signal('');
   protected readonly editingId = signal<number | null>(null);
-
-  protected readonly stars = [1, 2, 3, 4, 5];
+  protected readonly deleteId = signal<number | null>(null);
+  protected readonly uiReviews = computed(() => this.reviews().map((review) => toUiReview(review, this.authService.currentUser()?.id)));
+  protected readonly formMode = computed(() =>
+    this.editingId() ? { title: 'Edit review', submitLabel: 'Update review' } : { title: 'Write a review', submitLabel: 'Submit review' },
+  );
+  protected readonly deleteConfirmAction = computed<UiAction>(() => ({ label: 'Delete review', variant: 'danger', loading: this.submitting() }));
 
   protected readonly form: ReviewForm = this.fb.group({
-    rating: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
+    rating: [5, [requiredValidator, Validators.min(1), Validators.max(5)]],
     comment: [''],
   });
 
   private productSlug = '';
+
+  protected get ratingError(): string | null {
+    return this.form.controls.rating.invalid && this.form.controls.rating.touched ? 'Choose a rating.' : null;
+  }
 
   ngOnInit(): void {
     this.productSlug = this.route.snapshot.paramMap.get('slug') ?? '';
     this.loadReviews();
   }
 
-  private loadReviews(): void {
+  protected loadReviews(): void {
+    this.loadError.set('');
     this.isLoading.set(true);
     this.reviewService
       .getProductReviews(this.productSlug)
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
-        next: (r) => this.reviews.set(r),
+        next: (response) => this.reviews.set(response.results),
         error: () => this.loadError.set('Could not load reviews.'),
       });
   }
 
   protected submitReview(): void {
     this.formError.set('');
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-
-    const { rating, comment } = this.form.getRawValue();
     this.submitting.set(true);
-
-    const id = this.editingId();
-    const req = id
-      ? this.reviewService.updateReview(id, { rating, comment: comment || undefined })
-      : this.reviewService.createProductReview(this.productSlug, { rating, comment: comment || undefined });
-
-    req.pipe(finalize(() => this.submitting.set(false))).subscribe({
-      next: () => { this.cancelEdit(); this.loadReviews(); },
-      error: () => this.formError.set('Could not save review. Please try again.'),
-    });
+    this.reviewWorkflow
+      .submitReview(this.productSlug, this.editingId(), this.form.valid, this.form.getRawValue())
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe((result) => this.applyReviewSave(result));
   }
 
-  protected startEdit(review: Review): void {
-    this.editingId.set(review.id);
-    this.form.setValue({ rating: review.rating, comment: review.comment ?? '' });
+  protected startEdit(review: UiReview): void {
+    const existing = this.reviews().find((item) => String(item.id) === review.id);
+    if (!existing) {
+      return;
+    }
+    this.editingId.set(existing.id);
+    this.form.setValue({
+      rating: existing.rating,
+      comment: existing.comment ?? '',
+    });
   }
 
   protected cancelEdit(): void {
@@ -179,10 +200,59 @@ export class ReviewsPage implements OnInit {
     this.form.reset({ rating: 5, comment: '' });
   }
 
-  protected deleteReview(review: Review): void {
-    this.reviewService.deleteReview(review.id).subscribe({
-      next: () => this.reviews.update((list) => list.filter((r) => r.id !== review.id)),
-      error: () => this.loadError.set('Could not delete review.'),
-    });
+  protected requestDelete(review: UiReview): void {
+    this.deleteId.set(Number(review.id));
   }
+
+  protected deleteReview(): void {
+    const id = this.deleteId();
+    if (!id) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.reviewWorkflow
+      .deleteReview(id)
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe((result) => this.applyReviewDelete(result));
+  }
+
+  private applyReviewSave(result: ReviewSubmitResult): void {
+    if (result.status === 'invalid') {
+      this.form.markAllAsTouched();
+      this.formError.set(result.message);
+      return;
+    }
+    if (result.status === 'failed') {
+      this.formError.set(result.message);
+      return;
+    }
+
+    this.reviews.update((reviews) =>
+      result.mode === 'updated' ? reviews.map((item) => (item.id === result.review.id ? result.review : item)) : [result.review, ...reviews],
+    );
+    this.cancelEdit();
+  }
+
+  private applyReviewDelete(result: ReviewDeleteResult): void {
+    if (result.status === 'failed') {
+      this.formError.set(result.message);
+      return;
+    }
+
+    this.reviews.update((reviews) => reviews.filter((review) => review.id !== result.id));
+    this.deleteId.set(null);
+  }
+}
+
+function toUiReview(review: Review, currentUserId: string | undefined): UiReview {
+  return {
+    id: String(review.id),
+    authorName: review.user_name,
+    createdAt: review.created_at,
+    rating: review.rating,
+    body: review.comment ?? 'No written comment.',
+    moderationState: review.is_visible ? 'visible' : 'hidden',
+    owner: currentUserId === review.user,
+  };
 }
