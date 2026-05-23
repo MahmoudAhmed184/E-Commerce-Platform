@@ -1,13 +1,12 @@
-import { Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
 
-import { adminGuard } from './core/guards/admin.guard';
-import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin/admin.guard';
+import { authGuard } from './core/guards/auth/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/products',
-    pathMatch: 'full',
+    loadComponent: () => import('./features/products/pages/home-page/home-page').then((m) => m.HomePage),
   },
   {
     path: 'auth',
@@ -38,13 +37,18 @@ export const routes: Routes = [
     path: 'admin',
     loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
     canActivate: [authGuard, adminGuard],
+    canActivateChild: [authGuard, adminGuard],
   },
   {
     path: 'reviews',
     loadChildren: () => import('./features/reviews/reviews.routes').then((m) => m.REVIEWS_ROUTES),
   },
   {
+    path: 'error',
+    loadComponent: () => import('./layout/server-error-page/server-error-page').then((m) => m.ServerErrorPage),
+  },
+  {
     path: '**',
-    redirectTo: '/products',
+    loadComponent: () => import('./layout/not-found-page/not-found-page').then((m) => m.NotFoundPage),
   },
 ];
