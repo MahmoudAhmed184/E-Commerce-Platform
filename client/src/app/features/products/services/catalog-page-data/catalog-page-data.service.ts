@@ -256,7 +256,7 @@ function buildFeatures(product: Product): readonly CatalogFeature[] {
   return [
     {
       id: 'stock',
-      label: product.stock > 0 ? `${product.stock} units are available for checkout.` : 'This product is currently out of stock.',
+      label: product.stock > 0 ? `${product.stock} units are available for checkout.` : 'This product is currently unavailable.',
     },
     {
       id: 'reviews',
@@ -299,7 +299,7 @@ function mapStockStatus(stock: number): CatalogProduct['stockStatus'] {
 
 function formatAvailability(stock: number): string {
   if (stock <= 0) {
-    return 'Out of stock';
+    return 'Unavailable';
   }
 
   return stock <= 5 ? `Low stock (${stock} left)` : 'In stock';

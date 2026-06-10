@@ -80,7 +80,7 @@ describe('ProductDetailPage', () => {
     );
     const quantityInput = host.querySelector<HTMLInputElement>('aside input[type="number"]');
 
-    expect(host.textContent).toContain('Currently out of stock');
+    expect(host.textContent).toContain('Unavailable');
     expect(quantityInput).toBeNull();
     expect(browseButton?.disabled).toBe(false);
   });

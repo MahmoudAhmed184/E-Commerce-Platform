@@ -16,7 +16,7 @@ export type ProductCardViewMode = 'grid' | 'list';
   host: { class: 'contents' },
   template: `
     @if (loading()) {
-      <article class="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm" aria-busy="true">
+      <article class="rounded-md border-hairline border-border-default bg-surface-raised p-md shadow-xs" aria-busy="true">
         <app-skeleton-loader shape="media" label="Loading product image" />
         <app-skeleton-loader [rows]="3" label="Loading product details" />
       </article>
@@ -35,31 +35,32 @@ export type ProductCardViewMode = 'grid' | 'list';
           />
         </a>
 
-        <div class="flex min-w-0 flex-1 flex-col gap-2 p-4">
-          <p class="font-mono text-xs font-medium uppercase tracking-wider text-neutral-400">
+        <div class="flex min-w-0 flex-1 flex-col space-y-2 p-md">
+          <p class="type-label-sm text-text-muted">
             {{ item.category }}
           </p>
 
-          <h3 class="text-sm font-semibold leading-snug text-neutral-900 line-clamp-2">
-            <a class="focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm" [routerLink]="['/products', item.slug]">{{ item.name }}</a>
+          <h3 class="type-label-md text-text-primary line-clamp-2">
+            <a class="rounded-sm text-text-primary focus-visible:focus-ring" [routerLink]="['/products', item.slug]">{{ item.name }}</a>
           </h3>
 
-          <p class="font-mono text-base font-bold text-neutral-900">
+          <p class="type-label-lg text-text-primary">
             {{ item.price | currency: item.currency }}
           </p>
 
           @if (item.stockStatus === 'low-stock') {
             <div class="flex items-center gap-1.5">
-              <span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-              <span class="text-xs text-amber-600">Low stock</span>
+              <span class="inline-block size-2xs rounded-full bg-warning-600"></span>
+              <span class="type-label-sm text-text-warning">Low stock</span>
             </div>
           } @else if (item.stockStatus === 'out-of-stock') {
-            <span class="text-xs text-neutral-400">Unavailable</span>
+            <span class="type-label-sm text-text-muted">Unavailable</span>
           }
 
           @if (showQuickAdd()) {
             <div class="mt-auto pt-2">
               <app-button
+                variant="primary"
                 size="sm"
                 [fullWidth]="true"
                 [disabled]="isDisabled()"
@@ -90,30 +91,26 @@ export class ProductCardComponent {
   protected readonly imageClasses = computed(() => [
     'block',
     'overflow-hidden',
-    'bg-neutral-50',
-    'focus-visible:ring-2',
-    'focus-visible:ring-indigo-500',
-    'focus-visible:ring-offset-2',
+    'bg-surface-subtle',
+    'focus-visible:focus-ring',
     this.viewMode() === 'grid'
-      ? 'aspect-square rounded-t-xl'
-      : 'w-thumbnail-lg shrink-0 rounded-s-xl',
+      ? 'aspect-square rounded-t-md'
+      : 'w-thumbnail-lg shrink-0 rounded-s-md',
   ].join(' '));
   protected readonly cardClasses = computed(() => [
     'group',
     'relative',
     'overflow-hidden',
-    'rounded-xl',
-    'border',
-    'border-neutral-100',
-    'bg-white',
-    'shadow-sm',
-    'transition-all',
-    'duration-150',
+    'rounded-md',
+    'border-hairline',
+    'border-border-default',
+    'bg-surface-raised',
+    'interactive-transition',
+    'shadow-xs',
     'cursor-pointer',
-    'hover:border-indigo-200',
-    'hover:shadow-[0_4px_16px_rgba(79,70,229,0.08)]',
+    'hover:border-border-focus',
+    'hover:shadow-md',
     'hover:-translate-y-0.5',
     this.viewMode() === 'grid' ? 'flex flex-col h-full' : 'flex',
-    this.isDisabled() ? 'opacity-40' : '',
   ].filter(Boolean).join(' '));
 }

@@ -53,7 +53,7 @@ type DetailState =
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-transparent">
+    <main class="bg-surface-page">
       <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-xl px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
         @if (state().kind === 'loading') {
           <section class="grid gap-xl lg:grid-cols-[var(--ui-layout-product-detail-grid)]" aria-label="Loading product">
@@ -89,7 +89,7 @@ type DetailState =
               <app-image-gallery [images]="item.images" [selectedIndex]="selectedImageIndex()" (selectedIndexChange)="selectedImageIndex.set($event)" />
             </div>
 
-            <aside class="glass-panel glass-depth-floating grid min-w-0 gap-md rounded-lg p-md lg:sticky lg:top-[8rem] lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:p-md lg:[scrollbar-gutter:stable] xl:p-lg">
+            <aside class="surface-panel surface-depth-floating grid min-w-0 gap-md rounded-md p-md lg:sticky lg:top-[8rem] lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:p-md lg:[scrollbar-gutter:stable] xl:p-lg">
               <div class="grid gap-md">
                 <div class="flex flex-wrap items-center gap-xs">
                   <app-badge tone="neutral" [label]="item.category" />
@@ -107,7 +107,7 @@ type DetailState =
                       }
                     </div>
                   </div>
-                  <div class="rounded-md border-hairline border-glass-border bg-glass-white-6 px-sm py-xs text-end shadow-glass-flat">
+                  <div class="rounded-md border-hairline border-border-default bg-surface-raised px-sm py-xs text-end shadow-xs">
                     <p class="type-label-sm text-text-muted">Price</p>
                     <p class="type-heading-lg text-text-primary">{{ item.price | currency: item.currency }}</p>
                   </div>
@@ -115,8 +115,8 @@ type DetailState =
               </div>
 
               @if (item.stockStatus !== 'out-of-stock') {
-                <div class="flex gap-sm rounded-md border-hairline border-glass-border bg-glass-white-6 p-sm text-text-secondary shadow-glass-flat" role="status">
-                  <span class="inline-flex size-control-sm shrink-0 items-center justify-center rounded-md bg-glass-white-12 text-text-success">
+                <div class="flex gap-sm rounded-md border-hairline border-border-default bg-surface-raised p-sm text-text-secondary shadow-xs" role="status">
+                  <span class="inline-flex size-control-sm shrink-0 items-center justify-center rounded-md bg-surface-subtle text-text-success">
                     <svg lucideShieldCheck class="size-icon-md" aria-hidden="true"></svg>
                   </span>
                   <div class="min-w-0">
@@ -127,21 +127,21 @@ type DetailState =
               }
 
               <dl class="grid gap-xs lg:grid-cols-2">
-                <div class="flex gap-sm rounded-md bg-glass-white-6 p-sm shadow-glass-flat lg:col-span-2">
+                <div class="flex gap-sm rounded-md bg-surface-raised p-sm shadow-xs lg:col-span-2">
                   <svg lucideCreditCard class="mt-2xs size-icon-md shrink-0 text-icon-muted" aria-hidden="true"></svg>
                   <div class="min-w-0">
                     <dt class="type-label-sm text-text-muted">Checkout</dt>
                     <dd class="mt-2xs type-body-sm text-text-primary">Review, delivery, and payment</dd>
                   </div>
                 </div>
-                <div class="flex gap-sm rounded-md bg-glass-white-6 p-sm shadow-glass-flat">
+                <div class="flex gap-sm rounded-md bg-surface-raised p-sm shadow-xs">
                   <svg lucidePackageCheck class="mt-2xs size-icon-md shrink-0 text-icon-muted" aria-hidden="true"></svg>
                   <div class="min-w-0">
                     <dt class="type-label-sm text-text-muted">Availability</dt>
                     <dd class="mt-2xs type-body-sm text-text-primary">{{ stockSummary().label }}</dd>
                   </div>
                 </div>
-                <div class="flex gap-sm rounded-md bg-glass-white-6 p-sm shadow-glass-flat">
+                <div class="flex gap-sm rounded-md bg-surface-raised p-sm shadow-xs">
                   <svg lucideLifeBuoy class="mt-2xs size-icon-md shrink-0 text-icon-muted" aria-hidden="true"></svg>
                   <div class="min-w-0">
                     <dt class="type-label-sm text-text-muted">Support</dt>
@@ -151,11 +151,11 @@ type DetailState =
               </dl>
 
               @if (item.stockStatus === 'out-of-stock') {
-                <section class="grid gap-sm rounded-md border-hairline border-warning-600 bg-warning-50 p-md text-text-warning shadow-glass-flat" aria-live="polite">
+                <section class="grid gap-sm rounded-md border-hairline border-border-default bg-surface-subtle p-md text-text-secondary shadow-xs" aria-live="polite">
                   <div class="flex gap-sm">
                     <svg lucidePackageX class="mt-2xs size-icon-md shrink-0" aria-hidden="true"></svg>
                     <div class="min-w-0">
-                      <h3 class="type-heading-sm">Currently out of stock</h3>
+                      <h3 class="type-heading-sm text-text-primary">Unavailable</h3>
                       <p class="mt-2xs type-body-sm">Choose another available product or check back later.</p>
                     </div>
                   </div>
@@ -186,7 +186,7 @@ type DetailState =
           </section>
 
           <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-product-meta-grid)]">
-            <div class="glass-panel glass-depth-raised grid gap-md rounded-lg p-md" aria-labelledby="details-title">
+            <div class="surface-panel surface-depth-raised grid gap-md rounded-md p-md" aria-labelledby="details-title">
               <div class="grid gap-2xs">
                 <p class="type-label-sm text-muted-foreground">Details</p>
                 <h2 id="details-title" class="type-heading-lg text-card-foreground">Product information</h2>
@@ -200,7 +200,7 @@ type DetailState =
                   @case ('specs') {
                     <dl class="grid gap-sm">
                       @for (spec of item.specs; track spec.id) {
-                        <div class="flex justify-between gap-md border-b border-glass-border pb-xs">
+                        <div class="flex justify-between gap-md border-b border-border-default pb-xs">
                           <dt class="type-body-sm text-muted-foreground">{{ spec.label }}</dt>
                           <dd class="type-body-sm text-card-foreground">{{ spec.value }}</dd>
                         </div>
@@ -225,7 +225,7 @@ type DetailState =
               </app-tabs>
             </div>
 
-            <div class="glass-panel glass-depth-raised grid gap-md rounded-lg p-md">
+            <div class="surface-panel surface-depth-raised grid gap-md rounded-md p-md">
               <div class="grid gap-2xs">
                 <p class="type-label-sm text-muted-foreground">Policies</p>
                 <h2 class="type-heading-lg text-card-foreground">Shipping and care</h2>
@@ -262,18 +262,12 @@ type DetailState =
           </section>
 
           <nav class="flex flex-wrap gap-sm" aria-label="Product actions">
-            <a
-              class="glass-panel glass-depth-raised inline-flex min-h-control-md items-center rounded-md px-md py-xs type-label-md text-text-primary interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
-              routerLink="/products"
-            >
+            <app-button variant="secondary" [routerLink]="'/products'">
               Back to products
-            </a>
-            <a
-              class="inline-flex min-h-control-md items-center rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-md py-xs type-label-md text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
-              routerLink="/cart"
-            >
+            </app-button>
+            <app-button [routerLink]="'/cart'">
               View cart
-            </a>
+            </app-button>
           </nav>
         }
       </div>
@@ -367,9 +361,9 @@ export class ProductDetailPage implements OnInit {
   }
 }
 
-function productStockSummary(product: CatalogProduct | null): { tone: 'warning' | 'accent' | 'success'; label: string } {
+function productStockSummary(product: CatalogProduct | null): { tone: 'outline' | 'accent' | 'success'; label: string } {
   if (!product || product.stockStatus === 'out-of-stock') {
-    return { tone: 'warning', label: 'Out of stock' };
+    return { tone: 'outline', label: 'Unavailable' };
   }
   if (product.stockStatus === 'low-stock') {
     return { tone: 'accent', label: `Low stock (${product.inventory} left)` };

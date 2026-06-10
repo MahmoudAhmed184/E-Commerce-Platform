@@ -47,13 +47,13 @@ type ListingState =
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-transparent">
+    <main class="bg-surface-page">
       <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-xl px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
-        <header class="glass-panel glass-depth-floating glass-border-shimmer grid gap-md overflow-hidden rounded-lg p-md md:grid-cols-[var(--ui-layout-search-header-grid)] md:items-end lg:p-lg">
+        <header class="surface-panel surface-depth-floating grid gap-md rounded-md p-md md:grid-cols-[var(--ui-layout-search-header-grid)] md:items-end lg:p-lg">
           <div class="grid gap-sm">
             <div class="flex flex-wrap items-center gap-xs">
               <p class="type-label-sm text-text-muted">Products</p>
-              <span class="rounded-full bg-glass-white-12 px-xs py-2xs type-label-sm text-text-secondary">{{ totalItems() }} results</span>
+              <span class="rounded-full bg-surface-subtle px-xs py-2xs type-label-sm text-text-secondary">{{ totalItems() }} results</span>
             </div>
             <div class="grid gap-xs">
               <h1 class="type-heading-xl text-text-primary">Shop products</h1>
@@ -77,7 +77,7 @@ type ListingState =
         </header>
 
         @if (statusMessage()) {
-          <p class="glass-panel glass-depth-raised rounded-md p-sm type-body-sm text-text-success" role="status">
+          <p class="surface-panel surface-depth-raised rounded-md p-sm type-body-sm text-text-success" role="status">
             {{ statusMessage() }}
           </p>
         }
@@ -99,12 +99,12 @@ type ListingState =
         }
 
         <div class="grid gap-lg lg:grid-cols-[var(--ui-layout-product-list-grid)] lg:items-start">
-          <aside class="glass-panel glass-depth-floating hidden rounded-lg p-md lg:sticky lg:top-xl lg:grid lg:gap-md" aria-label="Product filters">
+          <aside class="surface-panel surface-depth-floating hidden rounded-md p-md lg:sticky lg:top-xl lg:grid lg:gap-md" aria-label="Product filters">
             <ng-container *ngTemplateOutlet="filtersTemplate" />
           </aside>
 
           <section class="grid gap-md" aria-live="polite" [attr.aria-busy]="isLoading() ? 'true' : 'false'">
-            <div class="glass-panel glass-depth-raised z-dropdown flex flex-wrap items-center justify-between gap-md rounded-md p-sm">
+            <div class="surface-panel surface-depth-raised flex flex-wrap items-center justify-between gap-md rounded-md p-sm">
               <div class="grid gap-2xs">
                 <h2 class="type-heading-sm text-text-primary">Results</h2>
                 <p class="type-body-sm text-text-muted">Use sorting and filters to find the right product faster.</p>
