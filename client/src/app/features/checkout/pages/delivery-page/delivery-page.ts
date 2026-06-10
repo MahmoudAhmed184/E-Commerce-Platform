@@ -5,11 +5,11 @@ import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { CartService } from '../../../../core/services/cart/cart.service';
-import { CheckoutService } from '../../../../core/services/checkout/checkout.service';
+import { CheckoutService, type CheckoutSummary } from '../../../../core/services/checkout/checkout.service';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
-import type { UiAddress, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import type { UiAddress, UiOrderSummaryCharge, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiOption, UiStepperStep } from '../../../../shared/components/ui.types';
 import { AddressFormComponent } from '../../components/address-form/address-form.component';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
@@ -83,10 +83,11 @@ import { OrderSummaryCardComponent } from '../../../../shared/components/order-s
               <app-order-summary-card
                 [lines]="summaryLines()"
                 [subtotal]="subtotal()"
-                [total]="subtotal()"
+                [charges]="charges()"
+                [total]="orderTotal()"
                 currency="USD"
                 [sticky]="true"
-                [loading]="isLoadingCart()"
+                [loading]="isLoadingCart() || summaryLoading()"
               />
               <p class="type-body-sm text-text-muted">
                 Payment is enabled after the required delivery fields are complete.
@@ -116,16 +117,29 @@ export class DeliveryPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly isLoadingCart = signal(false);
+  protected readonly summaryLoading = signal(false);
   protected readonly address = signal<UiAddress>(emptyAddress());
   protected readonly fieldErrors = signal<Record<string, string | undefined>>({});
   protected readonly formError = signal('');
-  protected readonly subtotal = computed(() => {
+  protected readonly fallbackSubtotal = computed(() => {
     if (this.authService.isLoggedIn()) {
       return Number.parseFloat(this.cartService.cart()?.subtotal ?? '0');
     }
     return this.cartService.guestSubtotal;
   });
+  protected readonly subtotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.subtotal ?? String(this.fallbackSubtotal())));
+  protected readonly orderTotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.total_amount ?? String(this.fallbackSubtotal())));
+  protected readonly charges = computed<readonly UiOrderSummaryCharge[]>(() => toSummaryCharges(this.checkoutService.summary()));
   protected readonly summaryLines = computed<readonly UiPriceLine[]>(() => {
+    const summary = this.checkoutService.summary();
+    if (summary) {
+      return summary.items.map((item, index) => ({
+        id: `summary-${item.product}-${index}`,
+        label: `${item.product_name} x ${item.quantity}`,
+        amount: Number.parseFloat(item.line_total),
+      }));
+    }
+
     if (this.authService.isLoggedIn()) {
       return (this.cartService.cart()?.items ?? []).map((item) => ({
         id: `auth-${item.id}`,
@@ -140,7 +154,7 @@ export class DeliveryPage implements OnInit {
       amount: Number.parseFloat(item.product_price) * item.quantity,
     }));
   });
-  protected readonly cartEmpty = computed(() => this.summaryLines().length === 0);
+  protected readonly cartEmpty = computed(() => !this.hasCheckoutItems());
   protected readonly addressFormMode = computed(() => (this.authService.isLoggedIn() ? 'auth' : 'guest'));
   protected readonly guestAddress = computed(() => !this.authService.isLoggedIn());
 
@@ -148,6 +162,7 @@ export class DeliveryPage implements OnInit {
     this.address.set(this.checkoutService.getSavedDeliveryAddress(this.authService.currentUser()?.email ?? ''));
 
     if (!this.authService.isLoggedIn()) {
+      this.refreshSummary();
       return;
     }
 
@@ -156,6 +171,7 @@ export class DeliveryPage implements OnInit {
       .loadCart()
       .pipe(finalize(() => this.isLoadingCart.set(false)))
       .subscribe({
+        next: () => this.refreshSummary(),
         error: () => this.formError.set('Could not load checkout totals. Try again.'),
       });
   }
@@ -181,6 +197,27 @@ export class DeliveryPage implements OnInit {
 
   protected browseProducts(): void {
     void this.router.navigateByUrl('/products');
+  }
+
+  private refreshSummary(): void {
+    if (!this.hasCheckoutItems()) {
+      this.checkoutService.clearSummary();
+      return;
+    }
+
+    this.summaryLoading.set(true);
+    this.checkoutService
+      .loadSummary()
+      .pipe(finalize(() => this.summaryLoading.set(false)))
+      .subscribe({
+        error: () => this.formError.set('Could not validate checkout totals. Try again.'),
+      });
+  }
+
+  private hasCheckoutItems(): boolean {
+    return this.authService.isLoggedIn()
+      ? Boolean(this.cartService.cart()?.items.length)
+      : this.cartService.guestItems().length > 0;
   }
 }
 
@@ -210,4 +247,24 @@ function emptyAddress(): UiAddress {
     country: 'US',
     deliveryNotes: '',
   };
+}
+
+function toSummaryCharges(summary: CheckoutSummary | null): readonly UiOrderSummaryCharge[] {
+  if (!summary) {
+    return [];
+  }
+
+  const shipping = Number.parseFloat(summary.shipping_amount);
+  const tax = Number.parseFloat(summary.tax_amount);
+  const discount = Number.parseFloat(summary.discount_amount);
+  const charges: UiOrderSummaryCharge[] = [
+    { label: 'Shipping', amount: shipping, tone: shipping === 0 ? 'success' : 'neutral' },
+    { label: 'Tax', amount: tax, tone: 'neutral' },
+  ];
+
+  if (discount > 0) {
+    charges.push({ label: 'Discount', amount: -discount, tone: 'success' });
+  }
+
+  return charges;
 }

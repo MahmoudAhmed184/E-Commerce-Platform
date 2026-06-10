@@ -184,7 +184,8 @@ export class OrderConfirmationPage implements OnInit {
     }
 
     this.state.set({ kind: 'loading' });
-    this.checkoutService.getOrder(orderNumber).subscribe({
+    const guestAccessToken = this.route.snapshot.queryParamMap.get('guest_access_token');
+    this.checkoutService.getOrder(orderNumber, guestAccessToken).subscribe({
       next: (order) => this.state.set({ kind: 'loaded', order: mapConfirmationOrder(order) }),
       error: () => this.state.set({ kind: 'error', message: 'This order could not be loaded. Check the order number and try again.' }),
     });

@@ -5,18 +5,18 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 import type { UiAddress } from '../../models/commerce-ui/commerce-ui.model';
 import { ApiService } from '../api/api.service';
 import { AuthService } from '../auth/auth.service';
-import { CartService } from '../cart/cart.service';
+import { CartService, type Cart, type GuestCartItem } from '../cart/cart.service';
 import * as underTest from './checkout.service';
 import { CheckoutService } from './checkout.service';
 
 class AuthServiceStub {
-  readonly currentUser = signal(null);
+  readonly currentUser = signal<{ email: string } | null>(null);
   readonly isLoggedIn = signal(false);
 }
 
 class CartServiceStub {
-  readonly cart = signal(null);
-  readonly guestItems = signal([]);
+  readonly cart = signal<Cart | null>(null);
+  readonly guestItems = signal<GuestCartItem[]>([]);
   cleared = false;
 
   clearCartState(): void {
@@ -26,8 +26,16 @@ class CartServiceStub {
 
 class ApiServiceStub {
   response: unknown = [];
+  readonly getCalls: { path: string; params?: Record<string, string> }[] = [];
+  readonly postCalls: { path: string; body: unknown }[] = [];
 
-  get<T>(): Observable<T> {
+  get<T>(path: string, params?: Record<string, string>): Observable<T> {
+    this.getCalls.push({ path, ...(params ? { params } : {}) });
+    return of(this.response as T);
+  }
+
+  post<T>(path: string, body: unknown): Observable<T> {
+    this.postCalls.push({ path, body });
     return of(this.response as T);
   }
 }
@@ -79,6 +87,54 @@ const order = {
   },
   created_at: '2026-05-21T10:15:00Z',
 } satisfies underTest.Order;
+
+const summary = {
+  items: [
+    {
+      product: 3,
+      product_name: 'Checkout Product',
+      product_slug: 'checkout-product',
+      unit_price: '25.00',
+      quantity: 2,
+      line_total: '50.00',
+    },
+  ],
+  subtotal: '50.00',
+  shipping_amount: '0.00',
+  tax_amount: '0.00',
+  discount_amount: '0.00',
+  total_amount: '50.00',
+} satisfies underTest.CheckoutSummary;
+
+const guestItem = {
+  product: 3,
+  product_name: 'Checkout Product',
+  product_slug: 'checkout-product',
+  product_price: '25.00',
+  primary_image: null,
+  quantity: 2,
+  available_stock: 5,
+} satisfies GuestCartItem;
+
+const authenticatedCart = {
+  id: 1,
+  status: 'active',
+  items: [
+    {
+      id: 8,
+      product: 3,
+      product_name: 'Checkout Product',
+      product_slug: 'checkout-product',
+      product_price: '25.00',
+      primary_image: null,
+      quantity: 2,
+      unit_price_snapshot: '25.00',
+      line_total: '50.00',
+    },
+  ],
+  subtotal: '50.00',
+  total: '50.00',
+} satisfies Cart;
 
 describe('checkout.service', () => {
   it('exports a module surface', () => {
@@ -134,5 +190,68 @@ describe('checkout.service', () => {
     const service = TestBed.inject(CheckoutService);
 
     await expect(firstValueFrom(service.getOrders())).resolves.toEqual([order]);
+  });
+
+  it('passes guest access token when loading an order detail', async () => {
+    const api = new ApiServiceStub();
+    const guestOrder = { ...order, guest_access_token: 'signed-token' } satisfies underTest.Order;
+    api.response = guestOrder;
+    TestBed.configureTestingModule({
+      providers: [
+        CheckoutService,
+        { provide: ApiService, useValue: api },
+        { provide: AuthService, useClass: AuthServiceStub },
+        { provide: CartService, useClass: CartServiceStub },
+      ],
+    });
+    const service = TestBed.inject(CheckoutService);
+
+    await expect(firstValueFrom(service.getOrder('ORD-ABCDEF123456', 'signed-token'))).resolves.toEqual(guestOrder);
+
+    expect(api.getCalls).toEqual([{ path: '/orders/ORD-ABCDEF123456/', params: { guest_access_token: 'signed-token' } }]);
+  });
+
+  it('loads checkout summaries from guest cart items', async () => {
+    const api = new ApiServiceStub();
+    const cart = new CartServiceStub();
+    api.response = summary;
+    cart.guestItems.set([guestItem]);
+    TestBed.configureTestingModule({
+      providers: [
+        CheckoutService,
+        { provide: ApiService, useValue: api },
+        { provide: AuthService, useClass: AuthServiceStub },
+        { provide: CartService, useValue: cart },
+      ],
+    });
+    const service = TestBed.inject(CheckoutService);
+
+    await expect(firstValueFrom(service.loadSummary())).resolves.toEqual(summary);
+
+    expect(api.postCalls).toEqual([{ path: '/orders/summary/', body: { items: [{ product: 3, quantity: 2 }] } }]);
+    expect(service.summary()).toEqual(summary);
+  });
+
+  it('loads checkout summaries from authenticated cart items', async () => {
+    const api = new ApiServiceStub();
+    const auth = new AuthServiceStub();
+    const cart = new CartServiceStub();
+    api.response = summary;
+    auth.isLoggedIn.set(true);
+    cart.cart.set(authenticatedCart);
+    TestBed.configureTestingModule({
+      providers: [
+        CheckoutService,
+        { provide: ApiService, useValue: api },
+        { provide: AuthService, useValue: auth },
+        { provide: CartService, useValue: cart },
+      ],
+    });
+    const service = TestBed.inject(CheckoutService);
+
+    await expect(firstValueFrom(service.loadSummary())).resolves.toEqual(summary);
+
+    expect(api.postCalls).toEqual([{ path: '/orders/summary/', body: { items: [{ product: 3, quantity: 2 }] } }]);
+    expect(service.summary()).toEqual(summary);
   });
 });

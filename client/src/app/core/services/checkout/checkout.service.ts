@@ -8,6 +8,7 @@ import {
   parseLiteral,
   parseNullableStringField,
   parseNumberField,
+  parseOptionalNullableStringField,
   parsePaginatedResponse,
   parseRecord,
   parseRecordField,
@@ -35,6 +36,28 @@ export interface CheckoutPayload {
   items: { product: number; quantity: number }[];
 }
 
+export interface CheckoutSummaryPayload {
+  items: { product: number; quantity: number }[];
+}
+
+export interface CheckoutSummaryItem {
+  product: number;
+  product_name: string;
+  product_slug: string;
+  unit_price: string;
+  quantity: number;
+  line_total: string;
+}
+
+export interface CheckoutSummary {
+  items: CheckoutSummaryItem[];
+  subtotal: string;
+  shipping_amount: string;
+  tax_amount: string;
+  discount_amount: string;
+  total_amount: string;
+}
+
 export interface OrderItem {
   id: number;
   product_name: string;
@@ -46,6 +69,7 @@ export interface OrderItem {
 export interface Order {
   id: number;
   order_number: string;
+  guest_access_token?: string | null;
   email: string;
   phone: string;
   shipping_address: CheckoutAddress;
@@ -81,11 +105,13 @@ export class CheckoutService {
   private readonly stateState = signal<CheckoutState>({ step: 'review', status: 'idle' });
   private readonly selectedPaymentMethodState = signal<PaymentMethod>('card');
   private readonly deliveryAddressState = signal<UiAddress | null>(null);
+  private readonly summaryState = signal<CheckoutSummary | null>(null);
   private idempotencyKey: string | null = null;
 
   readonly state = this.stateState.asReadonly();
   readonly selectedPaymentMethod = this.selectedPaymentMethodState.asReadonly();
   readonly deliveryAddress = this.deliveryAddressState.asReadonly();
+  readonly summary = this.summaryState.asReadonly();
 
   startReview(): void {
     this.stateState.set({ step: 'review', status: 'idle' });
@@ -110,6 +136,26 @@ export class CheckoutService {
     this.stateState.set({ step: 'payment', status: 'idle', paymentMethod: method });
   }
 
+  loadSummary(): Observable<CheckoutSummary> {
+    const payload = this.buildSummaryPayload();
+
+    if (payload === null) {
+      const error = new Error('Cart is empty.');
+      this.summaryState.set(null);
+      return throwError(() => error);
+    }
+
+    this.summaryState.set(null);
+    return this.api.post<unknown>('/orders/summary/', payload).pipe(
+      map((response) => parseCheckoutSummary(response, 'checkout summary')),
+      tap((summary) => this.summaryState.set(summary)),
+    );
+  }
+
+  clearSummary(): void {
+    this.summaryState.set(null);
+  }
+
   placeOrder(address: UiAddress, paymentMethod: PaymentMethod): Observable<Order> {
     const payload = this.buildPayload(address, paymentMethod);
 
@@ -132,6 +178,7 @@ export class CheckoutService {
         tap((order) => {
           this.stateState.set({ step: 'confirmation', status: 'complete', order });
           this.deliveryAddressState.set(null);
+          this.summaryState.set(null);
           this.clearCheckoutDrafts();
           this.cartService.clearCartState();
         }),
@@ -149,20 +196,13 @@ export class CheckoutService {
       .pipe(map((response) => parseOrderList(response)));
   }
 
-  getOrder(orderNumber: string): Observable<Order> {
-    return this.api.get<unknown>(`/orders/${orderNumber}/`).pipe(map((response) => parseOrder(response, 'order')));
+  getOrder(orderNumber: string, guestAccessToken?: string | null): Observable<Order> {
+    const params = guestAccessToken ? { guest_access_token: guestAccessToken } : undefined;
+    return this.api.get<unknown>(`/orders/${orderNumber}/`, params).pipe(map((response) => parseOrder(response, 'order')));
   }
 
   private buildPayload(address: UiAddress, paymentMethod: PaymentMethod): CheckoutPayload | null {
-    const items = this.authService.isLoggedIn()
-      ? this.cartService.cart()?.items.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-        })) ?? []
-      : this.cartService.guestItems().map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-        }));
+    const items = this.buildCheckoutItems();
 
     if (!items.length) {
       return null;
@@ -187,6 +227,23 @@ export class CheckoutService {
       payment_method: paymentMethod,
       items,
     };
+  }
+
+  private buildSummaryPayload(): CheckoutSummaryPayload | null {
+    const items = this.buildCheckoutItems();
+    return items.length ? { items } : null;
+  }
+
+  private buildCheckoutItems(): CheckoutPayload['items'] {
+    return this.authService.isLoggedIn()
+      ? this.cartService.cart()?.items.map((item) => ({
+          product: item.product,
+          quantity: item.quantity,
+        })) ?? []
+      : this.cartService.guestItems().map((item) => ({
+          product: item.product,
+          quantity: item.quantity,
+        }));
   }
 
   private getOrCreateIdempotencyKey(): string {
@@ -250,6 +307,32 @@ function parseOrderItem(value: unknown, context: string): OrderItem {
   };
 }
 
+function parseCheckoutSummaryItem(value: unknown, context: string): CheckoutSummaryItem {
+  const record = parseRecord(value, context);
+
+  return {
+    product: parseNumberField(record, 'product', context),
+    product_name: parseStringField(record, 'product_name', context),
+    product_slug: parseStringField(record, 'product_slug', context),
+    unit_price: parseStringField(record, 'unit_price', context),
+    quantity: parseNumberField(record, 'quantity', context),
+    line_total: parseStringField(record, 'line_total', context),
+  };
+}
+
+function parseCheckoutSummary(value: unknown, context: string): CheckoutSummary {
+  const record = parseRecord(value, context);
+
+  return {
+    items: parseArrayField(record, 'items', (item, index) => parseCheckoutSummaryItem(item, `${context}.items[${index}]`), context),
+    subtotal: parseStringField(record, 'subtotal', context),
+    shipping_amount: parseStringField(record, 'shipping_amount', context),
+    tax_amount: parseStringField(record, 'tax_amount', context),
+    discount_amount: parseStringField(record, 'discount_amount', context),
+    total_amount: parseStringField(record, 'total_amount', context),
+  };
+}
+
 function parseOrderPayment(value: unknown, context: string): NonNullable<Order['payment']> {
   const record = parseRecord(value, context);
 
@@ -265,10 +348,12 @@ function parseOrder(value: unknown, context: string): Order {
   const record = parseRecord(value, context);
   const paymentValue = record['payment'];
   const payment = paymentValue === undefined || paymentValue === null ? undefined : parseOrderPayment(paymentValue, `${context}.payment`);
+  const guestAccessToken = parseOptionalNullableStringField(record, 'guest_access_token', context);
 
   return {
     id: parseNumberField(record, 'id', context),
     order_number: parseStringField(record, 'order_number', context),
+    ...(guestAccessToken !== undefined ? { guest_access_token: guestAccessToken } : {}),
     email: parseStringField(record, 'email', context),
     phone: parseStringField(record, 'phone', context),
     shipping_address: parseCheckoutAddress(parseRecordField(record, 'shipping_address', context), `${context}.shipping_address`),

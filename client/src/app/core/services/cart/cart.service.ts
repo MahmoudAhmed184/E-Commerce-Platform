@@ -17,8 +17,11 @@ export interface CartItem {
   line_total: string;
 }
 
+export type CartStatus = 'active' | 'converted' | 'abandoned';
+
 export interface Cart {
   id: number;
+  status: CartStatus;
   items: CartItem[];
   subtotal: string;
   total: string;
@@ -277,6 +280,7 @@ function buildCart(items: readonly CartItem[]): Cart {
   const subtotal = items.reduce((sum, item) => sum + Number.parseFloat(item.line_total), 0);
   return {
     id: 0,
+    status: 'active',
     items: [...items],
     subtotal: subtotal.toFixed(2),
     total: subtotal.toFixed(2),
@@ -320,10 +324,14 @@ function normalizeCart(value: unknown): Cart | null {
   }
 
   const id = value['id'];
+  const status = value['status'];
   const items = value['items'];
   const subtotal = value['subtotal'];
   const total = value['total'];
   if (typeof id !== 'number' || !Array.isArray(items) || typeof subtotal !== 'string' || typeof total !== 'string') {
+    return null;
+  }
+  if (status !== undefined && status !== 'active' && status !== 'converted' && status !== 'abandoned') {
     return null;
   }
 
@@ -337,6 +345,7 @@ function normalizeCart(value: unknown): Cart | null {
 
   return {
     id,
+    status: status ?? 'active',
     items: normalizedItems,
     subtotal,
     total,

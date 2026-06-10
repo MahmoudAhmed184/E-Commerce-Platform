@@ -118,7 +118,8 @@ const orderDateFormatter = new Intl.DateTimeFormat('en-US', {
               </div>
             </div>
             <p class="type-body-md text-text-secondary">
-              Use an order number for any purchase, or sign in to review account order history.
+              Use a secure checkout confirmation link for guest orders, or sign in to review
+              account order history.
             </p>
           </div>
 
@@ -126,7 +127,7 @@ const orderDateFormatter = new Intl.DateTimeFormat('en-US', {
             @if (authService.isLoggedIn()) {
               <app-badge tone="success" label="Account connected" />
             } @else {
-              <app-badge tone="neutral" label="Guest lookup" />
+              <app-badge tone="neutral" label="Secure link required" />
             }
             <a
               class="inline-flex min-h-touch-min items-center gap-xs rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
@@ -187,7 +188,8 @@ const orderDateFormatter = new Intl.DateTimeFormat('en-US', {
                   }}</span>
                 } @else {
                   <span class="type-body-sm text-text-muted" [id]="orderNumberHelperId"
-                    >Find this in the checkout confirmation or receipt email.</span
+                    >Signed-in customers can find this in the checkout confirmation. Guest orders
+                    require the secure checkout link.</span
                   >
                 }
               </label>
@@ -255,8 +257,8 @@ const orderDateFormatter = new Intl.DateTimeFormat('en-US', {
                   <div class="grid gap-xs">
                     <h3 class="type-heading-md text-text-primary">Sign in for order history</h3>
                     <p class="max-w-[64ch] type-body-md text-text-secondary">
-                      Account orders appear here after login. Guest orders can still be opened from
-                      the lookup panel.
+                      Account orders appear here after login. Guest orders open from the secure
+                      checkout confirmation link created after purchase.
                     </p>
                   </div>
                 </div>
@@ -293,7 +295,8 @@ const orderDateFormatter = new Intl.DateTimeFormat('en-US', {
                     aria-hidden="true"
                   ></svg>
                   <p class="type-body-sm text-text-secondary">
-                    Order-number lookup is still available while account history is unavailable.
+                    Order-number lookup for account orders is still available while history is
+                    unavailable.
                   </p>
                 </div>
               </section>

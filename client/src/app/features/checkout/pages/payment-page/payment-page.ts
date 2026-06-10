@@ -5,12 +5,12 @@ import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { CartService } from '../../../../core/services/cart/cart.service';
-import { CheckoutService, type PaymentMethod } from '../../../../core/services/checkout/checkout.service';
+import { CheckoutService, type CheckoutSummary, type PaymentMethod } from '../../../../core/services/checkout/checkout.service';
 import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
-import type { UiPaymentMethod, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import type { UiOrderSummaryCharge, UiPaymentMethod, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiAction, UiStepperStep } from '../../../../shared/components/ui.types';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
 import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
@@ -89,12 +89,12 @@ import { CheckoutPaymentWorkflowService, type CheckoutPaymentPreflightResult, ty
               <app-order-summary-card
                 [lines]="summaryLines()"
                 [subtotal]="subtotal()"
-                [charges]="charges"
+                [charges]="charges()"
                 [total]="orderTotal()"
                 currency="USD"
                 paymentStatus="Pending"
                 [sticky]="true"
-                [loading]="isLoadingCart()"
+                [loading]="isLoadingCart() || summaryLoading()"
               />
               <p class="type-body-sm text-text-muted">
                 Orders are submitted only after payment preflight passes.
@@ -124,10 +124,6 @@ export class PaymentPage implements OnInit {
     { id: 'payment', label: 'Payment', href: '/checkout/payment', status: 'current' },
   ];
   protected readonly walletBalance: number | null = null;
-  protected readonly charges = [
-    { label: 'Shipping', amount: 0, tone: 'neutral' as const },
-    { label: 'Tax', amount: 0, tone: 'neutral' as const },
-  ] as const;
 
   protected readonly authService = inject(AuthService);
   protected readonly cartService = inject(CartService);
@@ -136,18 +132,30 @@ export class PaymentPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly isLoadingCart = signal(false);
+  protected readonly summaryLoading = signal(false);
   protected readonly selectedMethod = this.checkoutService.selectedPaymentMethod;
   protected readonly placingOrder = signal(false);
   protected readonly formError = signal('');
   protected readonly codModalOpen = signal(false);
-  protected readonly subtotal = computed(() => {
+  protected readonly fallbackSubtotal = computed(() => {
     if (this.authService.isLoggedIn()) {
       return Number.parseFloat(this.cartService.cart()?.subtotal ?? '0');
     }
     return this.cartService.guestSubtotal;
   });
-  protected readonly orderTotal = computed(() => this.subtotal());
+  protected readonly subtotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.subtotal ?? String(this.fallbackSubtotal())));
+  protected readonly orderTotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.total_amount ?? String(this.fallbackSubtotal())));
+  protected readonly charges = computed<readonly UiOrderSummaryCharge[]>(() => toSummaryCharges(this.checkoutService.summary()));
   protected readonly summaryLines = computed<readonly UiPriceLine[]>(() => {
+    const summary = this.checkoutService.summary();
+    if (summary) {
+      return summary.items.map((item, index) => ({
+        id: `summary-${item.product}-${index}`,
+        label: `${item.product_name} x ${item.quantity}`,
+        amount: Number.parseFloat(item.line_total),
+      }));
+    }
+
     if (this.authService.isLoggedIn()) {
       return (this.cartService.cart()?.items ?? []).map((item) => ({
         id: `auth-${item.id}`,
@@ -162,7 +170,7 @@ export class PaymentPage implements OnInit {
       amount: Number.parseFloat(item.product_price) * item.quantity,
     }));
   });
-  protected readonly cartEmpty = computed(() => this.summaryLines().length === 0);
+  protected readonly cartEmpty = computed(() => !this.hasCheckoutItems());
   protected readonly methods = computed<readonly UiPaymentMethod[]>(() => [
     {
       id: 'card',
@@ -189,6 +197,7 @@ export class PaymentPage implements OnInit {
     this.paymentWorkflow.ensureDeliveryAddressDraft();
 
     if (!this.authService.isLoggedIn()) {
+      this.refreshSummary();
       return;
     }
 
@@ -197,6 +206,7 @@ export class PaymentPage implements OnInit {
       .loadCart()
       .pipe(finalize(() => this.isLoadingCart.set(false)))
       .subscribe({
+        next: () => this.refreshSummary(),
         error: () => this.formError.set('Could not load payment totals. Try again.'),
       });
   }
@@ -246,6 +256,12 @@ export class PaymentPage implements OnInit {
     this.codModalOpen.set(false);
     switch (result.status) {
       case 'placed':
+        if (result.order.guest_access_token) {
+          void this.router.navigate(['/orders', result.order.order_number], {
+            queryParams: { guest_access_token: result.order.guest_access_token },
+          });
+          return;
+        }
         void this.router.navigate(['/orders', result.order.order_number]);
         return;
       case 'delivery-required':
@@ -257,4 +273,45 @@ export class PaymentPage implements OnInit {
         return;
     }
   }
+
+  private refreshSummary(): void {
+    if (!this.hasCheckoutItems()) {
+      this.checkoutService.clearSummary();
+      return;
+    }
+
+    this.summaryLoading.set(true);
+    this.checkoutService
+      .loadSummary()
+      .pipe(finalize(() => this.summaryLoading.set(false)))
+      .subscribe({
+        error: () => this.formError.set('Could not validate payment totals. Try again.'),
+      });
+  }
+
+  private hasCheckoutItems(): boolean {
+    return this.authService.isLoggedIn()
+      ? Boolean(this.cartService.cart()?.items.length)
+      : this.cartService.guestItems().length > 0;
+  }
+}
+
+function toSummaryCharges(summary: CheckoutSummary | null): readonly UiOrderSummaryCharge[] {
+  if (!summary) {
+    return [];
+  }
+
+  const shipping = Number.parseFloat(summary.shipping_amount);
+  const tax = Number.parseFloat(summary.tax_amount);
+  const discount = Number.parseFloat(summary.discount_amount);
+  const charges: UiOrderSummaryCharge[] = [
+    { label: 'Shipping', amount: shipping, tone: shipping === 0 ? 'success' : 'neutral' },
+    { label: 'Tax', amount: tax, tone: 'neutral' },
+  ];
+
+  if (discount > 0) {
+    charges.push({ label: 'Discount', amount: -discount, tone: 'success' });
+  }
+
+  return charges;
 }

@@ -5,12 +5,13 @@ import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { type CartItem, CartService, type GuestCartItem } from '../../../../core/services/cart/cart.service';
+import { CheckoutService, type CheckoutSummary } from '../../../../core/services/checkout/checkout.service';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
-import type { UiCartItem, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
+import type { UiCartItem, UiOrderSummaryCharge, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiStepperStep } from '../../../../shared/components/ui.types';
 import { CartItemRowComponent } from '../../../cart/components/cart-item-row/cart-item-row.component';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
@@ -92,7 +93,15 @@ import { CheckoutStepperComponent } from '../../components/checkout-stepper/chec
             </div>
 
             <div class="grid gap-md">
-              <app-order-summary-card [lines]="summaryLines()" [subtotal]="subtotal()" [total]="subtotal()" currency="USD" [sticky]="true" />
+              <app-order-summary-card
+                [lines]="summaryLines()"
+                [subtotal]="subtotal()"
+                [charges]="charges()"
+                [total]="orderTotal()"
+                currency="USD"
+                [sticky]="true"
+                [loading]="summaryLoading()"
+              />
               <div class="grid gap-sm">
                 <app-button [routerLink]="'/checkout/delivery'" size="lg" [fullWidth]="true">
                   Continue to delivery
@@ -122,10 +131,12 @@ export class ReviewPage implements OnInit {
 
   protected readonly authService = inject(AuthService);
   protected readonly cartService = inject(CartService);
+  protected readonly checkoutService = inject(CheckoutService);
   private readonly router = inject(Router);
 
   protected readonly loadingRows = [{ id: 'review-loading-1' }, { id: 'review-loading-2' }, { id: 'review-loading-3' }] as const;
   protected readonly isLoading = signal(false);
+  protected readonly summaryLoading = signal(false);
   protected readonly updatingLineId = signal<string | null>(null);
   protected readonly error = signal('');
   protected readonly cartItems = computed<readonly UiCartItem[]>(() => {
@@ -139,13 +150,30 @@ export class ReviewPage implements OnInit {
     const count = this.cartItems().length;
     return count === 1 ? '1 item' : `${count} items`;
   });
-  protected readonly subtotal = computed(() => this.cartItems().reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
-  protected readonly summaryLines = computed<readonly UiPriceLine[]>(() =>
-    this.cartItems().map((item) => ({ id: item.id, label: `${item.productName} x ${item.quantity}`, amount: item.unitPrice * item.quantity })),
-  );
+  protected readonly fallbackSubtotal = computed(() => this.cartItems().reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
+  protected readonly subtotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.subtotal ?? String(this.fallbackSubtotal())));
+  protected readonly orderTotal = computed(() => Number.parseFloat(this.checkoutService.summary()?.total_amount ?? String(this.fallbackSubtotal())));
+  protected readonly charges = computed<readonly UiOrderSummaryCharge[]>(() => toSummaryCharges(this.checkoutService.summary()));
+  protected readonly summaryLines = computed<readonly UiPriceLine[]>(() => {
+    const summary = this.checkoutService.summary();
+    if (summary) {
+      return summary.items.map((item, index) => ({
+        id: `summary-${item.product}-${index}`,
+        label: `${item.product_name} x ${item.quantity}`,
+        amount: Number.parseFloat(item.line_total),
+      }));
+    }
+
+    return this.cartItems().map((item) => ({
+      id: item.id,
+      label: `${item.productName} x ${item.quantity}`,
+      amount: item.unitPrice * item.quantity,
+    }));
+  });
 
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) {
+      this.refreshSummary();
       return;
     }
 
@@ -154,6 +182,7 @@ export class ReviewPage implements OnInit {
       .loadCart()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
+        next: () => this.refreshSummary(),
         error: () => this.error.set('Could not load checkout items. Try again.'),
       });
   }
@@ -161,6 +190,7 @@ export class ReviewPage implements OnInit {
   protected changeQuantity(lineId: string, quantity: number): void {
     if (lineId.startsWith('guest-')) {
       this.cartService.updateGuestItem(Number(lineId.slice('guest-'.length)), quantity);
+      this.refreshSummary();
       return;
     }
 
@@ -169,6 +199,7 @@ export class ReviewPage implements OnInit {
       .updateItem(Number(lineId.slice('auth-'.length)), quantity)
       .pipe(finalize(() => this.updatingLineId.set(null)))
       .subscribe({
+        next: () => this.refreshSummary(),
         error: () => this.error.set('Could not update quantity. Try again.'),
       });
   }
@@ -176,6 +207,7 @@ export class ReviewPage implements OnInit {
   protected removeLine(item: UiCartItem): void {
     if (item.id.startsWith('guest-')) {
       this.cartService.removeGuestItem(Number(item.id.slice('guest-'.length)));
+      this.refreshSummary();
       return;
     }
 
@@ -184,6 +216,7 @@ export class ReviewPage implements OnInit {
       .removeItem(Number(item.id.slice('auth-'.length)))
       .pipe(finalize(() => this.updatingLineId.set(null)))
       .subscribe({
+        next: () => this.refreshSummary(),
         error: () => this.error.set('Could not remove item. Try again.'),
       });
   }
@@ -220,4 +253,39 @@ export class ReviewPage implements OnInit {
       stockStatus: item.available_stock === null ? 'Verified at checkout' : `${availableStock} available`,
     };
   }
+
+  private refreshSummary(): void {
+    if (!this.cartItems().length) {
+      this.checkoutService.clearSummary();
+      return;
+    }
+
+    this.summaryLoading.set(true);
+    this.checkoutService
+      .loadSummary()
+      .pipe(finalize(() => this.summaryLoading.set(false)))
+      .subscribe({
+        error: () => this.error.set('Could not validate checkout totals. Try again.'),
+      });
+  }
+}
+
+function toSummaryCharges(summary: CheckoutSummary | null): readonly UiOrderSummaryCharge[] {
+  if (!summary) {
+    return [];
+  }
+
+  const shipping = Number.parseFloat(summary.shipping_amount);
+  const tax = Number.parseFloat(summary.tax_amount);
+  const discount = Number.parseFloat(summary.discount_amount);
+  const charges: UiOrderSummaryCharge[] = [
+    { label: 'Shipping', amount: shipping, tone: shipping === 0 ? 'success' : 'neutral' },
+    { label: 'Tax', amount: tax, tone: 'neutral' },
+  ];
+
+  if (discount > 0) {
+    charges.push({ label: 'Discount', amount: -discount, tone: 'success' });
+  }
+
+  return charges;
 }
