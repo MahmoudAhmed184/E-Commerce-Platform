@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import NoReturn, cast
+from typing import Any, NoReturn, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -11,10 +11,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .jwt_cookies import clear_auth_cookies, set_auth_cookies
 from .models import CustomUser
+from .permissions import IsActiveAccount, enforce_active_account
 from .selectors import get_current_user_data
 from .serializers import (
     ConfirmEmailSerializer,
@@ -112,6 +115,22 @@ class CookieTokenRefreshView(TokenRefreshView):
                 },
             )
 
+        try:
+            refresh = RefreshToken(cast(Any, refresh_cookie))
+        except TokenError as exc:
+            raise InvalidToken(exc.args[0]) from exc
+
+        user_id = refresh.get(api_settings.USER_ID_CLAIM)
+        if user_id is None:
+            raise InvalidToken({"detail": "Token contained no recognizable user identification."})
+
+        try:
+            token_user = CustomUser.objects.get(**{api_settings.USER_ID_FIELD: user_id})
+        except CustomUser.DoesNotExist as exc:
+            raise InvalidToken({"detail": "User not found.", "code": "user_not_found"}) from exc
+
+        enforce_active_account(token_user)
+
         serializer = self.get_serializer(data={"refresh": refresh_cookie})
 
         try:
@@ -147,7 +166,7 @@ class LogoutView(APIView):
 
 
 class CurrentUserView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAccount]
 
     def get(self, request: Request) -> Response:
         user = cast(CustomUser, request.user)

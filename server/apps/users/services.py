@@ -24,6 +24,31 @@ class AuthBlockedError(Exception):
         super().__init__(detail)
 
 
+def get_account_block_error(user: CustomUser) -> AuthBlockedError | None:
+    if user.deleted_at is not None or user.status == CustomUser.Status.DELETED:
+        return AuthBlockedError(
+            code="account_deleted",
+            detail="This account no longer exists.",
+            account_status=CustomUser.Status.DELETED,
+        )
+
+    if user.status == CustomUser.Status.RESTRICTED:
+        return AuthBlockedError(
+            code="account_restricted",
+            detail="Your account has been restricted. Contact support.",
+            account_status=CustomUser.Status.RESTRICTED,
+        )
+
+    if user.status != CustomUser.Status.ACTIVE or not user.is_email_confirmed:
+        return AuthBlockedError(
+            code="email_confirmation_required",
+            detail="Please confirm your email before logging in.",
+            account_status=CustomUser.Status.PENDING,
+        )
+
+    return None
+
+
 @transaction.atomic
 def create_user(email: str, phone: str, password: str, full_name: str) -> CustomUser:
     normalized_email = CustomUser.objects.normalize_email(email).strip()
@@ -118,26 +143,9 @@ def authenticate_user(identifier: str, password: str) -> CustomUser:
     if user is None or not user.check_password(password):
         raise ValidationError({"non_field_errors": "Invalid credentials."})
 
-    if user.deleted_at is not None or user.status == CustomUser.Status.DELETED:
-        raise AuthBlockedError(
-            code="account_deleted",
-            detail="This account no longer exists.",
-            account_status=CustomUser.Status.DELETED,
-        )
-
-    if user.status == CustomUser.Status.RESTRICTED:
-        raise AuthBlockedError(
-            code="account_restricted",
-            detail="Your account has been restricted. Contact support.",
-            account_status=CustomUser.Status.RESTRICTED,
-        )
-
-    if user.status != CustomUser.Status.ACTIVE or not user.is_email_confirmed:
-        raise AuthBlockedError(
-            code="email_confirmation_required",
-            detail="Please confirm your email before logging in.",
-            account_status=CustomUser.Status.PENDING,
-        )
+    blocked = get_account_block_error(user)
+    if blocked is not None:
+        raise blocked
 
     return user
 

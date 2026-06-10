@@ -8,7 +8,7 @@ from .models import CustomUser
 class CurrentUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ("id", "email", "phone", "full_name", "role", "status")
+        fields = ("id", "email", "phone", "full_name", "role", "status", "is_email_confirmed")
         read_only_fields = fields
 
 
@@ -43,4 +43,3 @@ class ConfirmEmailSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     identifier = serializers.CharField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
-

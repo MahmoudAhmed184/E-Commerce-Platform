@@ -38,6 +38,12 @@ def _login(client: APIClient, identifier: str, password: str = "Password123"):
     )
 
 
+def _client_with_access_cookie(user: CustomUser) -> APIClient:
+    client = APIClient()
+    client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = issue_auth_tokens(user)["access"]
+    return client
+
+
 @pytest.mark.django_db
 def test_register_returns_201() -> None:
     client = APIClient()
@@ -241,6 +247,22 @@ def test_refresh_token_rotates_from_cookie() -> None:
 
 
 @pytest.mark.django_db
+def test_refresh_rechecks_restricted_user_status() -> None:
+    user = _create_active_user(email="refresh-restricted@example.com", phone="+201000000126")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    user.status = CustomUser.Status.RESTRICTED
+    user.save(update_fields=["status", "updated_at"])
+
+    response = client.post("/api/v1/auth/token/refresh/", {}, format="json")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data["code"] == "account_restricted"
+    assert response.data["account_status"] == CustomUser.Status.RESTRICTED
+    assert settings.JWT_REFRESH_COOKIE_NAME in login_response.cookies
+
+
+@pytest.mark.django_db
 def test_me_returns_current_user_shape() -> None:
     user = _create_active_user(email="me@example.com", phone="+201000000021")
     client = APIClient()
@@ -261,6 +283,35 @@ def test_me_returns_current_user_shape() -> None:
     assert str(response.data["id"]) == str(user.id)
     assert response.data["email"] == user.email
     assert response.data["is_email_confirmed"] is True
+
+
+@pytest.mark.django_db
+def test_me_rechecks_restricted_user_status_from_existing_cookie() -> None:
+    user = _create_active_user(email="me-restricted@example.com", phone="+201000000127")
+    client = _client_with_access_cookie(user)
+    user.status = CustomUser.Status.RESTRICTED
+    user.save(update_fields=["status", "updated_at"])
+
+    response = client.get("/api/v1/users/me/")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data["code"] == "account_restricted"
+    assert response.data["account_status"] == CustomUser.Status.RESTRICTED
+
+
+@pytest.mark.django_db
+def test_me_rechecks_soft_deleted_user_status_from_existing_cookie() -> None:
+    user = _create_active_user(email="me-deleted@example.com", phone="+201000000128")
+    client = _client_with_access_cookie(user)
+    user.status = CustomUser.Status.DELETED
+    user.deleted_at = timezone.now()
+    user.save(update_fields=["status", "deleted_at", "updated_at"])
+
+    response = client.get("/api/v1/users/me/")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.data["code"] == "account_deleted"
+    assert response.data["account_status"] == CustomUser.Status.DELETED
 
 
 @pytest.mark.django_db
