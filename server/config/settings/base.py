@@ -168,6 +168,9 @@ REST_FRAMEWORK = {
         "anon": "20/minute",
         "user": "60/minute",
         "auth": "10/minute",
+        "checkout": "10/minute",
+        "payment_webhook": "30/minute",
+        "review_write": "20/minute",
     },
 }
 

@@ -17,6 +17,7 @@ from .serializers import PaymentWebhookSerializer
 class SandboxPaymentWebhookView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "payment_webhook"
 
     def post(self, request):
         signature = request.headers.get("X-Sandbox-Signature", "")
