@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { LucideArrowLeft, LucidePackageCheck } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
@@ -12,7 +13,7 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import type { UiPaymentMethod, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiAction, UiStepperStep } from '../../../../shared/components/ui.types';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
-import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
+import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 import { PaymentMethodSelectorComponent } from '../../components/payment-method-selector/payment-method-selector.component';
 import { CheckoutPaymentWorkflowService, type CheckoutPaymentPreflightResult, type CheckoutPaymentWorkflowResult } from '../../services/checkout-payment-workflow/checkout-payment-workflow.service';
 
@@ -25,16 +26,17 @@ import { CheckoutPaymentWorkflowService, type CheckoutPaymentPreflightResult, ty
     ButtonComponent,
     CheckoutStepperComponent,
     EmptyStateComponent,
+    LucideArrowLeft,
+    LucidePackageCheck,
     OrderSummaryCardComponent,
     PaymentMethodSelectorComponent,
-    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-surface-page">
-      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-lg px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
-        <header class="grid gap-md">
-          <div class="grid gap-xs">
+    <main class="min-h-screen bg-surface-page">
+      <div class="mx-auto grid max-w-[var(--ui-container-2xl)] gap-xl px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
+        <header class="grid gap-lg">
+          <div class="grid max-w-[72ch] gap-xs">
             <p class="type-label-sm text-text-muted">Checkout</p>
             <h1 class="type-heading-xl text-text-primary">Payment</h1>
             <p class="type-body-md text-text-secondary">Choose how you want to pay. Your order is created after payment details are confirmed.</p>
@@ -55,8 +57,8 @@ import { CheckoutPaymentWorkflowService, type CheckoutPaymentPreflightResult, ty
             (actionPressed)="browseProducts()"
           />
         } @else {
-          <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
-            <div class="grid gap-md rounded-md border-hairline border-border-default bg-surface-raised p-md shadow-xs">
+          <section class="grid gap-xl lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
+            <div class="grid gap-md">
               <app-payment-method-selector
                 [methods]="methods()"
                 [selected]="selectedMethod()"
@@ -72,26 +74,32 @@ import { CheckoutPaymentWorkflowService, type CheckoutPaymentPreflightResult, ty
               </app-payment-method-selector>
 
               <div class="flex flex-wrap gap-sm">
-                <app-button [loading]="placingOrder()" (pressed)="placeOrder()">Place order</app-button>
-                <a
-                  class="inline-flex min-h-control-md items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
-                  routerLink="/checkout/delivery"
-                >
+                <app-button variant="secondary" [routerLink]="'/checkout/delivery'">
+                  <svg lucideArrowLeft class="size-icon-sm" aria-hidden="true"></svg>
                   Back to delivery
-                </a>
+                </app-button>
+                <app-button [loading]="placingOrder()" (pressed)="placeOrder()">
+                  <svg lucidePackageCheck class="size-icon-sm" aria-hidden="true"></svg>
+                  Place order
+                </app-button>
               </div>
             </div>
 
-            <app-order-summary-card
-              [lines]="summaryLines()"
-              [subtotal]="subtotal()"
-              [charges]="charges"
-              [total]="orderTotal()"
-              currency="USD"
-              paymentStatus="Pending"
-              [sticky]="true"
-              [loading]="isLoadingCart()"
-            />
+            <div class="grid gap-md">
+              <app-order-summary-card
+                [lines]="summaryLines()"
+                [subtotal]="subtotal()"
+                [charges]="charges"
+                [total]="orderTotal()"
+                currency="USD"
+                paymentStatus="Pending"
+                [sticky]="true"
+                [loading]="isLoadingCart()"
+              />
+              <p class="type-body-sm text-text-muted">
+                Orders are submitted only after payment preflight passes.
+              </p>
+            </div>
           </section>
         }
       </div>

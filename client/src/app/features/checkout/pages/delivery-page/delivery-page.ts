@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { LucideArrowLeft, LucideArrowRight } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
@@ -12,7 +13,7 @@ import type { UiAddress, UiPriceLine } from '../../../../core/models/commerce-ui
 import type { UiOption, UiStepperStep } from '../../../../shared/components/ui.types';
 import { AddressFormComponent } from '../../components/address-form/address-form.component';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
-import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
+import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 
 @Component({
   selector: 'app-checkout-delivery-page',
@@ -23,15 +24,16 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
     ButtonComponent,
     CheckoutStepperComponent,
     EmptyStateComponent,
+    LucideArrowLeft,
+    LucideArrowRight,
     OrderSummaryCardComponent,
-    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-surface-page">
-      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-lg px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
-        <header class="grid gap-md">
-          <div class="grid gap-xs">
+    <main class="min-h-screen bg-surface-page">
+      <div class="mx-auto grid max-w-[var(--ui-container-2xl)] gap-xl px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
+        <header class="grid gap-lg">
+          <div class="grid max-w-[72ch] gap-xs">
             <p class="type-label-sm text-text-muted">Checkout</p>
             <h1 class="type-heading-xl text-text-primary">Delivery details</h1>
             <p class="type-body-md text-text-secondary">Enter a reachable contact and complete delivery address before payment.</p>
@@ -48,7 +50,7 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
             (actionPressed)="browseProducts()"
           />
         } @else {
-          <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
+          <section class="grid gap-xl lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
             <div class="grid gap-md">
               @if (formError()) {
                 <app-alert-banner tone="error" title="Review delivery details" [message]="formError()" />
@@ -66,24 +68,30 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
               />
 
               <div class="flex flex-wrap gap-sm">
-                <app-button (pressed)="continueToPayment()">Continue to payment</app-button>
-                <a
-                  class="inline-flex min-h-control-md items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
-                  routerLink="/checkout/review"
-                >
+                <app-button variant="secondary" [routerLink]="'/checkout/review'">
+                  <svg lucideArrowLeft class="size-icon-sm" aria-hidden="true"></svg>
                   Back to review
-                </a>
+                </app-button>
+                <app-button (pressed)="continueToPayment()">
+                  Continue to payment
+                  <svg lucideArrowRight class="size-icon-sm" aria-hidden="true"></svg>
+                </app-button>
               </div>
             </div>
 
-            <app-order-summary-card
-              [lines]="summaryLines()"
-              [subtotal]="subtotal()"
-              [total]="subtotal()"
-              currency="USD"
-              [sticky]="true"
-              [loading]="isLoadingCart()"
-            />
+            <div class="grid gap-md">
+              <app-order-summary-card
+                [lines]="summaryLines()"
+                [subtotal]="subtotal()"
+                [total]="subtotal()"
+                currency="USD"
+                [sticky]="true"
+                [loading]="isLoadingCart()"
+              />
+              <p class="type-body-sm text-text-muted">
+                Payment is enabled after the required delivery fields are complete.
+              </p>
+            </div>
           </section>
         }
       </div>

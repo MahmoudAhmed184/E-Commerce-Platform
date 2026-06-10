@@ -1,36 +1,41 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { LucideArrowLeft, LucideArrowRight, LucideShoppingBag } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { type CartItem, CartService, type GuestCartItem } from '../../../../core/services/cart/cart.service';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
 import type { UiCartItem, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiStepperStep } from '../../../../shared/components/ui.types';
 import { CartItemRowComponent } from '../../../cart/components/cart-item-row/cart-item-row.component';
 import { CheckoutStepperComponent } from '../../components/checkout-stepper/checkout-stepper.component';
-import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
 
 @Component({
   selector: 'app-checkout-review-page',
   standalone: true,
   imports: [
     AlertBannerComponent,
+    ButtonComponent,
     CartItemRowComponent,
     CheckoutStepperComponent,
     EmptyStateComponent,
+    LucideArrowLeft,
+    LucideArrowRight,
+    LucideShoppingBag,
     OrderSummaryCardComponent,
-    RouterLink,
     SkeletonLoaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-surface-page">
-      <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-lg px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
-        <header class="grid gap-md">
-          <div class="grid gap-xs">
+    <main class="min-h-screen bg-surface-page">
+      <div class="mx-auto grid max-w-[var(--ui-container-2xl)] gap-xl px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
+        <header class="grid gap-lg">
+          <div class="grid max-w-[72ch] gap-xs">
             <p class="type-label-sm text-text-muted">Checkout</p>
             <h1 class="type-heading-xl text-text-primary">Review order</h1>
             <p class="type-body-md text-text-secondary">Confirm items and quantities before entering delivery details.</p>
@@ -60,8 +65,19 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
             (actionPressed)="browseProducts()"
           />
         } @else {
-          <section class="grid gap-lg lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
+          <section class="grid gap-xl lg:grid-cols-[var(--ui-layout-checkout-grid)] lg:items-start">
             <div class="grid gap-md" aria-label="Checkout items">
+              <div class="flex flex-wrap items-end justify-between gap-sm">
+                <div class="grid gap-2xs">
+                  <h2 class="type-heading-lg text-text-primary">Items in your order</h2>
+                  <p class="type-body-sm text-text-secondary">{{ itemCountLabel() }} ready for checkout.</p>
+                </div>
+                <app-button variant="secondary" [routerLink]="'/products'">
+                  <svg lucideShoppingBag class="size-icon-sm" aria-hidden="true"></svg>
+                  Add items
+                </app-button>
+              </div>
+
               @for (item of cartItems(); track item.id) {
                 <app-cart-item-row
                   [item]="item"
@@ -77,18 +93,19 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
 
             <div class="grid gap-md">
               <app-order-summary-card [lines]="summaryLines()" [subtotal]="subtotal()" [total]="subtotal()" currency="USD" [sticky]="true" />
-              <a
-                class="inline-flex min-h-control-lg items-center justify-center rounded-md bg-surface-primary px-lg py-sm type-label-lg text-text-on-primary interactive-transition hover:bg-primary-600 focus-visible:focus-ring"
-                routerLink="/checkout/delivery"
-              >
-                Continue to delivery
-              </a>
-              <a
-                class="inline-flex min-h-control-md items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
-                routerLink="/cart"
-              >
-                Back to cart
-              </a>
+              <div class="grid gap-sm">
+                <app-button [routerLink]="'/checkout/delivery'" size="lg" [fullWidth]="true">
+                  Continue to delivery
+                  <svg lucideArrowRight class="size-icon-sm" aria-hidden="true"></svg>
+                </app-button>
+                <app-button variant="secondary" [routerLink]="'/cart'" [fullWidth]="true">
+                  <svg lucideArrowLeft class="size-icon-sm" aria-hidden="true"></svg>
+                  Back to cart
+                </app-button>
+              </div>
+              <p class="type-body-sm text-text-muted">
+                Prices and stock are checked again before payment.
+              </p>
             </div>
           </section>
         }
@@ -117,6 +134,10 @@ export class ReviewPage implements OnInit {
     }
 
     return this.cartService.guestItems().map((item) => this.guestLine(item));
+  });
+  protected readonly itemCountLabel = computed(() => {
+    const count = this.cartItems().length;
+    return count === 1 ? '1 item' : `${count} items`;
   });
   protected readonly subtotal = computed(() => this.cartItems().reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
   protected readonly summaryLines = computed<readonly UiPriceLine[]>(() =>

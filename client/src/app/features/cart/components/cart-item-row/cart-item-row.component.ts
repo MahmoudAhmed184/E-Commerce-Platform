@@ -15,12 +15,12 @@ import type { UiCartItem } from '../../../../core/models/commerce-ui/commerce-ui
   host: { class: 'contents' },
   template: `
     @if (loading()) {
-      <div class="glass-panel glass-depth-raised rounded-md p-md" aria-busy="true">
+      <div class="surface-panel surface-depth-raised rounded-md p-md" aria-busy="true">
         <app-skeleton-loader shape="block" [count]="2" label="Loading cart item" />
       </div>
     } @else if (item(); as cartItem) {
-      <article class="glass-panel glass-depth-raised grid gap-md rounded-lg p-md md:grid-cols-[var(--ui-layout-nav-grid)]">
-        <a class="block size-thumbnail-md overflow-hidden rounded-md bg-glass-white-6 shadow-glass-flat focus-visible:focus-ring" [routerLink]="cartItem.productSlug ? ['/products', cartItem.productSlug] : null">
+      <article class="surface-panel surface-depth-raised grid gap-md rounded-md p-md md:grid-cols-[var(--ui-layout-nav-grid)]">
+        <a class="block size-thumbnail-md overflow-hidden rounded-md bg-surface-raised shadow-xs focus-visible:focus-ring" [routerLink]="cartItem.productSlug ? ['/products', cartItem.productSlug] : null">
           <img class="h-full w-full object-cover" [src]="cartItem.imageUrl" [alt]="cartItem.productName" />
         </a>
 

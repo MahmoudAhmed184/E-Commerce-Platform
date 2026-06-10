@@ -1,30 +1,31 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
 import type { UiCartItem, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import { type CartItem, CartService, type GuestCartItem } from '../../../../core/services/cart/cart.service';
 import { CartItemRowComponent } from '../../components/cart-item-row/cart-item-row.component';
-import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
 
 @Component({
   selector: 'app-cart-page',
   standalone: true,
   imports: [
     AlertBannerComponent,
+    ButtonComponent,
     CartItemRowComponent,
     EmptyStateComponent,
     OrderSummaryCardComponent,
-    RouterLink,
     SkeletonLoaderComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-transparent">
+    <main class="bg-surface-page">
       <div class="mx-auto grid max-w-[var(--ui-container-xl)] gap-lg px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
         <header class="flex flex-wrap items-end justify-between gap-md">
           <div class="grid gap-xs">
@@ -33,7 +34,7 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
             <p class="type-body-md text-text-secondary">Review items, quantities, and totals before starting checkout.</p>
           </div>
           @if (!isEmpty()) {
-            <p class="glass-panel glass-depth-raised rounded-full px-sm py-xs type-label-md text-text-secondary">
+            <p class="surface-panel surface-depth-raised rounded-full px-sm py-xs type-label-md text-text-secondary">
               {{ itemCountLabel() }}
             </p>
           }
@@ -84,12 +85,9 @@ import { OrderSummaryCardComponent } from '../../components/order-summary-card/o
                 currency="USD"
                 [sticky]="true"
               />
-              <a
-                class="inline-flex min-h-control-lg items-center justify-center rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-lg py-sm type-label-lg text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
-                routerLink="/checkout/review"
-              >
+              <app-button [routerLink]="'/checkout/review'" size="lg" [fullWidth]="true">
                 Continue to checkout
-              </a>
+              </app-button>
               <p class="type-body-sm text-text-muted">Shipping, taxes, discounts, and payment options are confirmed during checkout.</p>
             </div>
           </section>

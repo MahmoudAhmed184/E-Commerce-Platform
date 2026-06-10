@@ -79,7 +79,8 @@ describe('OrdersPage', () => {
     const text = root.textContent ?? '';
     expect(text).toContain('Order ORD-ABCDEF123456');
     expect(text).toContain('Checkout Product x 2');
-    expect(text).toContain('Payment cod pending');
+    expect(text).toContain('Payment COD pending');
+    expect(text).toContain('Cash on delivery');
   });
 
   it('normalizes order number lookup before navigation', async () => {

@@ -9,7 +9,7 @@ import { ErrorStateComponent } from '../../../../shared/components/error-state/e
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
 import type { UiOrderSummaryCharge, UiPriceLine } from '../../../../core/models/commerce-ui/commerce-ui.model';
 import type { UiTone } from '../../../../shared/components/ui.types';
-import { OrderSummaryCardComponent } from '../../components/order-summary-card/order-summary-card.component';
+import { OrderSummaryCardComponent } from '../../../../shared/components/order-summary-card/order-summary-card.component';
 
 interface ConfirmationBadge {
   id: string;
@@ -127,7 +127,7 @@ type ConfirmationState =
               />
 
               <a
-                class="inline-flex min-h-control-lg items-center justify-center rounded-md bg-surface-primary px-lg py-sm type-label-lg text-text-on-primary interactive-transition hover:bg-primary-600 focus-visible:focus-ring"
+                class="inline-flex min-h-touch-min items-center justify-center rounded-md bg-surface-primary px-lg py-sm type-label-lg text-text-on-primary interactive-transition hover:bg-surface-primary-hover focus-visible:focus-ring"
                 routerLink="/products"
               >
                 Continue shopping
