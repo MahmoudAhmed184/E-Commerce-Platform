@@ -5,11 +5,11 @@ import { finalize } from 'rxjs';
 import { AdminService, AdminReview } from '../../services/admin.service';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { RatingWidgetComponent } from '../../../../shared/components/rating-widget/rating-widget.component';
 
 @Component({
   selector: 'app-admin-reviews',
-  standalone: true,
-  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [SlicePipe, LoadingSpinnerComponent, ErrorMessageComponent, RatingWidgetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
@@ -27,39 +27,59 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                 <th class="px-4 py-3">Product</th>
                 <th class="px-4 py-3">Rating</th>
                 <th class="px-4 py-3">Comment</th>
-                <th class="px-4 py-3">Visible</th>
+                <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3">Date</th>
                 <th class="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (review of reviews(); track review.id) {
-                <tr class="hover:bg-slate-50">
+                <tr
+                  class="transition-colors"
+                  [class.opacity-50]="!!review.deleted_at"
+                  [class.bg-slate-50]="!!review.deleted_at"
+                  [class.hover:bg-slate-50]="!review.deleted_at"
+                >
                   <td class="px-4 py-3 text-slate-900">{{ review.user_name }}</td>
                   <td class="px-4 py-3 text-slate-600">{{ review.product_name }}</td>
-                  <td class="px-4 py-3 text-amber-500">
-                    {{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}
+                  <td class="px-4 py-3">
+                    <app-rating-widget [rating]="review.rating" size="sm" />
                   </td>
                   <td class="max-w-xs px-4 py-3 text-slate-600 truncate">{{ review.comment ?? '—' }}</td>
                   <td class="px-4 py-3">
-                    <span class="rounded-full px-2 py-0.5 text-xs font-medium"
-                      [class.bg-green-100]="review.is_visible"
-                      [class.text-green-700]="review.is_visible"
-                      [class.bg-red-100]="!review.is_visible"
-                      [class.text-red-600]="!review.is_visible">
-                      {{ review.is_visible ? 'Visible' : 'Hidden' }}
-                    </span>
+                    <div class="flex flex-wrap gap-1">
+                      @if (review.deleted_at) {
+                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          Deleted
+                        </span>
+                      } @else if (review.is_visible) {
+                        <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Visible
+                        </span>
+                      } @else {
+                        <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">
+                          Hidden
+                        </span>
+                      }
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-slate-500">{{ review.created_at | slice:0:10 }}</td>
                   <td class="px-4 py-3">
-                    <div class="flex gap-2">
-                      @if (review.is_visible) {
-                        <button type="button" (click)="hide(review)"
-                          class="text-xs font-medium text-amber-600 hover:text-amber-800">Hide</button>
-                      }
-                      <button type="button" (click)="remove(review)"
-                        class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
-                    </div>
+                    @if (!review.deleted_at) {
+                      <div class="flex gap-2">
+                        @if (review.is_visible) {
+                          <button type="button" (click)="hide(review)"
+                            class="text-xs font-medium text-amber-600 hover:text-amber-800">Hide</button>
+                        } @else {
+                          <button type="button" (click)="unhide(review)"
+                            class="text-xs font-medium text-green-600 hover:text-green-800">Unhide</button>
+                        }
+                        <button type="button" (click)="remove(review)"
+                          class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
+                      </div>
+                    } @else {
+                      <span class="text-xs text-slate-400">No actions</span>
+                    }
                   </td>
                 </tr>
               } @empty {
@@ -118,10 +138,22 @@ export class AdminReviewsPage implements OnInit {
     });
   }
 
+  protected unhide(review: AdminReview): void {
+    this.adminService.unhideReview(review.id).subscribe({
+      next: (updated) =>
+        this.reviews.update((list) => list.map((r) => (r.id === updated.id ? updated : r))),
+      error: () => this.error.set('Could not unhide review.'),
+    });
+  }
+
   protected remove(review: AdminReview): void {
     this.adminService.deleteReview(review.id).subscribe({
-      next: () => this.reviews.update((list) => list.filter((r) => r.id !== review.id)),
+      next: () =>
+        this.reviews.update((list) =>
+          list.map((r) => (r.id === review.id ? { ...r, deleted_at: new Date().toISOString() } : r)),
+        ),
       error: () => this.error.set('Could not delete review.'),
     });
   }
 }
+

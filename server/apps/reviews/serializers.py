@@ -1,20 +1,15 @@
 """
-reviews/serializers.py — Validation-only serializers (NFR-MNT-005).
+reviews/serializers.py — Request/response serialization for reviews.
 
-Serializers handle input parsing and validation.  They do NOT call
-``save()`` or ``create()`` — that responsibility belongs to
-``services.py`` (NFR-MNT-003).  Views orchestrate the flow:
-validate → call service → return response.
+These serializers handle VALIDATION ONLY. They do NOT create or update
+database objects — that responsibility belongs to services.py (NFR-MNT-003).
 
-WHY NO ``create()`` OVERRIDE?
-------------------------------
-The previous version had ``ReviewCreateSerializer.create()`` that
-called ``Review.objects.create(...)`` directly.  That mixed
-"validation" with "persistence", which breaks the services/selectors
-pattern the project uses.  Now:
-• Serializer validates → ``serializer.validated_data``
-• View calls ``services.create_review(**validated_data)``
-• Service handles the database write + business rules
+The flow is:
+  1. View receives HTTP request
+  2. Serializer validates the incoming data
+  3. View calls a service function with the validated data
+  4. Service creates/updates the model
+  5. View uses a read serializer to format the response
 """
 from __future__ import annotations
 
@@ -26,10 +21,10 @@ from .models import Review
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """Read serializer — used for all API responses that return a review.
+    """Read serializer — used for API responses.
 
-    Includes computed ``user_name`` and ``product_name`` so the
-    frontend doesn't need a separate request to resolve those.
+    Includes computed display fields (user_name, product_name) so the
+    frontend doesn't need separate API calls to show who wrote the review.
     """
 
     user_name = serializers.CharField(source="user.full_name", read_only=True)
@@ -63,15 +58,14 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ReviewCreateSerializer(serializers.Serializer):
-    """Write serializer — validates data for creating a review.
+    """Write serializer for creating reviews — VALIDATION ONLY.
 
-    ``product`` is optional in the request body because it can also
-    come from the URL (e.g. ``/api/v1/products/<slug>/reviews/``).
-    The view injects it via serializer context.
+    Does NOT call .save() or .create(). The view passes validated data
+    to ``services.create_review()`` which handles the database write.
 
-    NOTE: This is a plain ``Serializer``, NOT a ``ModelSerializer``.
-    We don't want DRF to auto-generate a ``create()`` method that
-    would bypass our service layer.
+    The ``product`` field is optional here because when creating via the
+    product slug URL (``/api/v1/products/{slug}/reviews/``), the product
+    is resolved from the URL and injected via serializer context.
     """
 
     product = serializers.PrimaryKeyRelatedField(
@@ -82,24 +76,38 @@ class ReviewCreateSerializer(serializers.Serializer):
     comment = serializers.CharField(required=False, default="", allow_blank=True)
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
-        # If the product wasn't in the request body, pull it from
-        # the view context (set by ProductReviewListCreateView).
+        # If product wasn't in the request body, pull it from context
+        # (set by ProductReviewListCreateView from the URL slug).
         product = attrs.get("product") or self.context.get("product")
         if product is None:
             raise serializers.ValidationError(
                 {"product": ["This field is required."]}
             )
         attrs["product"] = product
+
+        # Verify the user has ordered the product
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            from apps.orders.models import Order
+            has_ordered = Order.objects.filter(
+                user=request.user,
+                items__product=product,
+                status=Order.Status.CONFIRMED
+            ).exists()
+            if not has_ordered:
+                raise serializers.ValidationError(
+                    {"non_field_errors": ["You must purchase this product before reviewing it."]}
+                )
         return attrs
 
 
 class ReviewUpdateSerializer(serializers.Serializer):
-    """Write serializer — validates data for updating a review.
+    """Write serializer for updating reviews — VALIDATION ONLY.
 
-    Only ``rating`` and ``comment`` can be changed by the customer.
-    Using a plain ``Serializer`` (not ModelSerializer) keeps the
-    boundary clear: this file validates, ``services.py`` persists.
+    Both fields are optional because PATCH requests allow partial updates.
+    The view passes validated data to ``services.update_review()``.
     """
 
     rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
     comment = serializers.CharField(required=False, allow_blank=True)
+

@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
+import { PaginatedResponse } from '../../../core/models/pagination.model';
+export type { PaginatedResponse };
 
 export type UserStatus = 'pending_approval' | 'active' | 'restricted' | 'soft_deleted';
 export type UserRole = 'customer' | 'admin';
@@ -15,6 +17,8 @@ export interface AdminUser {
   full_name: string;
   role: UserRole;
   status: UserStatus;
+  is_email_confirmed: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -35,6 +39,7 @@ export interface AdminReview {
   rating: number;
   comment: string | null;
   is_visible: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -47,6 +52,8 @@ export interface AdminProduct {
   availability: 'in_stock' | 'out_of_stock';
   is_active: boolean;
   category_name: string;
+  category_id: number;
+  description: string;
 }
 
 export interface AdminCategory {
@@ -77,6 +84,7 @@ interface BackendAdminProduct {
   availability: 'in_stock' | 'out_of_stock';
   is_active: boolean;
   category: BackendCategorySummary;
+  description: string;
 }
 
 interface BackendAdminCategory {
@@ -108,16 +116,25 @@ export interface AdminProductImage {
   created_at: string;
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
+export interface DashboardStats {
+  total_users: number;
+  total_products: number;
+  total_orders: number;
+  total_revenue: string;
+  pending_users_count: number;
+  recent_orders: AdminOrder[];
+  recent_payments: AdminPayment[];
+  recent_reviews: AdminReview[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly api = inject(ApiService);
+
+  // Dashboard
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.api.get<DashboardStats>('/admin/dashboard/');
+  }
 
   // Users
   getUsers(params?: { search?: string; page?: number }): Observable<PaginatedResponse<AdminUser>> {
@@ -132,12 +149,16 @@ export class AdminService {
     return this.api.patch<AdminUser>(`/admin/users/${id}/restrict/`, {});
   }
 
+  activateUser(id: string): Observable<AdminUser> {
+    return this.api.patch<AdminUser>(`/admin/users/${id}/activate/`, {});
+  }
+
   softDeleteUser(id: string): Observable<AdminUser> {
     return this.api.delete<AdminUser>(`/admin/users/${id}/`);
   }
 
   // Orders
-  getOrders(params?: { page?: number }): Observable<PaginatedResponse<AdminOrder>> {
+  getOrders(params?: { page?: number; status?: string; payment_status?: string }): Observable<PaginatedResponse<AdminOrder>> {
     return this.api.get<PaginatedResponse<AdminOrder>>('/admin/orders/', params);
   }
 
@@ -154,9 +175,14 @@ export class AdminService {
     return this.api.patch<AdminReview>(`/admin/reviews/${id}/hide/`, {});
   }
 
+  unhideReview(id: number): Observable<AdminReview> {
+    return this.api.patch<AdminReview>(`/admin/reviews/${id}/unhide/`, {});
+  }
+
   deleteReview(id: number): Observable<void> {
     return this.api.delete<void>(`/admin/reviews/${id}/`);
   }
+
 
   // Products
   getAdminProducts(params?: { page?: number }): Observable<PaginatedResponse<AdminProduct>> {
@@ -165,9 +191,36 @@ export class AdminService {
       .pipe(map((response) => mapPaginatedResponse(response, mapAdminProduct)));
   }
 
+  createProduct(payload: {
+    name: string;
+    description: string;
+    price: string;
+    stock: number;
+    category_id: number;
+  }): Observable<AdminProduct> {
+    return this.api
+      .post<BackendAdminProduct>('/products/admin/products/', payload)
+      .pipe(map(mapAdminProduct));
+  }
+
   updateStock(productSlug: string, quantity: number): Observable<AdminProduct> {
     return this.api
       .post<BackendAdminProduct>(`/products/admin/products/${productSlug}/update_stock/`, { quantity })
+      .pipe(map(mapAdminProduct));
+  }
+
+  updateProduct(
+    productSlug: string,
+    payload: {
+      name: string;
+      description: string;
+      price: string;
+      stock: number;
+      category_id: number;
+    }
+  ): Observable<AdminProduct> {
+    return this.api
+      .patch<BackendAdminProduct>(`/products/admin/products/${productSlug}/`, payload)
       .pipe(map(mapAdminProduct));
   }
 
@@ -227,7 +280,7 @@ export class AdminService {
   }
 
   // Payments
-  getPayments(params?: { page?: number }): Observable<PaginatedResponse<AdminPayment>> {
+  getPayments(params?: { page?: number; status?: string }): Observable<PaginatedResponse<AdminPayment>> {
     return this.api.get<PaginatedResponse<AdminPayment>>('/admin/payments/', params);
   }
 }
@@ -252,6 +305,8 @@ function mapAdminProduct(product: BackendAdminProduct): AdminProduct {
     availability: product.availability,
     is_active: product.is_active,
     category_name: product.category.name,
+    category_id: product.category.id,
+    description: product.description,
   };
 }
 

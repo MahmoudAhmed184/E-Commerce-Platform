@@ -1,23 +1,19 @@
 """
-reviews/permissions.py — Object-level permissions for reviews.
+reviews/permissions.py — Object-level permissions for reviews (FR-REV-009).
 
-WHY A CUSTOM PERMISSION?
--------------------------
-DRF's built-in ``IsAuthenticated`` checks *who you are*, but not
-*what you own*.  For FR-REV-009 ("Customers shall not edit or delete
-reviews created by other users"), we need **object-level** permission
-checking.
+DRF has two levels of permission checking:
+  1. **View-level** — checked before the view logic runs (e.g., IsAuthenticated).
+  2. **Object-level** — checked when you call ``self.get_object()`` in a view.
 
-Without this, the previous implementation filtered the queryset by
-``user=request.user`` which returned a 404 for other users' reviews.
-That's misleading — a 404 means "doesn't exist", but the review
-*does* exist; you just don't have permission.  A 403 is correct.
+The ``IsReviewOwner`` permission below is an object-level permission.
+It runs after DRF retrieves the review from the database and checks
+whether the requesting user is the author.
 
-HOW IT WORKS
-------------
-DRF calls ``has_object_permission()`` after ``get_object()`` retrieves
-the model instance.  If it returns ``False``, DRF raises a
-``PermissionDenied`` exception → 403 response.
+Why not just filter the queryset?
+  The old code did ``Review.objects.filter(user=request.user)`` which
+  returns 404 for reviews owned by other users. That's misleading —
+  the review exists, you just can't touch it. A 403 is more honest
+  and helps frontend developers show the right error message.
 """
 from __future__ import annotations
 
@@ -29,18 +25,27 @@ from .models import Review
 
 
 class IsReviewOwner(permissions.BasePermission):
-    """Only the review author can modify (update/delete) the review.
+    """Object-level permission: only the review author can modify.
 
-    Read-safe: allows GET/HEAD/OPTIONS for any authenticated user.
-    Write-restricted: only the owner can PATCH/DELETE.
+    - Safe methods (GET, HEAD, OPTIONS) are always allowed — we don't
+      use this permission on list endpoints anyway.
+    - Unsafe methods (PATCH, DELETE) require ``obj.user_id == request.user.id``.
+
+    If the check fails, DRF automatically returns 403 Forbidden with a
+    message like "You do not have permission to perform this action."
     """
 
+    message = "You can only modify your own reviews."
+
     def has_object_permission(
-        self, request: Request, view: APIView, obj: Review
+        self,
+        request: Request,
+        view: APIView,
+        obj: Review,
     ) -> bool:
-        # SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
+        # Read permissions are allowed for any request
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # For write methods, check ownership.
+        # Write permissions only for the review owner
         return obj.user_id == request.user.id

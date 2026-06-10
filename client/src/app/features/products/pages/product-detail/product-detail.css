@@ -105,9 +105,39 @@
 .title {
   font-size: 2.5rem;
   font-weight: 700;
-  margin: 0 0 24px 0;
+  margin: 0 0 12px 0;
   color: #212529;
   line-height: 1.2;
+}
+
+.rating-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.avg-text {
+  font-weight: 700;
+  color: #212529;
+  font-size: 1.1rem;
+}
+
+.count-text {
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.view-reviews-link {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.view-reviews-link:hover {
+  text-decoration: underline;
 }
 
 .price-stock {

@@ -1,9 +1,15 @@
-<div class="flex min-h-dvh flex-col bg-slate-50 text-slate-950">
-  <app-header />
+@if (!(isAdminRoute$ | async)) {
+  <div class="flex min-h-dvh flex-col bg-slate-50 text-slate-950">
+    <app-header />
 
-  <main class="flex-1">
+    <main class="flex-1">
+      <router-outlet />
+    </main>
+
+    <app-footer />
+  </div>
+} @else {
+  <div class="h-dvh bg-slate-50 text-slate-950">
     <router-outlet />
-  </main>
-
-  <app-footer />
-</div>
+  </div>
+}

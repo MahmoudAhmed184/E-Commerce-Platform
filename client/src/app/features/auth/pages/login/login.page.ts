@@ -115,8 +115,13 @@ export class LoginPage {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => {
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/products';
-          void this.router.navigateByUrl(returnUrl);
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          if (returnUrl) {
+            void this.router.navigateByUrl(returnUrl);
+          } else {
+            const path = this.authService.isAdmin() ? '/admin/overview' : '/products';
+            void this.router.navigateByUrl(path);
+          }
         },
         error: (error: unknown) => this.applyError(error),
       });

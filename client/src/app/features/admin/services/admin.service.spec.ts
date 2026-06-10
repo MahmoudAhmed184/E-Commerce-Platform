@@ -146,4 +146,35 @@ describe('AdminService', () => {
     expect(body.get('alt_text')).toBe('Camera front');
     expect(body.get('is_primary')).toBe('true');
   });
+
+  it('calls the unhide endpoint for review moderation', () => {
+    service.unhideReview(42).subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/admin/reviews/42/unhide/`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({});
+  });
+
+  it('passes status filter params when fetching orders', () => {
+    service.getOrders({ page: 1, status: 'pending', payment_status: 'paid' }).subscribe();
+
+    const request = http.expectOne(
+      (req) =>
+        req.url === `${environment.apiBaseUrl}/admin/orders/` &&
+        req.params.get('status') === 'pending' &&
+        req.params.get('payment_status') === 'paid',
+    );
+    expect(request.request.method).toBe('GET');
+  });
+
+  it('passes status filter param when fetching payments', () => {
+    service.getPayments({ page: 1, status: 'failed' }).subscribe();
+
+    const request = http.expectOne(
+      (req) =>
+        req.url === `${environment.apiBaseUrl}/admin/payments/` &&
+        req.params.get('status') === 'failed',
+    );
+    expect(request.request.method).toBe('GET');
+  });
 });

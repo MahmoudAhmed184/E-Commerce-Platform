@@ -8,6 +8,7 @@ export interface User {
   full_name: string;
   role: UserRole;
   status: UserStatus;
+  created_at?: string;
 }
 
 export interface AuthTokens {

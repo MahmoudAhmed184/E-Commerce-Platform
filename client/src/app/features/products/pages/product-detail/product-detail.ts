@@ -7,10 +7,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { CartService } from '../../../cart/services/cart.service';
 import { ProductService, Product, ProductImage } from '../../services/product';
 
+import { RatingWidgetComponent } from '../../../../shared/components/rating-widget/rating-widget.component';
+
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, RatingWidgetComponent],
   templateUrl: './product-detail.html',
   styleUrls: ['./product-detail.css']
 })

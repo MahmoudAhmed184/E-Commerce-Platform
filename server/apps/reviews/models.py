@@ -1,3 +1,18 @@
+"""
+reviews/models.py — Review data model (SRS 7.13).
+
+Each review ties a user to a product with a 1-5 rating and optional comment.
+
+Key design decisions:
+  - ``is_visible``: Admin moderation flag. Hidden reviews still exist but
+    are excluded from public queries (FR-ADM-011).
+  - ``deleted_at``: Customer soft-delete timestamp. When a customer "deletes"
+    their review, we set this instead of removing the row. This preserves
+    historical data and lets the customer leave a new review later (FR-REV-006).
+  - The unique constraint uses ``condition=Q(deleted_at__isnull=True)`` so it
+    only applies to active (non-deleted) reviews — this is the "one active
+    review per customer per product" rule from FR-REV-002.
+"""
 from __future__ import annotations
 
 from django.conf import settings
@@ -6,20 +21,6 @@ from django.db import models
 
 
 class Review(models.Model):
-    """A product review submitted by an authenticated customer.
-
-    Key business rules
-    ------------------
-    * One **active** review per customer per product (FR-REV-002).
-      "Active" means ``deleted_at IS NULL``.  A conditional unique
-      constraint enforces this at the database level.
-    * ``is_visible`` is the admin moderation flag (FR-ADM-011).
-      Setting it to False hides the review from public listings.
-    * ``deleted_at`` records the customer's soft-delete timestamp
-      (FR-REV-006 / SRS 7.13).  Soft-deleted reviews are excluded
-      from all public queries but preserved for historical purposes.
-    """
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="reviews",
@@ -42,21 +43,13 @@ class Review(models.Model):
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            # Only one non-deleted review per user+product (SRS 7.13).
-            # Once a review is soft-deleted (deleted_at is set), the
-            # constraint no longer blocks a new review for the same pair.
+            # Only one active (non-deleted) review per user per product.
+            # Soft-deleted reviews (deleted_at is set) are excluded from
+            # this constraint, so a user can re-review after deletion.
             models.UniqueConstraint(
                 fields=["user", "product"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="unique_active_review_per_user_product",
-            ),
-        ]
-        indexes = [
-            # Covers the most common query: visible, non-deleted
-            # reviews for a product, ordered by created_at (desc).
-            models.Index(
-                fields=["product", "is_visible", "deleted_at"],
-                name="idx_review_product_visible",
             ),
         ]
 

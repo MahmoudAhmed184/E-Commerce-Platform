@@ -1,41 +1,37 @@
 """
-reviews/views.py — HTTP orchestration for reviews (NFR-MNT-005).
+reviews/views.py — HTTP request/response handlers for reviews (NFR-MNT-005).
 
-Views stay thin.  They handle:
-  1. Request parsing (DRF serializers)
-  2. Permission checking (DRF permissions)
-  3. Delegating reads to ``selectors.py``
-  4. Delegating writes to ``services.py``
-  5. Building the HTTP response
+Views are intentionally kept THIN. They handle:
+  1. Parsing incoming requests
+  2. Permission checking
+  3. Calling the right serializer for validation
+  4. Delegating to selectors (reads) or services (writes)
+  5. Formatting the response
 
-No business logic or raw ORM calls belong here.
+No business logic or raw querysets live here.
 """
 from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
-from rest_framework.mixins import DestroyModelMixin, UpdateModelMixin
+from rest_framework import generics, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
 
 from apps.products.models import Product
 
-from . import selectors, services
 from .models import Review
 from .permissions import IsReviewOwner
+from .selectors import get_user_active_reviews, get_visible_product_reviews
 from .serializers import ReviewCreateSerializer, ReviewSerializer, ReviewUpdateSerializer
-
-
-# ── Pagination ────────────────────────────────────────────────────
+from .services import create_review, delete_review, update_review
 
 
 class ReviewPagination(PageNumberPagination):
     """Bounded pagination for review lists (NFR-PER-001).
 
-    Default 10 reviews per page, max 50.  The frontend can request
-    a different page size via ``?page_size=20``.
+    Default page size is 10, but the client can request up to 50 per page
+    using the ``page_size`` query parameter.
     """
 
     page_size = 10
@@ -43,28 +39,24 @@ class ReviewPagination(PageNumberPagination):
     max_page_size = 50
 
 
-# ── Product-scoped endpoints ─────────────────────────────────────
-#    /api/v1/products/<product_slug>/reviews/
-
-
 class ProductReviewListCreateView(generics.ListCreateAPIView):
-    """List visible reviews for a product (GET) or create one (POST).
+    """List visible reviews for a product, or create a new review.
 
-    GET  → Public.  Returns paginated visible reviews (FR-REV-007).
-    POST → Authenticated.  Creates a review (FR-REV-001).
+    GET  /api/v1/products/{product_slug}/reviews/  → public, paginated list
+    POST /api/v1/products/{product_slug}/reviews/  → authenticated, create review
     """
 
-    serializer_class = ReviewSerializer
     pagination_class = ReviewPagination
 
-    # -- Permissions --------------------------------------------------
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return ReviewCreateSerializer
+        return ReviewSerializer
 
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAuthenticated()]
         return [AllowAny()]
-
-    # -- Helpers ------------------------------------------------------
 
     def get_product(self) -> Product:
         """Resolve the product from the URL slug."""
@@ -73,76 +65,67 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
             slug=self.kwargs["product_slug"],
         )
 
-    # -- GET (list) ---------------------------------------------------
-
     def get_queryset(self):
-        """Delegate to ``selectors.get_visible_product_reviews``."""
-        return selectors.get_visible_product_reviews(self.get_product())
-
-    # -- POST (create) ------------------------------------------------
-
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return ReviewCreateSerializer
-        return ReviewSerializer
+        """Delegate to the selector — views don't build querysets directly."""
+        return get_visible_product_reviews(self.get_product())
 
     def get_serializer_context(self):
+        """Inject the product into serializer context for POST requests.
+
+        This way the serializer knows which product the review is for
+        without the client needing to send a product ID in the body
+        (it's already in the URL slug).
+        """
         context = super().get_serializer_context()
         if self.request.method == "POST":
             context["product"] = self.get_product()
         return context
 
     def create(self, request, *args, **kwargs):
-        """Validate input → call service → return read serializer."""
+        """Validate with serializer, then delegate to service for DB write."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Delegate the actual creation to the service layer.
-        review = services.create_review(
+        # Service handles the actual creation + IntegrityError handling
+        review = create_review(
             user=request.user,
-            **serializer.validated_data,
+            product=serializer.validated_data["product"],
+            rating=serializer.validated_data["rating"],
+            comment=serializer.validated_data.get("comment", ""),
         )
 
-        # Return the created review through the read serializer so
-        # the response includes computed fields like user_name.
+        # Use the read serializer for the response
         return Response(
             ReviewSerializer(review).data,
             status=status.HTTP_201_CREATED,
         )
 
 
-# ── Owner-scoped endpoints ───────────────────────────────────────
-#    /api/v1/reviews/<id>/
+class ReviewViewSet(viewsets.ModelViewSet):
+    """CRUD operations on the current user's own reviews.
 
+    PATCH  /api/v1/reviews/{id}/  → update own review
+    DELETE /api/v1/reviews/{id}/  → soft-delete own review
 
-class ReviewViewSet(UpdateModelMixin, DestroyModelMixin, GenericViewSet):
-    """Update or delete the authenticated user's own review.
-
-    PATCH  → Update rating/comment (FR-REV-005).
-    DELETE → Soft-delete the review (FR-REV-006).
-
-    Ownership is enforced by ``IsReviewOwner``.  If the user tries
-    to modify someone else's review, the API returns **403 Forbidden**
-    instead of a misleading 404 (FR-REV-009).
-
-    WHY NOT A FULL ModelViewSet?
-    ----------------------------
-    We only need ``partial_update`` and ``destroy`` here.  List and
-    create are handled by ``ProductReviewListCreateView`` under the
-    product-scoped URL.  Using mixins explicitly keeps the surface
-    area small and intentional.
+    The ``IsReviewOwner`` permission ensures that:
+      - If you try to edit someone else's review, you get 403 (not 404).
+      - This is more honest and helps frontend developers show the right error.
     """
 
     permission_classes = [IsAuthenticated, IsReviewOwner]
     http_method_names = ["patch", "delete", "head", "options"]
+    pagination_class = ReviewPagination
 
     def get_queryset(self):
         """Return all active (non-deleted) reviews.
 
-        We do NOT filter by ``user=request.user`` here, because
-        ``IsReviewOwner`` handles the ownership check.  Filtering
-        by user would turn a permission error into a 404, which is
-        misleading.
+        We intentionally return ALL reviews here (not just the user's)
+        so that ``get_object()`` can find the review by ID. If we filtered
+        by ``user=request.user``, a non-owner would get 404 instead of 403.
+
+        Object-level ownership is enforced by the ``IsReviewOwner`` permission
+        class, which checks ``obj.user_id == request.user.id`` and returns
+        403 Forbidden for non-owners.
         """
         return (
             Review.objects.filter(deleted_at__isnull=True)
@@ -150,20 +133,22 @@ class ReviewViewSet(UpdateModelMixin, DestroyModelMixin, GenericViewSet):
         )
 
     def get_serializer_class(self):
-        return ReviewUpdateSerializer
+        if self.action in {"partial_update", "update"}:
+            return ReviewUpdateSerializer
+        return ReviewSerializer
 
     def partial_update(self, request, *args, **kwargs):
-        """Validate input → call service → return read serializer."""
-        review = self.get_object()  # also triggers permission check
+        """Validate with serializer, then delegate to service for DB write."""
+        review = self.get_object()  # triggers IsReviewOwner check
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        review = services.update_review(review, **serializer.validated_data)
-
+        review = update_review(review, **serializer.validated_data)
         return Response(ReviewSerializer(review).data)
 
     def destroy(self, request, *args, **kwargs):
-        """Soft-delete the review via ``services.delete_review``."""
-        review = self.get_object()  # also triggers permission check
-        services.delete_review(review)
+        """Soft-delete the review via the service layer."""
+        review = self.get_object()  # triggers IsReviewOwner check
+        delete_review(review)
         return Response(status=status.HTTP_204_NO_CONTENT)
+

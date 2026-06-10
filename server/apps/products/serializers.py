@@ -68,17 +68,29 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     availability = serializers.SerializerMethodField()
     average_rating = serializers.FloatField(read_only=True, default=0)
     review_count = serializers.IntegerField(read_only=True, default=0)
+    user_has_ordered = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'stock',
             'category', 'images', 'availability',
-            'average_rating', 'review_count',
+            'average_rating', 'review_count', 'user_has_ordered',
         ]
 
     def get_availability(self, obj) -> str:
         return obj.availability
+
+    def get_user_has_ordered(self, obj) -> bool:
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        from apps.orders.models import Order
+        return Order.objects.filter(
+            user=request.user,
+            items__product=obj,
+            status=Order.Status.CONFIRMED
+        ).exists()
 
 
 # ─── Admin Write Serializers ───────────────────────────────────────

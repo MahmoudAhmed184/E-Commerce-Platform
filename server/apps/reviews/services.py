@@ -1,105 +1,90 @@
 """
 reviews/services.py — Business logic for reviews (NFR-MNT-003).
 
-All write operations are centralised here.  Views delegate to
-services instead of mutating models directly.
+All write operations are centralized here. Views delegate to services
+instead of mutating models directly, and serializers only validate.
 
-WHY A SEPARATE FILE?
---------------------
-The project convention (see docs/CONVENTIONS.md, NFR-MNT-003) puts
-all "business workflows" in ``services.py``.  This keeps views thin
-and makes it easy to test business rules without HTTP overhead.
-
-Compare with ``apps/products/services.py`` for the same pattern.
+Why a separate module?
+  Your project convention (NFR-MNT-003) says "business workflows live in
+  services.py." This means:
+    - Serializers validate incoming data but never call .save() or .create()
+    - Views handle HTTP plumbing (parse request, call service, return response)
+    - Services contain the actual business rules and database mutations
 """
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.products.models import Product
+from apps.users.models import CustomUser
 
 from .models import Review
 
 
 def create_review(
     *,
-    user,
+    user: CustomUser,
     product: Product,
     rating: int,
     comment: str = "",
 ) -> Review:
-    """Create a new review for a product (FR-REV-001).
+    """Create a new review for a product (FR-REV-001, FR-REV-002).
 
-    Business rules enforced
-    -----------------------
-    * The product must be active.
-    * One active review per user per product (FR-REV-002).
-      The database constraint ``unique_active_review_per_user_product``
-      catches race conditions, but we also do a pre-check for a
-      friendlier error message.
+    Business rules:
+      - Each customer can have only ONE active review per product (FR-REV-002).
+        The database constraint ``unique_active_review_per_user_product``
+        enforces this. If a user tries to create a second active review,
+        we catch the IntegrityError and raise a friendly validation error.
+      - Rating must be 1-5 (enforced at model level via validators).
+      - Comment is optional (FR-REV-004).
 
-    Parameters
-    ----------
-    user : CustomUser
-        The authenticated customer submitting the review.
-    product : Product
-        The product being reviewed (must be active).
-    rating : int
-        Integer 1–5 (validated by model validators).
-    comment : str
-        Optional written feedback (FR-REV-004).
+    Args:
+        user: The authenticated customer creating the review.
+        product: The product being reviewed.
+        rating: Integer from 1 to 5.
+        comment: Optional review text.
 
-    Raises
-    ------
-    ValidationError
-        If the user already has an active review for this product.
+    Returns:
+        The newly created Review instance.
+
+    Raises:
+        ValidationError: If the user already has an active review for this product.
     """
-    # Pre-check for a friendly error message (avoids raw IntegrityError).
-    if Review.objects.filter(
-        user=user, product=product, deleted_at__isnull=True
-    ).exists():
-        raise ValidationError(
-            {"product": ["You have already reviewed this product."]}
-        )
-
     try:
-        review = Review.objects.create(
+        review = Review(
             user=user,
             product=product,
             rating=rating,
             comment=comment,
         )
-    except IntegrityError as exc:
-        # Race condition: another request created a review between
-        # the pre-check and the INSERT.  Re-raise as a validation
-        # error so the API returns 400 instead of 500.
+        review.full_clean()
+        review.save()
+        return review
+    except (IntegrityError, DjangoValidationError) as exc:
+        # Django 6+ validates constraints in full_clean(), so a duplicate
+        # active review raises DjangoValidationError before hitting the DB.
+        # We catch both just in case full_clean is ever bypassed.
         raise ValidationError(
             {"product": ["You have already reviewed this product."]}
         ) from exc
 
-    return review
 
+def update_review(review: Review, **fields: object) -> Review:
+    """Update an existing review's rating and/or comment (FR-REV-005).
 
-def update_review(review: Review, **fields) -> Review:
-    """Update a review's rating and/or comment (FR-REV-005).
-
-    Only ``rating`` and ``comment`` are updatable.  Other fields
-    like ``user``, ``product``, and ``is_visible`` are immutable
+    Only ``rating`` and ``comment`` are allowed to be changed.
+    Other fields (user, product, visibility, timestamps) are immutable
     from the customer's perspective.
 
-    Parameters
-    ----------
-    review : Review
-        The review instance to update (must be owned by the caller).
-    **fields
-        Keyword arguments for the fields to update.
+    Args:
+        review: The Review instance to update.
+        **fields: Keyword arguments for fields to change.
 
-    Returns
-    -------
-    Review
-        The updated review instance.
+    Returns:
+        The updated Review instance.
     """
     allowed = {"rating", "comment"}
     update_fields: list[str] = []
@@ -117,31 +102,28 @@ def update_review(review: Review, **fields) -> Review:
 
 
 def delete_review(review: Review) -> Review:
-    """Soft-delete a review by setting ``deleted_at`` (FR-REV-006).
+    """Soft-delete a review by setting deleted_at (FR-REV-006).
 
-    WHY SOFT-DELETE?
-    ----------------
-    The SRS (section 7.13) specifies a ``deleted_at`` field, and
-    FR-ADM-005 says historical reviews should be preserved when
-    users are soft-deleted.  Soft-deleting the review itself is
-    consistent: the data is preserved for admin/audit purposes,
-    and the conditional unique constraint allows the user to
-    submit a new review for the same product later.
+    We don't actually remove the row from the database. Instead, we set
+    ``deleted_at`` to the current time. This:
+      1. Preserves historical data (the review existed).
+      2. Removes it from public display (selectors filter by deleted_at__isnull=True).
+      3. Frees the unique constraint so the user can leave a new review.
+
+    Returns:
+        The soft-deleted Review instance.
     """
     review.deleted_at = timezone.now()
     review.save(update_fields=["deleted_at", "updated_at"])
     return review
 
 
-# ── Admin moderation (FR-ADM-011) ────────────────────────────────
-
-
 def hide_review(review: Review) -> Review:
-    """Hide a review from public display (FR-ADM-011).
+    """Hide a review from public display — admin moderation (FR-ADM-011).
 
-    Sets ``is_visible=False``.  The review still exists and the
-    customer can still see it in their "my reviews" view; it is
-    simply excluded from the public product review listing.
+    Sets ``is_visible=False``. The review still exists and the customer
+    can still see it in their own review list, but it won't appear on
+    the product page.
     """
     review.is_visible = False
     review.save(update_fields=["is_visible", "updated_at"])
@@ -149,10 +131,10 @@ def hide_review(review: Review) -> Review:
 
 
 def unhide_review(review: Review) -> Review:
-    """Restore a hidden review to public display.
+    """Restore a hidden review's visibility — admin moderation reversal.
 
-    This is the inverse of ``hide_review``.  Useful when an admin
-    hides a review by mistake and needs to undo the action.
+    Sets ``is_visible=True``. Useful when an admin accidentally hides
+    a legitimate review.
     """
     review.is_visible = True
     review.save(update_fields=["is_visible", "updated_at"])
