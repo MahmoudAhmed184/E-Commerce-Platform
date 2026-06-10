@@ -49,11 +49,11 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ("id", "items", "subtotal", "total")
+        fields = ("id", "status", "items", "subtotal", "total")
 
 
 class AddCartItemSerializer(serializers.Serializer):
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True))
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True, category__is_active=True))
     quantity = serializers.IntegerField(min_value=1, max_value=99)
 
 

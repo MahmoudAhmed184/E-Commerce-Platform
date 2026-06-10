@@ -6,12 +6,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.permissions import IsActiveAccount
+
 from . import services
 from .serializers import AddCartItemSerializer, CartSerializer, UpdateCartItemSerializer
 
 
 class CartView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAccount]
 
     def get(self, request):
         cart = services.get_or_create_cart(request.user)
@@ -19,7 +21,7 @@ class CartView(APIView):
 
 
 class CartItemCollectionView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAccount]
 
     def post(self, request):
         serializer = AddCartItemSerializer(data=request.data)
@@ -33,7 +35,7 @@ class CartItemCollectionView(APIView):
 
 
 class CartItemDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAccount]
 
     def patch(self, request, item_id: int):
         serializer = UpdateCartItemSerializer(data=request.data)

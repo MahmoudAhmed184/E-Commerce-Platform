@@ -7,12 +7,21 @@ from django.db import models
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="cart", on_delete=models.CASCADE)
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        CONVERTED = "converted", "Converted"
+        ABANDONED = "abandoned", "Abandoned"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="carts", on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["user", "status", "-updated_at"], name="cart_user_status_updated_idx"),
+        ]
 
     @property
     def subtotal(self) -> Decimal:
