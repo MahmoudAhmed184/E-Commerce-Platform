@@ -10,13 +10,13 @@ import { ThemeService } from '../../core/services/theme/theme.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
-      class="glass-panel glass-depth-raised inline-flex size-control-md items-center justify-center rounded-md text-icon-default interactive-transition hover:shadow-glass-floating focus-visible:focus-ring"
+      class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-md text-icon-default interactive-transition hover:bg-surface-subtle hover:text-text-primary focus-visible:focus-ring"
       type="button"
       [attr.aria-label]="toggleLabel()"
       [attr.title]="toggleLabel()"
       (click)="toggleTheme()"
     >
-      @if (themeService.isWhiteMode()) {
+      @if (themeService.isLightMode()) {
         <svg lucideMoon class="size-icon-sm" aria-hidden="true"></svg>
       } @else {
         <svg lucideSun class="size-icon-sm" aria-hidden="true"></svg>
@@ -26,7 +26,7 @@ import { ThemeService } from '../../core/services/theme/theme.service';
 })
 export class ThemeToggleComponent {
   protected readonly themeService = inject(ThemeService);
-  protected readonly toggleLabel = computed(() => (this.themeService.isWhiteMode() ? 'Switch to dark mode' : 'Switch to white mode'));
+  protected readonly toggleLabel = computed(() => (this.themeService.isLightMode() ? 'Switch to dark mode' : 'Switch to light mode'));
 
   protected toggleTheme(): void {
     this.themeService.toggleResolvedTheme();

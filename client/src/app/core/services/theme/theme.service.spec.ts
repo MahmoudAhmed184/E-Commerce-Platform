@@ -25,20 +25,20 @@ describe('ThemeService', () => {
     });
   });
 
-  it('uses white mode when the system preference is light and no explicit preference exists', () => {
+  it('uses light mode when the system preference is light and no explicit preference exists', () => {
     const service = TestBed.inject(ThemeService);
 
     TestBed.tick();
 
     expect(service.preference()).toBe('system');
     expect(service.resolvedTheme()).toBe('light');
-    expect(service.isWhiteMode()).toBe(true);
+    expect(service.isLightMode()).toBe(true);
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.style.colorScheme).toBe('light');
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('honors a stored dark preference over system white mode', () => {
+  it('honors a stored dark preference over system light mode', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'dark');
 
     const service = TestBed.inject(ThemeService);
@@ -47,11 +47,11 @@ describe('ThemeService', () => {
 
     expect(service.preference()).toBe('dark');
     expect(service.resolvedTheme()).toBe('dark');
-    expect(service.isWhiteMode()).toBe(false);
+    expect(service.isLightMode()).toBe(false);
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
-  it('persists explicit white and dark toggles', () => {
+  it('persists explicit light and dark toggles', () => {
     const service = TestBed.inject(ThemeService);
 
     TestBed.tick();

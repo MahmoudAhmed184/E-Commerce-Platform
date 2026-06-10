@@ -21,7 +21,7 @@ export class ThemeService {
     const preference = this.preferenceState();
     return preference === 'system' ? this.systemThemeState() : preference;
   });
-  readonly isWhiteMode = computed(() => this.resolvedTheme() === 'light');
+  readonly isLightMode = computed(() => this.resolvedTheme() === 'light');
 
   constructor() {
     this.listenForSystemThemeChanges();

@@ -4,8 +4,8 @@
   "description": "Reliable shopping for everyday products.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#00a99d",
+  "background_color": "#FAFAFA",
+  "theme_color": "#00A99D",
   "icons": [
     {
       "src": "android-chrome-192x192.png?v=20260522",

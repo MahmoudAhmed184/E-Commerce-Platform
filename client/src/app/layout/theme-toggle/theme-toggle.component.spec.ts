@@ -18,7 +18,7 @@ describe('ThemeToggleComponent', () => {
     document.documentElement.style.colorScheme = '';
   });
 
-  it('toggles from white mode to dark mode when pressed', () => {
+  it('toggles from light mode to dark mode when pressed', () => {
     const fixture = TestBed.createComponent(ThemeToggleComponent);
 
     fixture.detectChanges();
@@ -32,7 +32,7 @@ describe('ThemeToggleComponent', () => {
     fixture.detectChanges();
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(button.getAttribute('aria-label')).toBe('Switch to white mode');
+    expect(button.getAttribute('aria-label')).toBe('Switch to light mode');
   });
 });
 
