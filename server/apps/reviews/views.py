@@ -21,9 +21,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from apps.products.models import Product
+from apps.products.selectors import get_active_products
+from apps.users.permissions import IsActiveAccount
 
 from . import selectors, services
-from .models import Review
 from .permissions import IsReviewOwner
 from .serializers import ReviewCreateSerializer, ReviewSerializer, ReviewUpdateSerializer
 
@@ -57,11 +58,16 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
     pagination_class = ReviewPagination
 
+    def get_throttles(self):
+        if self.request.method == "POST":
+            self.throttle_scope = "review_write"
+        return super().get_throttles()
+
     # -- Permissions --------------------------------------------------
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), IsActiveAccount()]
         return [AllowAny()]
 
     # -- Helpers ------------------------------------------------------
@@ -69,7 +75,7 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
     def get_product(self) -> Product:
         """Resolve the product from the URL slug."""
         return get_object_or_404(
-            Product.objects.filter(is_active=True),
+            get_active_products(),
             slug=self.kwargs["product_slug"],
         )
 
@@ -133,8 +139,9 @@ class ReviewViewSet(UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     area small and intentional.
     """
 
-    permission_classes = [IsAuthenticated, IsReviewOwner]
+    permission_classes = [IsAuthenticated, IsActiveAccount, IsReviewOwner]
     http_method_names = ["patch", "delete", "head", "options"]
+    throttle_scope = "review_write"
 
     def get_queryset(self):
         """Return all active (non-deleted) reviews.
@@ -144,10 +151,7 @@ class ReviewViewSet(UpdateModelMixin, DestroyModelMixin, GenericViewSet):
         by user would turn a permission error into a 404, which is
         misleading.
         """
-        return (
-            Review.objects.filter(deleted_at__isnull=True)
-            .select_related("user", "product")
-        )
+        return selectors.get_active_reviews_for_owner_permission()
 
     def get_serializer_class(self):
         return ReviewUpdateSerializer

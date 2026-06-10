@@ -85,3 +85,11 @@ def get_user_active_reviews(user) -> QuerySet[Review]:
         .select_related("user", "product")
         .order_by("-created_at")
     )
+
+
+def get_active_reviews_for_owner_permission() -> QuerySet[Review]:
+    return (
+        Review.objects.filter(deleted_at__isnull=True)
+        .select_related("user", "product")
+        .order_by("-created_at")
+    )
