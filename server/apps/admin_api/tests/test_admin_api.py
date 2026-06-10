@@ -63,6 +63,46 @@ def test_admin_user_actions_return_updated_user(admin_user: CustomUser, customer
 
 
 @pytest.mark.django_db
+def test_staff_customer_is_denied_admin_api() -> None:
+    user = CustomUser.objects.create_user(
+        email="staff-customer-admin-api@example.com",
+        phone="+201000000702",
+        password="Password123",
+        full_name="Staff Customer",
+        role=CustomUser.Role.CUSTOMER,
+        status=CustomUser.Status.ACTIVE,
+        is_email_confirmed=True,
+        is_staff=True,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.get("/api/v1/admin/users/")
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_admin_role_without_staff_flag_is_allowed_admin_api() -> None:
+    user = CustomUser.objects.create_user(
+        email="role-admin-api@example.com",
+        phone="+201000000703",
+        password="Password123",
+        full_name="Role Admin",
+        role=CustomUser.Role.ADMIN,
+        status=CustomUser.Status.ACTIVE,
+        is_email_confirmed=True,
+        is_staff=False,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.get("/api/v1/admin/users/")
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
 def test_admin_order_and_payment_lists(admin_user: CustomUser, customer: CustomUser, product: Product) -> None:
     order = Order.objects.create(
         user=customer,
@@ -104,15 +144,18 @@ def test_admin_order_list_handles_orders_without_payments(admin_user: CustomUser
 
 
 @pytest.mark.django_db
-def test_admin_can_hide_and_delete_reviews(admin_user: CustomUser, customer: CustomUser, product: Product) -> None:
+def test_admin_can_hide_restore_and_delete_reviews(admin_user: CustomUser, customer: CustomUser, product: Product) -> None:
     review = Review.objects.create(user=customer, product=product, rating=5)
     client = APIClient()
     client.force_authenticate(user=admin_user)
 
     hide_response = client.patch(f"/api/v1/admin/reviews/{review.id}/hide/")
+    unhide_response = client.patch(f"/api/v1/admin/reviews/{review.id}/unhide/")
     delete_response = client.delete(f"/api/v1/admin/reviews/{review.id}/")
 
     assert hide_response.status_code == status.HTTP_200_OK
     assert hide_response.data["is_visible"] is False
+    assert unhide_response.status_code == status.HTTP_200_OK
+    assert unhide_response.data["is_visible"] is True
     assert delete_response.status_code == status.HTTP_204_NO_CONTENT
     assert not Review.objects.filter(id=review.id).exists()
