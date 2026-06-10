@@ -38,7 +38,7 @@ import { AuthFlowService } from '../../services/auth-flow/auth-flow.service';
             @if (successMessage()) {
               <app-alert-banner tone="success" title="Email confirmed" [message]="successMessage()" />
               <a
-                class="inline-flex min-h-control-md items-center justify-center rounded-md bg-surface-primary px-md py-xs type-label-md text-text-on-primary interactive-transition hover:bg-primary-600 focus-visible:focus-ring"
+                class="inline-flex min-h-touch-min items-center justify-center rounded-md bg-surface-primary px-md py-xs type-label-md text-text-on-primary interactive-transition hover:bg-surface-primary-hover focus-visible:focus-ring"
                 routerLink="/auth/login"
               >
                 Go to sign in
@@ -59,7 +59,7 @@ import { AuthFlowService } from '../../services/auth-flow/auth-flow.service';
               <app-alert-banner tone="success" title="Confirmation email sent" [message]="'Check ' + email() + ' for the confirmation link.'" />
             }
             <a
-              class="inline-flex min-h-control-md items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
+              class="inline-flex min-h-touch-min items-center justify-center rounded-md border-hairline border-border-default bg-surface-raised px-md py-xs type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
               routerLink="/auth/login"
             >
               Back to sign in

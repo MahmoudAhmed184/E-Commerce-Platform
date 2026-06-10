@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { type AbstractControl, type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidationErrors, type ValidatorFn, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { LucideCheck, LucideMailCheck, LucidePackageCheck, LucideUserCheck } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type { RegisterPayload } from '../../../../core/models/user/user.model';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { InputComponent } from '../../../../shared/components/input/input.component';
 import { AuthFlowService, type AuthFlowError } from '../../services/auth-flow/auth-flow.service';
 
 type RegisterForm = FormGroup<{
@@ -22,36 +24,61 @@ const emailValidator: ValidatorFn = (control) => Validators.email(control);
 @Component({
   selector: 'app-register-page',
   standalone: true,
-  imports: [AlertBannerComponent, ButtonComponent, ReactiveFormsModule, RouterLink],
+  imports: [
+    AlertBannerComponent,
+    ButtonComponent,
+    InputComponent,
+    LucideCheck,
+    LucideMailCheck,
+    LucidePackageCheck,
+    LucideUserCheck,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="bg-background">
+    <main class="bg-surface-page">
       <section class="mx-auto grid min-h-[var(--ui-layout-min-screen-minus-header)] max-w-[var(--ui-container-xl)] px-gutter-xs py-xl md:px-gutter-sm lg:px-gutter-lg">
-        <div class="grid overflow-hidden rounded-md border border-border bg-card shadow-sm lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
-          <aside class="hidden content-between gap-xl border-e border-border bg-muted p-xl lg:grid">
+        <div class="grid overflow-hidden rounded-md border-hairline border-border-default bg-surface-raised shadow-sm lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+          <aside class="hidden content-between gap-xl border-e-hairline border-border-default bg-surface-subtle p-xl lg:grid">
             <div class="grid gap-sm">
-              <p class="type-label-sm text-muted-foreground">New customer</p>
-              <h1 class="type-heading-xl text-card-foreground">Create your account</h1>
-              <p class="max-w-[32rem] type-body-md text-muted-foreground">Create an account to save contact details, track orders, and move faster through checkout.</p>
+              <div class="inline-flex items-center gap-xs">
+                <img class="size-11 object-contain" src="logo-icon.png?v=20260522" alt="" width="1024" height="1024" aria-hidden="true" />
+                <span class="type-label-lg text-text-primary">Vendra</span>
+              </div>
+              <h1 class="type-heading-xl text-text-primary">Create your account</h1>
+              <p class="max-w-[32rem] type-body-md text-text-secondary">
+                Save checkout details, confirm your email, and track every purchase from one secure account.
+              </p>
             </div>
 
-            <dl class="grid gap-sm">
-              <div class="rounded-lg border border-border bg-card p-sm">
-                <dt class="type-label-sm text-muted-foreground">Checkout</dt>
-                <dd class="mt-2xs type-heading-sm text-card-foreground">Save contact details</dd>
-              </div>
-              <div class="rounded-lg border border-border bg-card p-sm">
-                <dt class="type-label-sm text-muted-foreground">Order support</dt>
-                <dd class="mt-2xs type-heading-sm text-card-foreground">Track purchases in one place</dd>
-              </div>
-            </dl>
+            <ul class="grid gap-sm">
+              <li class="flex items-center gap-sm type-body-sm text-text-secondary">
+                <span class="grid size-control-sm place-items-center rounded-full bg-surface-primary-subtle text-text-info">
+                  <svg lucideCheck class="h-4 w-4" aria-hidden="true"></svg>
+                </span>
+                Contact details ready for checkout
+              </li>
+              <li class="flex items-center gap-sm type-body-sm text-text-secondary">
+                <span class="grid size-control-sm place-items-center rounded-full bg-surface-primary-subtle text-text-info">
+                  <svg lucideCheck class="h-4 w-4" aria-hidden="true"></svg>
+                </span>
+                Email confirmation protects access
+              </li>
+              <li class="flex items-center gap-sm type-body-sm text-text-secondary">
+                <span class="grid size-control-sm place-items-center rounded-full bg-surface-primary-subtle text-text-info">
+                  <svg lucideCheck class="h-4 w-4" aria-hidden="true"></svg>
+                </span>
+                Order tracking from your first purchase
+              </li>
+            </ul>
           </aside>
 
-          <div class="grid content-center gap-lg p-lg md:p-xl">
+          <section class="grid content-center gap-lg p-lg md:p-xl">
             <header class="grid gap-xs">
-              <p class="type-label-sm text-muted-foreground">Create account</p>
-              <h2 class="type-heading-xl text-card-foreground">Create your shopping account</h2>
-              <p class="type-body-md text-muted-foreground">Enter your details, confirm your email, and start shopping with order tracking.</p>
+              <p class="type-label-sm text-text-muted">New account</p>
+              <h2 class="type-heading-xl text-text-primary">Set up your checkout profile</h2>
+              <p class="type-body-md text-text-secondary">Enter your contact details once, then use them for faster orders and support.</p>
             </header>
 
             <form class="grid gap-md" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -59,118 +86,92 @@ const emailValidator: ValidatorFn = (control) => Validators.email(control);
                 <app-alert-banner tone="error" title="Account creation failed" [message]="formError()" />
               }
 
-              <div class="grid gap-md">
-                <div class="grid gap-xs">
-                  <label class="type-label-md text-card-foreground" for="full_name">Full name</label>
-	                  <input
-	                    id="full_name"
-	                    class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition focus-visible:focus-ring aria-invalid:border-border-error"
-	                    type="text"
-	                    formControlName="full_name"
-	                    autocomplete="name"
-	                    [attr.aria-invalid]="fullNameAriaInvalid"
-	                    [attr.aria-describedby]="fullNameAriaDescribedBy"
-	                  />
-	                  @if (fullNameApiError(); as message) {
-	                    <p id="full_name-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
-	                  } @else if (fullNameRequiredVisible) {
-	                    <p id="full_name-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
-	                  }
-	                </div>
+              <div class="grid gap-md md:grid-cols-2">
+                <app-input
+                  label="Full name"
+                  name="full_name"
+                  autocomplete="name"
+                  [value]="fullNameControl.value"
+                  [required]="true"
+                  [error]="fullNameError"
+                  (valueChange)="updateControl(fullNameControl, $event)"
+                  (blurred)="fullNameControl.markAsTouched()"
+                />
 
-                <div class="grid gap-xs">
-                  <label class="type-label-md text-card-foreground" for="phone">Phone</label>
-	                  <input
-	                    id="phone"
-	                    class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition focus-visible:focus-ring aria-invalid:border-border-error"
-	                    type="tel"
-	                    formControlName="phone"
-	                    autocomplete="tel"
-	                    [attr.aria-invalid]="phoneAriaInvalid"
-	                    [attr.aria-describedby]="phoneAriaDescribedBy"
-	                  />
-	                  @if (phoneApiError(); as message) {
-	                    <p id="phone-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
-	                  } @else if (phoneRequiredVisible) {
-	                    <p id="phone-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
-	                  } @else if (phoneFormatVisible) {
-	                    <p id="phone-error" class="type-body-sm text-text-error" aria-live="polite">Phone must contain 7 to 15 digits.</p>
-	                  }
-	                </div>
+                <app-input
+                  type="tel"
+                  label="Phone"
+                  name="phone"
+                  autocomplete="tel"
+                  [value]="phoneControl.value"
+                  [required]="true"
+                  [error]="phoneError"
+                  (valueChange)="updateControl(phoneControl, $event)"
+                  (blurred)="phoneControl.markAsTouched()"
+                />
               </div>
 
-              <div class="grid gap-xs">
-                <label class="type-label-md text-card-foreground" for="email">Email</label>
-	                <input
-	                  id="email"
-	                  class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition focus-visible:focus-ring aria-invalid:border-border-error"
-	                  type="email"
-	                  formControlName="email"
-	                  autocomplete="email"
-	                  [attr.aria-invalid]="emailAriaInvalid"
-	                  [attr.aria-describedby]="emailAriaDescribedBy"
-	                />
-	                @if (emailApiError(); as message) {
-	                  <p id="email-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
-	                } @else if (emailRequiredVisible) {
-	                  <p id="email-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
-	                } @else if (emailFormatVisible) {
-	                  <p id="email-error" class="type-body-sm text-text-error" aria-live="polite">Enter a valid email address.</p>
-	                }
-	              </div>
+              <app-input
+                type="email"
+                label="Email"
+                name="email"
+                autocomplete="email"
+                [value]="emailControl.value"
+                [required]="true"
+                [error]="emailError"
+                (valueChange)="updateControl(emailControl, $event)"
+                (blurred)="emailControl.markAsTouched()"
+              />
 
-              <div class="grid gap-md">
-                <div class="grid gap-xs">
-                  <label class="type-label-md text-card-foreground" for="password">Password</label>
-	                  <input
-	                    id="password"
-	                    class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition focus-visible:focus-ring aria-invalid:border-border-error"
-	                    type="password"
-	                    formControlName="password"
-	                    autocomplete="new-password"
-	                    [attr.aria-invalid]="passwordAriaInvalid"
-	                    [attr.aria-describedby]="passwordAriaDescribedBy"
-	                  />
-	                  @if (passwordApiError(); as message) {
-	                    <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
-	                  } @else if (passwordRequiredVisible) {
-	                    <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
-	                  } @else if (passwordTooShortVisible) {
-	                    <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">Password must be at least 8 characters.</p>
-	                  } @else if (passwordDigitVisible) {
-	                    <p id="password-error" class="type-body-sm text-text-error" aria-live="polite">Password must contain at least 1 digit.</p>
-	                  }
-	                </div>
+              <div class="grid gap-md md:grid-cols-2">
+                <app-input
+                  type="password"
+                  label="Password"
+                  name="password"
+                  autocomplete="new-password"
+                  [value]="passwordControl.value"
+                  [required]="true"
+                  [error]="passwordError"
+                  (valueChange)="updateControl(passwordControl, $event)"
+                  (blurred)="passwordControl.markAsTouched()"
+                />
 
-                <div class="grid gap-xs">
-                  <label class="type-label-md text-card-foreground" for="confirmPassword">Confirm password</label>
-	                  <input
-	                    id="confirmPassword"
-	                    class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground interactive-transition focus-visible:focus-ring aria-invalid:border-border-error"
-	                    type="password"
-	                    formControlName="confirmPassword"
-	                    autocomplete="new-password"
-	                    [attr.aria-invalid]="confirmPasswordAriaInvalid"
-	                    [attr.aria-describedby]="confirmPasswordAriaDescribedBy"
-	                  />
-	                  @if (confirmPasswordApiError(); as message) {
-	                    <p id="confirmPassword-error" class="type-body-sm text-text-error" aria-live="polite">{{ message }}</p>
-	                  } @else if (confirmPasswordRequiredVisible) {
-	                    <p id="confirmPassword-error" class="type-body-sm text-text-error" aria-live="polite">This field is required.</p>
-	                  } @else if (confirmPasswordMismatchVisible) {
-	                    <p id="confirmPassword-error" class="type-body-sm text-text-error" aria-live="polite">Passwords must match.</p>
-	                  }
-	                </div>
-	              </div>
+                <app-input
+                  type="password"
+                  label="Confirm password"
+                  name="confirmPassword"
+                  autocomplete="new-password"
+                  [value]="confirmPasswordControl.value"
+                  [required]="true"
+                  [error]="confirmPasswordError"
+                  (valueChange)="updateControl(confirmPasswordControl, $event)"
+                  (blurred)="confirmPasswordControl.markAsTouched()"
+                />
+              </div>
 
-              <app-button type="submit" [loading]="isLoading()" [fullWidth]="true">Create account</app-button>
+              <app-button type="submit" size="lg" [loading]="isLoading()" [fullWidth]="true">Create account</app-button>
             </form>
 
-            <p class="type-body-sm text-muted-foreground">
+            <p class="type-body-sm text-text-secondary">
               Already have an account?
               <a class="type-label-md text-text-info focus-visible:focus-ring" routerLink="/auth/login">Sign in</a>
             </p>
-          </div>
+
+            <div class="grid gap-sm sm:grid-cols-3">
+              <div class="rounded-md border-hairline border-border-default bg-surface-subtle p-sm">
+                <svg lucideUserCheck class="mb-xs h-4 w-4 text-icon-default" aria-hidden="true"></svg>
+                <p class="type-label-sm text-text-secondary">Checkout profile</p>
+              </div>
+              <div class="rounded-md border-hairline border-border-default bg-surface-subtle p-sm">
+                <svg lucideMailCheck class="mb-xs h-4 w-4 text-icon-default" aria-hidden="true"></svg>
+                <p class="type-label-sm text-text-secondary">Email confirmation</p>
+              </div>
+              <div class="rounded-md border-hairline border-border-default bg-surface-subtle p-sm">
+                <svg lucidePackageCheck class="mb-xs h-4 w-4 text-icon-default" aria-hidden="true"></svg>
+                <p class="type-label-sm text-text-secondary">Order tracking</p>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
     </main>
@@ -212,6 +213,10 @@ export class RegisterPage {
     return shouldShowControlError(this.fullNameControl, 'required');
   }
 
+  protected get fullNameError(): string | null {
+    return this.fullNameApiError() ?? (this.fullNameRequiredVisible ? 'This field is required.' : null);
+  }
+
   protected get fullNameAriaInvalid(): 'true' | null {
     return this.fullNameApiError() || this.fullNameRequiredVisible ? 'true' : null;
   }
@@ -228,6 +233,12 @@ export class RegisterPage {
     return shouldShowControlError(this.phoneControl, 'phone');
   }
 
+  protected get phoneError(): string | null {
+    return this.phoneApiError()
+      ?? (this.phoneRequiredVisible ? 'This field is required.' : null)
+      ?? (this.phoneFormatVisible ? 'Phone must contain 7 to 15 digits.' : null);
+  }
+
   protected get phoneAriaInvalid(): 'true' | null {
     return this.phoneApiError() || this.phoneRequiredVisible || this.phoneFormatVisible ? 'true' : null;
   }
@@ -242,6 +253,12 @@ export class RegisterPage {
 
   protected get emailFormatVisible(): boolean {
     return shouldShowControlError(this.emailControl, 'email');
+  }
+
+  protected get emailError(): string | null {
+    return this.emailApiError()
+      ?? (this.emailRequiredVisible ? 'This field is required.' : null)
+      ?? (this.emailFormatVisible ? 'Enter a valid email address.' : null);
   }
 
   protected get emailAriaInvalid(): 'true' | null {
@@ -264,6 +281,13 @@ export class RegisterPage {
     return shouldShowControlError(this.passwordControl, 'passwordDigit');
   }
 
+  protected get passwordError(): string | null {
+    return this.passwordApiError()
+      ?? (this.passwordRequiredVisible ? 'This field is required.' : null)
+      ?? (this.passwordTooShortVisible ? 'Password must be at least 8 characters.' : null)
+      ?? (this.passwordDigitVisible ? 'Password must contain at least 1 digit.' : null);
+  }
+
   protected get passwordAriaInvalid(): 'true' | null {
     return this.passwordApiError() || this.passwordRequiredVisible || this.passwordTooShortVisible || this.passwordDigitVisible ? 'true' : null;
   }
@@ -280,12 +304,24 @@ export class RegisterPage {
     return (this.confirmPasswordControl.touched || this.confirmPasswordControl.dirty) && this.form.hasError('passwordMismatch');
   }
 
+  protected get confirmPasswordError(): string | null {
+    return this.confirmPasswordApiError()
+      ?? (this.confirmPasswordRequiredVisible ? 'This field is required.' : null)
+      ?? (this.confirmPasswordMismatchVisible ? 'Passwords must match.' : null);
+  }
+
   protected get confirmPasswordAriaInvalid(): 'true' | null {
     return this.confirmPasswordApiError() || this.confirmPasswordRequiredVisible || this.confirmPasswordMismatchVisible ? 'true' : null;
   }
 
   protected get confirmPasswordAriaDescribedBy(): 'confirmPassword-error' | null {
     return this.confirmPasswordAriaInvalid ? 'confirmPassword-error' : null;
+  }
+
+  protected updateControl(control: FormControl<string>, value: string): void {
+    control.setValue(value);
+    control.markAsDirty();
+    this.fieldErrors.set(null);
   }
 
   protected submit(): void {
