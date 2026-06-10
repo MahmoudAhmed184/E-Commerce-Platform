@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    env:
+      DJANGO_SECRET_KEY: ci-only-6yX2kR9pQ4mN8vB1sT7zL5cH3aJ0dFqWeRuIoPaSgDhKjZxCvBnM
+      PAYMENT_WEBHOOK_SECRET: ci-webhook-secret-6yX2kR9pQ4mN8vB1sT7zL5cH3aJ0dFqWeRuIoPaSgD
+      CORS_ALLOWED_ORIGINS: https://example.com
+      CSRF_TRUSTED_ORIGINS: https://example.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: server/.python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: server/uv.lock
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Django checks
+        run: uv run python -Wd manage.py check
+
+      - name: Django deployment checks
+        run: uv run python -Wd manage.py check --deploy --settings=config.settings.production
+
+      - name: Backend tests
+        run: uv run python -Wd -m pytest
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26.x
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test -- --watch=false
+
+      - name: Production build
+        run: npm run build
