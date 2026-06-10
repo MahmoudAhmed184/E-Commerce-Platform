@@ -92,8 +92,8 @@ export class AdminWorkflowService {
     );
   }
 
-  saveCategory(editingSlug: string | null, name: string, description: string): Observable<AdminCategorySaveResult> {
-    const payload = toCategoryPayload(name, description);
+  saveCategory(editingSlug: string | null, name: string, description: string, isActive = true): Observable<AdminCategorySaveResult> {
+    const payload = toCategoryPayload(name, description, isActive);
     if (!payload) {
       return of({ status: 'invalid', message: 'Category name is required.' });
     }
@@ -164,8 +164,8 @@ export class AdminWorkflowService {
 
   deleteProduct(productSlug: string): Observable<AdminWorkflowResult> {
     return this.adminService.deleteProduct(productSlug).pipe(
-      map(() => ({ status: 'success' as const, message: 'Product deleted.' })),
-      catchError(() => of({ status: 'failed' as const, message: 'The product could not be deleted.' })),
+      map(() => ({ status: 'success' as const, message: 'Product deactivated.' })),
+      catchError(() => of({ status: 'failed' as const, message: 'The product could not be deactivated.' })),
     );
   }
 
@@ -187,14 +187,18 @@ export class AdminWorkflowService {
   }
 }
 
-function toCategoryPayload(name: string, description: string): AdminCategoryPayload | null {
+function toCategoryPayload(name: string, description: string, isActive: boolean): AdminCategoryPayload | null {
   const trimmedName = name.trim();
   if (!trimmedName) {
     return null;
   }
 
   const trimmedDescription = description.trim();
-  return trimmedDescription ? { name: trimmedName, description: trimmedDescription } : { name: trimmedName };
+  const payload: AdminCategoryPayload = { name: trimmedName, is_active: isActive };
+  if (trimmedDescription) {
+    payload.description = trimmedDescription;
+  }
+  return payload;
 }
 
 function validateProductDraft(input: AdminProductDraft): Record<string, string> {

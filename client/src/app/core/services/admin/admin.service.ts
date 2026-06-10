@@ -68,12 +68,14 @@ export interface AdminCategory {
   name: string;
   slug: string;
   description: string;
+  is_active: boolean;
   product_count: number;
 }
 
 export interface AdminCategoryPayload {
   name: string;
   description?: string;
+  is_active?: boolean;
 }
 
 export interface AdminProductPayload {
@@ -312,6 +314,7 @@ function mapAdminCategory(category: BackendAdminCategory): AdminCategory {
     name: category.name,
     slug: category.slug,
     description: category.description,
+    is_active: category.is_active,
     product_count: category.product_count,
   };
 }

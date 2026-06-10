@@ -126,6 +126,7 @@ const categoryFixture: AdminCategory = {
   name: 'Electronics',
   slug: 'electronics',
   description: 'Devices',
+  is_active: true,
   product_count: 1,
 };
 
@@ -168,6 +169,13 @@ describe('AdminWorkflowService', () => {
 
     expect(result).toEqual({ status: 'invalid', message: 'Category name is required.' });
     expect(adminService.createdCategories).toEqual([]);
+  });
+
+  it('trims category payloads and preserves active state before saving', async () => {
+    const result = await firstValueFrom(service.saveCategory('electronics', ' Electronics ', ' Devices ', false));
+
+    expect(result).toEqual({ status: 'saved', category: categoryFixture, message: 'Category saved.' });
+    expect(adminService.createdCategories).toEqual([{ name: 'Electronics', description: 'Devices', is_active: false }]);
   });
 
   it('trims product payloads before saving', async () => {
@@ -226,6 +234,12 @@ describe('AdminWorkflowService', () => {
 
     expect(result).toEqual({ status: 'saved', product: productFixture, message: 'Product created. Product images uploaded.' });
     expect(adminService.uploadedImages).toEqual([{ productId: productFixture.id, fileName: 'camera.jpg', isPrimary: true }]);
+  });
+
+  it('describes product delete calls as deactivation', async () => {
+    const result = await firstValueFrom(service.deleteProduct('camera'));
+
+    expect(result).toEqual({ status: 'success', message: 'Product deactivated.' });
   });
 
   it('keeps saved product context when image upload fails', async () => {

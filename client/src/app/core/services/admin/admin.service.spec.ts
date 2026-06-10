@@ -118,6 +118,7 @@ describe('AdminService', () => {
           name: 'Sports',
           slug: 'sports',
           description: 'Sports gear',
+          is_active: true,
           product_count: 5,
         },
       ],

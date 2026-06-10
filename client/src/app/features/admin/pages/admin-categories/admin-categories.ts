@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
 import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
-import { LucideFolderTree, LucidePackage, LucidePencil, LucideTags, LucideTrash2, LucideTriangleAlert } from '@lucide/angular';
+import { LucideEyeOff, LucideFolderTree, LucidePackage, LucidePencil, LucideTags, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
@@ -22,6 +22,7 @@ interface CategoryFormMode {
 type CategoryForm = FormGroup<{
   name: FormControl<string>;
   description: FormControl<string>;
+  isActive: FormControl<boolean>;
 }>;
 
 const requiredValidator: ValidatorFn = (control) => Validators.required(control);
@@ -34,11 +35,11 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
     AlertDialogComponent,
     BadgeComponent,
     ButtonComponent,
+    LucideEyeOff,
     LucideFolderTree,
     LucidePackage,
     LucidePencil,
     LucideTags,
-    LucideTrash2,
     LucideTriangleAlert,
     ReactiveFormsModule,
     SkeletonLoaderComponent,
@@ -142,6 +143,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                       <td class="admin-table-token">{{ category.slug }}</td>
                       <td class="admin-table-description">{{ category.description || 'No description' }}</td>
                       <td class="admin-table-status"><app-badge [tone]="category.product_count ? 'success' : 'warning'" [label]="category.product_count + ' products'" /></td>
+                      <td class="admin-table-status"><app-badge [tone]="category.is_active ? 'success' : 'warning'" [label]="category.is_active ? 'active' : 'hidden'" /></td>
                       <td class="admin-table-action">
                         <div class="admin-row-actions" role="group" [attr.aria-label]="'Actions for ' + category.name">
                           <app-tooltip content="Edit category">
@@ -149,9 +151,9 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                               <svg lucidePencil class="size-icon-sm" aria-hidden="true"></svg>
                             </button>
                           </app-tooltip>
-                          <app-tooltip content="Delete category">
-                            <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Delete ' + category.name" (click)="handleRowAction(category.slug, 'delete-category')">
-                              <svg lucideTrash2 class="size-icon-sm" aria-hidden="true"></svg>
+                          <app-tooltip content="Deactivate category">
+                            <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Deactivate ' + category.name" (click)="handleRowAction(category.slug, 'delete-category')">
+                              <svg lucideEyeOff class="size-icon-sm" aria-hidden="true"></svg>
                             </button>
                           </app-tooltip>
                         </div>
@@ -159,7 +161,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                     </tr>
                   } @empty {
                     <tr>
-                      <td class="p-xl text-center type-body-md text-text-muted" colspan="5">No rows to display.</td>
+                      <td class="p-xl text-center type-body-md text-text-muted" colspan="6">No rows to display.</td>
                     </tr>
                   }
                 </tbody>
@@ -193,6 +195,11 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
               ></textarea>
             </label>
 
+            <label class="admin-checkrow">
+              <input class="size-icon-md accent-surface-primary focus-visible:focus-ring" type="checkbox" formControlName="isActive" />
+              Active category
+            </label>
+
             <div class="flex flex-wrap gap-sm">
               <app-button type="submit" size="sm" [loading]="isSaving()">{{ formMode().submitLabel }}</app-button>
               @if (editingSlug()) {
@@ -205,8 +212,8 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
 
       <app-alert-dialog
         [open]="!!deleteSlug()"
-        [title]="'Delete category'"
-        description="Delete only categories that no longer contain products."
+        [title]="'Deactivate category'"
+        description="Hide this category from customer browsing without deleting catalog history."
         [destructive]="true"
         [confirmAction]="deleteConfirmAction()"
         [cancelAction]="{ label: 'Cancel', variant: 'secondary' }"
@@ -231,6 +238,7 @@ export class AdminCategoriesPage implements OnInit {
     { id: 'slug', header: 'Slug' },
     { id: 'description', header: 'Description' },
     { id: 'products', header: 'Products', sortable: true },
+    { id: 'status', header: 'Status', sortable: true },
   ];
   protected readonly categories = signal<readonly AdminCategory[]>([]);
   protected readonly editingSlug = signal<string | null>(null);
@@ -242,6 +250,7 @@ export class AdminCategoriesPage implements OnInit {
   protected readonly categoryForm: CategoryForm = this.fb.group({
     name: this.fb.control('', { validators: [requiredValidator] }),
     description: this.fb.control(''),
+    isActive: this.fb.control(true),
   });
 
   protected readonly sortedCategories = computed(() => [...this.categories()].sort((left, right) => left.name.localeCompare(right.name)));
@@ -256,15 +265,14 @@ export class AdminCategoriesPage implements OnInit {
   }));
   protected readonly nameAriaInvalid = computed(() => (this.formError() ? 'true' : null));
   protected readonly deleteConfirmAction = computed<UiAction>(() => ({
-    label: 'Delete category',
+    label: 'Deactivate category',
     variant: 'danger',
-    disabled: (this.deleteTarget()?.product_count ?? 0) !== 0,
     loading: this.isSaving(),
   }));
   protected readonly deleteDialogMessage = computed(() =>
-    this.deleteTarget()?.product_count === 0
-      ? 'This category has no products and can be deleted.'
-      : 'Move products out of this category before deleting it.',
+    this.deleteTarget()?.product_count
+      ? 'Assigned products will be hidden from public product listings until moved to an active category or this category is reactivated.'
+      : 'This category will be hidden from public category filters.',
   );
 
   ngOnInit(): void {
@@ -279,7 +287,7 @@ export class AdminCategoriesPage implements OnInit {
 
     if (actionId === 'edit-category') {
       this.editingSlug.set(category.slug);
-      this.categoryForm.setValue({ name: category.name, description: category.description });
+      this.categoryForm.setValue({ name: category.name, description: category.description, isActive: category.is_active });
     } else if (actionId === 'delete-category') {
       this.deleteSlug.set(category.slug);
     }
@@ -296,20 +304,20 @@ export class AdminCategoriesPage implements OnInit {
     const formValue = this.categoryForm.getRawValue();
     this.isSaving.set(true);
     this.adminWorkflow
-      .saveCategory(this.editingSlug(), formValue.name, formValue.description)
+      .saveCategory(this.editingSlug(), formValue.name, formValue.description, formValue.isActive)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe((result) => this.applyCategorySave(result));
   }
 
   protected resetForm(): void {
     this.editingSlug.set(null);
-    this.categoryForm.setValue({ name: '', description: '' });
+    this.categoryForm.setValue({ name: '', description: '', isActive: true });
     this.formError.set('');
   }
 
   protected confirmDelete(): void {
     const target = this.deleteTarget();
-    if (target?.product_count !== 0) {
+    if (!target) {
       return;
     }
 
@@ -320,10 +328,10 @@ export class AdminCategoriesPage implements OnInit {
       .subscribe({
         next: () => {
           this.deleteSlug.set(null);
-          this.statusMessage.set('Category deleted.');
+          this.statusMessage.set('Category deactivated.');
           this.loadCategories();
         },
-        error: () => this.formError.set('The category could not be deleted.'),
+        error: () => this.formError.set('The category could not be deactivated.'),
       });
   }
 

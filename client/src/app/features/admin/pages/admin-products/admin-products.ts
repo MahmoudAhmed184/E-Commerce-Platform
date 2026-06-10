@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
 import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
-import { LucideEye, LucideEyeOff, LucidePackage, LucidePencil, LucideTags, LucideTrash2, LucideTriangleAlert } from '@lucide/angular';
+import { LucideEye, LucideEyeOff, LucidePackage, LucidePencil, LucideTags, LucideTriangleAlert } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
 
 import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
@@ -72,7 +72,6 @@ const minZeroValidator: ValidatorFn = (control) => Validators.min(0)(control);
     LucidePackage,
     LucidePencil,
     LucideTags,
-    LucideTrash2,
     LucideTriangleAlert,
     PaginationComponent,
     ReactiveFormsModule,
@@ -250,9 +249,9 @@ const minZeroValidator: ValidatorFn = (control) => Validators.min(0)(control);
                                     }
                                   </button>
                                 </app-tooltip>
-                                <app-tooltip content="Delete product">
-                                  <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Delete ' + row.product.name" (click)="handleRowAction(row.product.slug, 'delete-product')">
-                                    <svg lucideTrash2 class="size-icon-sm" aria-hidden="true"></svg>
+                                <app-tooltip content="Deactivate product">
+                                  <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Deactivate ' + row.product.name" (click)="handleRowAction(row.product.slug, 'delete-product')">
+                                    <svg lucideEyeOff class="size-icon-sm" aria-hidden="true"></svg>
                                   </button>
                                 </app-tooltip>
                               </div>
@@ -378,7 +377,7 @@ const minZeroValidator: ValidatorFn = (control) => Validators.min(0)(control);
 
       <app-alert-dialog
         [open]="!!deleteProductSlug()"
-        [title]="'Delete product'"
+        [title]="'Deactivate product'"
         description="Remove the product from the live catalog while preserving historical order records."
         [destructive]="true"
         [confirmAction]="deleteConfirmAction()"
@@ -460,7 +459,7 @@ export class AdminProductsPage implements OnInit {
     submitLabel: this.editingSlug() ? 'Save product' : 'Create product',
   }));
   protected readonly uploadDisabled = computed(() => !this.selectedProduct() || this.uploadFiles().length === 0);
-  protected readonly deleteConfirmAction = computed<UiAction>(() => ({ label: 'Delete product', variant: 'danger', loading: this.isSaving() }));
+  protected readonly deleteConfirmAction = computed<UiAction>(() => ({ label: 'Deactivate product', variant: 'danger', loading: this.isSaving() }));
   protected readonly displayColumns = computed<readonly ProductTableColumn[]>(() =>
     this.columns.map((column) => ({
       ...column,
