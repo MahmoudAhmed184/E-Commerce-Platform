@@ -16,7 +16,7 @@ import type { UiMenuItem } from '../../../../shared/components/ui.types';
   host: { class: 'contents' },
   template: `
     @if (reviewView(); as item) {
-      <article class="grid gap-sm rounded-lg border border-border bg-card p-md shadow-xs">
+      <article class="grid gap-sm rounded-md border border-border bg-card p-md shadow-xs">
         <header class="flex flex-wrap items-start justify-between gap-sm">
           <div class="grid gap-2xs">
             <p class="type-label-md text-card-foreground">{{ item.authorName }}</p>

@@ -65,7 +65,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
               <label class="grid gap-xs type-label-md text-text-primary">
                 Comment
                 <textarea
-                  class="min-h-thumbnail-lg rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring"
+                  class="min-h-28 w-full rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition placeholder:text-text-muted focus-visible:border-border-focus focus-visible:focus-ring disabled:state-disabled"
                   formControlName="comment"
                 ></textarea>
               </label>

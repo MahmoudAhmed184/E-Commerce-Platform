@@ -48,7 +48,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
         } @else if (user(); as currentUser) {
           <section class="grid gap-lg lg:grid-cols-[minmax(var(--ui-container-aside-md),var(--ui-container-aside-xl))_minmax(0,1fr)] lg:items-start">
             <aside class="grid min-w-0 gap-md">
-              <section class="grid gap-md rounded-lg border border-border bg-card p-md shadow-xs" aria-labelledby="profile-summary-title">
+              <section class="grid gap-md rounded-md border border-border bg-card p-md shadow-xs" aria-labelledby="profile-summary-title">
                 <div class="flex items-center gap-md">
                   <app-avatar [name]="currentUser.full_name || currentUser.email" size="lg" />
                   <div class="min-w-0">
@@ -63,7 +63,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                   }
                 </div>
 
-                <div class="grid gap-sm rounded-lg border border-border bg-muted p-sm">
+                <div class="grid gap-sm rounded-md border border-border bg-muted p-sm">
                   <div>
                     <p class="type-label-sm text-muted-foreground">Primary phone</p>
                     <p class="type-body-md text-card-foreground">{{ currentUser.phone || 'Not set' }}</p>
@@ -80,7 +80,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
               <app-tabs [tabs]="tabs" [activeId]="activeTab()" (activeIdChange)="setActiveTab($event)">
                 @switch (activeTab()) {
                   @case ('addresses') {
-                    <section class="grid gap-md rounded-lg border border-border bg-card p-md shadow-xs" aria-labelledby="address-title">
+                    <section class="grid gap-md rounded-md border border-border bg-card p-md shadow-xs" aria-labelledby="address-title">
                       <div>
                         <p class="type-label-sm text-muted-foreground">Addresses</p>
                         <h2 id="address-title" class="type-heading-lg text-card-foreground">Saved addresses</h2>
@@ -89,7 +89,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                     </section>
                   }
                   @case ('preferences') {
-                    <section class="grid gap-md rounded-lg border border-border bg-card p-md shadow-xs" aria-labelledby="preferences-title">
+                    <section class="grid gap-md rounded-md border border-border bg-card p-md shadow-xs" aria-labelledby="preferences-title">
                       <div>
                         <p class="type-label-sm text-muted-foreground">Preferences</p>
                         <h2 id="preferences-title" class="type-heading-lg text-card-foreground">Payment and notifications</h2>
@@ -98,7 +98,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                     </section>
                   }
                   @default {
-                    <form class="grid gap-md rounded-lg border border-border bg-card p-md shadow-xs" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+                    <form class="grid gap-md rounded-md border border-border bg-card p-md shadow-xs" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
                       <div>
                         <p class="type-label-sm text-muted-foreground">Profile</p>
                         <h2 class="type-heading-lg text-card-foreground">Personal information</h2>
@@ -115,7 +115,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                         <label class="grid gap-xs type-label-md text-text-primary">
                           Full name
                           <input
-                            class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground focus-visible:focus-ring aria-invalid:border-border-error"
+                            class="min-h-touch-min w-full rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition placeholder:text-text-muted focus-visible:border-border-focus focus-visible:focus-ring disabled:state-disabled aria-invalid:border-border-error"
                             type="text"
                             formControlName="full_name"
                             autocomplete="name"
@@ -129,7 +129,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                         <label class="grid gap-xs type-label-md text-text-primary">
                           Phone number
                           <input
-                            class="min-h-control-md rounded-sm border border-border bg-card px-sm py-xs text-card-foreground focus-visible:focus-ring"
+                            class="min-h-touch-min w-full rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition placeholder:text-text-muted focus-visible:border-border-focus focus-visible:focus-ring disabled:state-disabled"
                             type="tel"
                             formControlName="phone"
                             autocomplete="tel"
@@ -140,7 +140,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
                       <label class="grid gap-xs type-label-md text-text-primary">
                         Email address
                         <input
-                          class="min-h-control-md rounded-sm border border-border bg-muted px-sm py-xs text-muted-foreground disabled:state-disabled"
+                          class="min-h-touch-min w-full rounded-sm border-hairline border-border-default bg-surface-subtle px-sm py-xs type-body-sm text-text-muted shadow-xs disabled:state-disabled"
                           type="email"
                           [value]="currentUser.email"
                           autocomplete="email"
