@@ -44,6 +44,21 @@ export const routes: Routes = [
     loadChildren: () => import('./features/reviews/reviews.routes').then((m) => m.REVIEWS_ROUTES),
   },
   {
+    path: 'returns',
+    loadComponent: () => import('./layout/policy-page/policy-page').then((m) => m.PolicyPage),
+    data: { policy: 'returns' },
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./layout/policy-page/policy-page').then((m) => m.PolicyPage),
+    data: { policy: 'privacy' },
+  },
+  {
+    path: 'terms',
+    loadComponent: () => import('./layout/policy-page/policy-page').then((m) => m.PolicyPage),
+    data: { policy: 'terms' },
+  },
+  {
     path: 'error',
     loadComponent: () => import('./layout/server-error-page/server-error-page').then((m) => m.ServerErrorPage),
   },

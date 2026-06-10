@@ -7,8 +7,8 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <footer class="glass-panel glass-depth-flat mt-auto rounded-none border-x-0 border-b-0 border-t border-glass-border text-text-primary">
-      <div class="border-b border-glass-border">
+    <footer class="surface-panel surface-depth-flat mt-auto rounded-none border-x-0 border-b-0 border-t border-border-default text-text-primary">
+      <div class="border-b border-border-default">
         <div class="mx-auto grid max-w-[var(--ui-container-2xl)] gap-md px-gutter-xs py-lg md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:px-gutter-sm lg:px-gutter-lg">
           <div class="grid gap-2xs">
             <p class="type-label-sm text-text-muted">Customer care</p>
@@ -56,13 +56,13 @@ import { RouterLink } from '@angular/router';
 
         <section class="grid gap-xs">
           <h2 class="type-heading-sm text-text-primary">Policies</h2>
-          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" href="/returns">Returns</a>
-          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" href="/privacy">Privacy</a>
-          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" href="/terms">Terms</a>
+          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" routerLink="/returns">Returns</a>
+          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" routerLink="/privacy">Privacy</a>
+          <a class="type-body-sm text-text-secondary hover:text-text-primary focus-visible:focus-ring" routerLink="/terms">Terms</a>
         </section>
       </div>
 
-      <div class="border-t border-glass-border px-gutter-xs py-sm text-center type-body-sm text-text-muted md:px-gutter-sm lg:px-gutter-lg">
+      <div class="border-t border-border-default px-gutter-xs py-sm text-center type-body-sm text-text-muted md:px-gutter-sm lg:px-gutter-lg">
         © 2026 Vendra. All rights reserved.
       </div>
     </footer>

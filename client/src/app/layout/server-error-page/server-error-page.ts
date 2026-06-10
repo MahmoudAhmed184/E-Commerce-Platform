@@ -9,7 +9,7 @@ import { ErrorStateComponent } from '../../shared/components/error-state/error-s
   imports: [ErrorStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="grid min-h-[var(--ui-layout-min-screen-minus-header)] place-items-center bg-transparent px-gutter-xs py-2xl md:px-gutter-sm">
+    <main class="grid min-h-[var(--ui-layout-min-screen-minus-header)] place-items-center bg-surface-page px-gutter-xs py-2xl md:px-gutter-sm">
       <app-error-state
         [statusCode]="statusCode()"
         [title]="title()"

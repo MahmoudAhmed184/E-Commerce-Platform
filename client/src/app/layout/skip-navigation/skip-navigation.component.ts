@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
-      class="glass-panel glass-depth-floating fixed start-gutter-xs top-gutter-xs z-skip-link -translate-y-[calc(var(--ui-size-control-lg)+var(--ui-space-lg))] rounded-md px-md py-xs type-label-md text-text-primary interactive-transition focus:translate-y-0 focus-visible:focus-ring"
+      class="surface-panel surface-depth-floating fixed start-gutter-xs top-gutter-xs z-skip-link -translate-y-[calc(var(--ui-size-control-lg)+var(--ui-space-lg))] rounded-md px-md py-xs type-label-md text-text-primary interactive-transition focus:translate-y-0 focus-visible:focus-ring"
       type="button"
       (click)="skipToMain()"
     >
