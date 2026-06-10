@@ -10,6 +10,8 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from django.utils import timezone
+
 from apps.orders.models import Order
 from apps.payments.models import Payment
 from apps.reviews.models import Review
@@ -146,7 +148,8 @@ class TestAdminUserRestrict:
     ) -> None:
         """Restrict guard: cannot restrict soft-deleted users."""
         active_customer.status = CustomUser.Status.DELETED
-        active_customer.save(update_fields=["status"])
+        active_customer.deleted_at = timezone.now()
+        active_customer.save(update_fields=["status", "deleted_at"])
 
         client = APIClient()
         client.force_authenticate(user=admin_user)
@@ -156,6 +159,50 @@ class TestAdminUserRestrict:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestAdminUserActivate:
+
+    def test_activate_restricted_user(
+        self, admin_user: CustomUser, active_customer: CustomUser
+    ) -> None:
+        active_customer.status = CustomUser.Status.RESTRICTED
+        active_customer.is_active = False
+        active_customer.save(update_fields=["status", "is_active"])
+
+        client = APIClient()
+        client.force_authenticate(user=admin_user)
+
+        response = client.patch(
+            f"/api/v1/admin/users/{active_customer.id}/activate/"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == CustomUser.Status.ACTIVE
+        assert response.data["is_active"] is True
+        assert response.data["is_email_confirmed"] is True
+
+    def test_activate_deleted_user(
+        self, admin_user: CustomUser, active_customer: CustomUser
+    ) -> None:
+        active_customer.status = CustomUser.Status.DELETED
+        active_customer.deleted_at = timezone.now()
+        active_customer.is_active = False
+        active_customer.save(update_fields=["status", "deleted_at", "is_active"])
+
+        client = APIClient()
+        client.force_authenticate(user=admin_user)
+
+        response = client.patch(
+            f"/api/v1/admin/users/{active_customer.id}/activate/"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == CustomUser.Status.ACTIVE
+        assert response.data["is_active"] is True
+        assert response.data["is_email_confirmed"] is True
+        assert response.data["deleted_at"] is None
 
 
 @pytest.mark.django_db

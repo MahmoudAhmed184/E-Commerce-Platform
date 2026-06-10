@@ -79,6 +79,10 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                         <button type="button" (click)="restrict(user)"
                           class="text-xs font-medium text-amber-600 hover:text-amber-800">Restrict</button>
                       }
+                      @if (user.status === 'restricted' || user.status === 'soft_deleted') {
+                        <button type="button" (click)="activate(user)"
+                          class="text-xs font-medium text-green-600 hover:text-green-800">Activate</button>
+                      }
                       @if (user.status !== 'soft_deleted') {
                         <button type="button" (click)="softDelete(user)"
                           class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
@@ -150,6 +154,13 @@ export class AdminUsersPage implements OnInit {
     this.adminService.restrictUser(user.id).subscribe({
       next: (updated) => this.updateUser(updated),
       error: () => this.error.set('Could not restrict user.'),
+    });
+  }
+
+  protected activate(user: AdminUser): void {
+    this.adminService.activateUser(user.id).subscribe({
+      next: (updated) => this.updateUser(updated),
+      error: () => this.error.set('Could not activate user.'),
     });
   }
 

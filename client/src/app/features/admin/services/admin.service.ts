@@ -149,6 +149,10 @@ export class AdminService {
     return this.api.patch<AdminUser>(`/admin/users/${id}/restrict/`, {});
   }
 
+  activateUser(id: string): Observable<AdminUser> {
+    return this.api.patch<AdminUser>(`/admin/users/${id}/activate/`, {});
+  }
+
   softDeleteUser(id: string): Observable<AdminUser> {
     return this.api.delete<AdminUser>(`/admin/users/${id}/`);
   }

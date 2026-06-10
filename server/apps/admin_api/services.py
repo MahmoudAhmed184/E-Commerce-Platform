@@ -79,6 +79,25 @@ def restrict_user(user: CustomUser) -> CustomUser:
     return user
 
 
+def activate_user(user: CustomUser) -> CustomUser:
+    """Restore a user account to active status.
+
+    This can bring restricted or soft-deleted accounts back into an
+    active state so admins can re-enable customers after review.
+    """
+    if user.status == CustomUser.Status.ACTIVE and user.is_active:
+        raise ValidationError(
+            {"status": ["User is already active."]}
+        )
+
+    user.status = CustomUser.Status.ACTIVE
+    user.is_active = True
+    user.is_email_confirmed = True
+    user.deleted_at = None
+    user.save(update_fields=["status", "is_active", "is_email_confirmed", "deleted_at", "updated_at"])
+    return user
+
+
 def soft_delete_user(user: CustomUser) -> CustomUser:
     """Soft-delete a user account (FR-ADM-005).
 

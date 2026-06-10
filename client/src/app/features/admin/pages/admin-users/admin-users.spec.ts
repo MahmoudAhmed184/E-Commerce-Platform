@@ -74,6 +74,24 @@ describe('AdminUsersPage', () => {
     expect(restrictBtn).toBeTruthy();
   });
 
+  it('shows Activate button for restricted users', () => {
+    flushInitialLoad([makeUser({ status: 'restricted' })]);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const buttons = Array.from(el.querySelectorAll('button'));
+    const activateBtn = buttons.find((b) => b.textContent?.trim() === 'Activate');
+    expect(activateBtn).toBeTruthy();
+  });
+
+  it('shows Activate button for soft-deleted users', () => {
+    flushInitialLoad([makeUser({ status: 'soft_deleted' })]);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const buttons = Array.from(el.querySelectorAll('button'));
+    const activateBtn = buttons.find((b) => b.textContent?.trim() === 'Activate');
+    expect(activateBtn).toBeTruthy();
+  });
+
   it('hides Delete button for soft-deleted users', () => {
     flushInitialLoad([makeUser({ status: 'soft_deleted' })]);
 
@@ -111,6 +129,21 @@ describe('AdminUsersPage', () => {
     const req = http.expectOne(`${environment.apiBaseUrl}/admin/users/u8/restrict/`);
     expect(req.request.method).toBe('PATCH');
     req.flush({ ...user, status: 'restricted' });
+  });
+
+  it('calls activateUser when Activate is clicked', () => {
+    const user = makeUser({ id: 'u10', status: 'restricted', is_email_confirmed: true });
+    flushInitialLoad([user]);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const activateBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Activate',
+    )!;
+    activateBtn.click();
+
+    const req = http.expectOne(`${environment.apiBaseUrl}/admin/users/u10/activate/`);
+    expect(req.request.method).toBe('PATCH');
+    req.flush({ ...user, status: 'active' });
   });
 
   it('calls softDeleteUser when Delete is clicked', () => {

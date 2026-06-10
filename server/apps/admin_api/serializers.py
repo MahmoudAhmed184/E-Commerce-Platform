@@ -32,6 +32,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "full_name",
             "role",
             "status",
+            "is_active",
             "is_email_confirmed",
             "deleted_at",
             "created_at",

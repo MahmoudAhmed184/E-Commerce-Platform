@@ -34,6 +34,7 @@ from .services import (
     admin_delete_review,
     admin_hide_review,
     admin_unhide_review,
+    activate_user,
     approve_user,
     restrict_user,
     soft_delete_user,
@@ -115,6 +116,13 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
         """
         user = self.get_object()
         user = restrict_user(user)
+        return Response(self.get_serializer(user).data)
+
+    @action(detail=True, methods=["patch"])
+    def activate(self, request, pk=None):
+        """Activate or restore a user account."""
+        user = self.get_object()
+        user = activate_user(user)
         return Response(self.get_serializer(user).data)
 
     def destroy(self, request, *args, **kwargs):
