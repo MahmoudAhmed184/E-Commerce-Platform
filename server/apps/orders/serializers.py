@@ -49,6 +49,9 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "order_number",
+            "email",
+            "phone",
+            "shipping_address",
             "status",
             "payment_status",
             "subtotal",

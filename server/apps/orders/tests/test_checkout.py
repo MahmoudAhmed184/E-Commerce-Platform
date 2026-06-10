@@ -53,6 +53,9 @@ def test_checkout_cod_creates_confirmed_order_and_payment(product: Product) -> N
     response = client.post("/api/v1/orders/checkout/", checkout_payload(product), format="json")
 
     assert response.status_code == status.HTTP_201_CREATED
+    assert response.data["email"] == "buyer@example.com"
+    assert response.data["phone"] == "+201000000500"
+    assert response.data["shipping_address"]["line1"] == "123 Test Street"
     assert response.data["status"] == Order.Status.CONFIRMED
     assert response.data["payment_status"] == Order.PaymentStatus.COD_PENDING
     assert response.data["total_amount"] == "50.00"
@@ -191,6 +194,30 @@ def test_authenticated_checkout_clears_cart(product: Product) -> None:
 
 
 @pytest.mark.django_db
+def test_authenticated_order_list_includes_frontend_required_fields(product: Product) -> None:
+    user = CustomUser.objects.create_user(
+        email="orders-list@example.com",
+        phone="+201000000504",
+        password="Password123",
+        full_name="Orders List User",
+        status=CustomUser.Status.ACTIVE,
+        is_email_confirmed=True,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    checkout_response = client.post("/api/v1/orders/checkout/", checkout_payload(product), format="json")
+
+    response = client.get("/api/v1/orders/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data[0]["order_number"] == checkout_response.data["order_number"]
+    assert response.data[0]["email"] == "buyer@example.com"
+    assert response.data[0]["phone"] == "+201000000500"
+    assert response.data[0]["shipping_address"] == checkout_payload(product)["shipping_address"]
+    assert response.data[0]["items"][0]["product_name"] == "Checkout Product"
+
+
+@pytest.mark.django_db
 def test_authenticated_order_detail_is_not_public(product: Product) -> None:
     user = CustomUser.objects.create_user(
         email="private-order@example.com",
@@ -210,6 +237,8 @@ def test_authenticated_order_detail_is_not_public(product: Product) -> None:
 
     assert anonymous_response.status_code == status.HTTP_404_NOT_FOUND
     assert owner_response.status_code == status.HTTP_200_OK
+    assert owner_response.data["email"] == "buyer@example.com"
+    assert owner_response.data["shipping_address"]["city"] == "Cairo"
 
 
 @pytest.mark.django_db
@@ -222,3 +251,5 @@ def test_guest_order_detail_can_be_retrieved_by_order_number(product: Product) -
 
     assert response.status_code == status.HTTP_200_OK
     assert response.data["order_number"] == order_number
+    assert response.data["email"] == "buyer@example.com"
+    assert response.data["shipping_address"]["country"] == "Egypt"
