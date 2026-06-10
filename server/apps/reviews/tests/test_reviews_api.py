@@ -23,7 +23,7 @@ from apps.users.models import CustomUser
 
 
 @pytest.mark.django_db
-def test_create_review_via_product_slug(user: CustomUser, product: Product) -> None:
+def test_create_review_via_product_slug(user: CustomUser, product: Product, user_order) -> None:
     """FR-REV-001: Authenticated customer can create a review."""
     client = APIClient()
     client.force_authenticate(user=user)
@@ -44,7 +44,7 @@ def test_create_review_via_product_slug(user: CustomUser, product: Product) -> N
 
 
 @pytest.mark.django_db
-def test_create_review_without_comment(user: CustomUser, product: Product) -> None:
+def test_create_review_without_comment(user: CustomUser, product: Product, user_order) -> None:
     """FR-REV-004: Comment is optional."""
     client = APIClient()
     client.force_authenticate(user=user)
@@ -60,7 +60,7 @@ def test_create_review_without_comment(user: CustomUser, product: Product) -> No
 
 
 @pytest.mark.django_db
-def test_duplicate_review_rejected(user: CustomUser, product: Product) -> None:
+def test_duplicate_review_rejected(user: CustomUser, product: Product, user_order) -> None:
     """FR-REV-002: Only one active review per product per user."""
     Review.objects.create(user=user, product=product, rating=4)
 
@@ -78,6 +78,22 @@ def test_duplicate_review_rejected(user: CustomUser, product: Product) -> None:
 
 
 @pytest.mark.django_db
+def test_create_review_without_order_rejected(user: CustomUser, product: Product) -> None:
+    """User cannot review a product they haven't ordered."""
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.post(
+        f"/api/v1/products/{product.slug}/reviews/",
+        {"rating": 5, "comment": "Nice!"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "must purchase this product" in str(response.data).lower()
+
+
+@pytest.mark.django_db
 def test_unauthenticated_create_rejected(product: Product) -> None:
     """Anonymous users cannot create reviews."""
     client = APIClient()
@@ -92,7 +108,7 @@ def test_unauthenticated_create_rejected(product: Product) -> None:
 
 
 @pytest.mark.django_db
-def test_rating_out_of_range_rejected(user: CustomUser, product: Product) -> None:
+def test_rating_out_of_range_rejected(user: CustomUser, product: Product, user_order) -> None:
     """FR-REV-003: Rating must be 1-5."""
     client = APIClient()
     client.force_authenticate(user=user)

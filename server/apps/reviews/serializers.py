@@ -84,6 +84,20 @@ class ReviewCreateSerializer(serializers.Serializer):
                 {"product": ["This field is required."]}
             )
         attrs["product"] = product
+
+        # Verify the user has ordered the product
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            from apps.orders.models import Order
+            has_ordered = Order.objects.filter(
+                user=request.user,
+                items__product=product,
+                status=Order.Status.CONFIRMED
+            ).exists()
+            if not has_ordered:
+                raise serializers.ValidationError(
+                    {"non_field_errors": ["You must purchase this product before reviewing it."]}
+                )
         return attrs
 
 

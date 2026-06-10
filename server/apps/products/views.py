@@ -117,8 +117,9 @@ class AdminProductViewSet(viewsets.ModelViewSet):
     def deactivate(self, request, slug=None):
         """Soft-deactivate product without deleting historical order data."""
         product = self.get_object()
-        services.deactivate_product(product)
-        return Response({'status': 'deactivated'})
+        product = services.deactivate_product(product)
+        serializer = self.get_serializer(product)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def update_stock(self, request, slug=None):

@@ -52,6 +52,8 @@ export interface AdminProduct {
   availability: 'in_stock' | 'out_of_stock';
   is_active: boolean;
   category_name: string;
+  category_id: number;
+  description: string;
 }
 
 export interface AdminCategory {
@@ -82,6 +84,7 @@ interface BackendAdminProduct {
   availability: 'in_stock' | 'out_of_stock';
   is_active: boolean;
   category: BackendCategorySummary;
+  description: string;
 }
 
 interface BackendAdminCategory {
@@ -202,6 +205,21 @@ export class AdminService {
       .pipe(map(mapAdminProduct));
   }
 
+  updateProduct(
+    productSlug: string,
+    payload: {
+      name: string;
+      description: string;
+      price: string;
+      stock: number;
+      category_id: number;
+    }
+  ): Observable<AdminProduct> {
+    return this.api
+      .patch<BackendAdminProduct>(`/products/admin/products/${productSlug}/`, payload)
+      .pipe(map(mapAdminProduct));
+  }
+
   toggleProductActive(product: Pick<AdminProduct, 'slug' | 'is_active'>): Observable<AdminProduct> {
     const request = product.is_active
       ? this.api.post<BackendAdminProduct>(`/products/admin/products/${product.slug}/deactivate/`, {})
@@ -283,6 +301,8 @@ function mapAdminProduct(product: BackendAdminProduct): AdminProduct {
     availability: product.availability,
     is_active: product.is_active,
     category_name: product.category.name,
+    category_id: product.category.id,
+    description: product.description,
   };
 }
 

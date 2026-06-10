@@ -33,6 +33,7 @@ export interface Product {
   category: Category;
   images: ProductImage[];
   primary_image?: string | null;
+  user_has_ordered?: boolean;
 }
 
 

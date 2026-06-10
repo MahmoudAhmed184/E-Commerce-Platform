@@ -51,40 +51,48 @@ type ReviewForm = FormGroup<{
             </h2>
             
             @if (authService.isLoggedIn()) {
-              <form class="mt-6 space-y-5" [formGroup]="form" (ngSubmit)="submitReview()" novalidate>
-                <app-error-message [message]="formError()" />
+              @if (product()?.user_has_ordered || editingId()) {
+                <form class="mt-6 space-y-5" [formGroup]="form" (ngSubmit)="submitReview()" novalidate>
+                  <app-error-message [message]="formError()" />
 
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Rating</label>
-                  <app-rating-widget 
-                    [rating]="form.controls.rating.value" 
-                    [readonly]="false" 
-                    size="lg"
-                    (rate)="form.controls.rating.setValue($event)" />
-                </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Rating</label>
+                    <app-rating-widget 
+                      [rating]="form.controls.rating.value" 
+                      [readonly]="false" 
+                      size="lg"
+                      (rate)="form.controls.rating.setValue($event)" />
+                  </div>
 
-                <div>
-                  <label for="comment" class="block text-sm font-medium text-slate-700">Comment (optional)</label>
-                  <textarea id="comment" rows="4" formControlName="comment"
-                    placeholder="What did you like or dislike?"
-                    class="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"></textarea>
-                </div>
+                  <div>
+                    <label for="comment" class="block text-sm font-medium text-slate-700">Comment (optional)</label>
+                    <textarea id="comment" rows="4" formControlName="comment"
+                      placeholder="What did you like or dislike?"
+                      class="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"></textarea>
+                  </div>
 
-                <div class="flex gap-3">
-                  <button type="submit"
-                    class="flex-1 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all disabled:opacity-70"
-                    [disabled]="submitting()">
-                    @if (submitting()) { <app-loading-spinner size="sm" /> }
-                    {{ editingId() ? 'Update' : 'Post Review' }}
-                  </button>
-                  @if (editingId()) {
-                    <button type="button" (click)="cancelEdit()"
-                      class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                      Cancel
+                  <div class="flex gap-3">
+                    <button type="submit"
+                      class="flex-1 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all disabled:opacity-70"
+                      [disabled]="submitting()">
+                      @if (submitting()) { <app-loading-spinner size="sm" /> }
+                      {{ editingId() ? 'Update' : 'Post Review' }}
                     </button>
-                  }
+                    @if (editingId()) {
+                      <button type="button" (click)="cancelEdit()"
+                        class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                        Cancel
+                      </button>
+                    }
+                  </div>
+                </form>
+              } @else {
+                <div class="mt-6 rounded-xl bg-amber-50 p-4 border border-dashed border-amber-300">
+                  <p class="text-sm font-medium text-amber-800 text-center">
+                    You can only review products that you have purchased.
+                  </p>
                 </div>
-              </form>
+              }
             } @else {
               <div class="mt-6 rounded-xl bg-slate-50 p-4 border border-dashed border-slate-300">
                 <p class="text-sm text-slate-600 text-center">

@@ -25,7 +25,6 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
           class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
           <option value="confirmed">Confirmed</option>
           <option value="cancelled">Cancelled</option>
           <option value="failed">Failed</option>

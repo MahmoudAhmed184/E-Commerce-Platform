@@ -100,3 +100,27 @@ def review(user: CustomUser, product: Product) -> Review:
         rating=4,
         comment="Great product!",
     )
+
+
+@pytest.fixture
+def user_order(user: CustomUser, product: Product):
+    """A confirmed order for the user containing the reviewed product."""
+    from apps.orders.models import Order, OrderItem
+    order = Order.objects.create(
+        user=user,
+        email=user.email,
+        phone="+201000000601",
+        shipping_address={"address": "123 Test St"},
+        status=Order.Status.CONFIRMED,
+        payment_status=Order.PaymentStatus.PAID,
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=product,
+        product_name=product.name,
+        product_slug=product.slug,
+        unit_price=product.price,
+        quantity=1,
+        line_total=product.price,
+    )
+    return order
