@@ -53,10 +53,10 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                   <td class="px-4 py-3 text-slate-500">{{ review.created_at | slice:0:10 }}</td>
                   <td class="px-4 py-3">
                     <div class="flex gap-2">
-                      @if (review.is_visible) {
-                        <button type="button" (click)="hide(review)"
-                          class="text-xs font-medium text-amber-600 hover:text-amber-800">Hide</button>
-                      }
+                      <button type="button" (click)="toggleVisibility(review)"
+                        class="text-xs font-medium text-amber-600 hover:text-amber-800">
+                        {{ review.is_visible ? 'Hide' : 'Restore' }}
+                      </button>
                       <button type="button" (click)="remove(review)"
                         class="text-xs font-medium text-red-500 hover:text-red-700">Delete</button>
                     </div>
@@ -110,11 +110,14 @@ export class AdminReviewsPage implements OnInit {
       });
   }
 
-  protected hide(review: AdminReview): void {
-    this.adminService.hideReview(review.id).subscribe({
+  protected toggleVisibility(review: AdminReview): void {
+    const isVisible = !review.is_visible;
+    this.error.set('');
+
+    this.adminService.setReviewVisibility(review.id, isVisible).subscribe({
       next: (updated) =>
         this.reviews.update((list) => list.map((r) => (r.id === updated.id ? updated : r))),
-      error: () => this.error.set('Could not hide review.'),
+      error: () => this.error.set(`Could not ${isVisible ? 'restore' : 'hide'} review.`),
     });
   }
 

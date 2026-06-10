@@ -50,4 +50,28 @@ describe('errorInterceptor', () => {
       accountStatus: 'restricted',
     });
   });
+
+  it('uses the first field validation error as the message', async () => {
+    const errorPromise = new Promise<AppError>((resolve) => {
+      client.post(`${environment.apiBaseUrl}/users/me/password/`, {}).subscribe({
+        error: (error: AppError) => resolve(error),
+      });
+    });
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/users/me/password/`);
+    request.flush(
+      {
+        new_password: ['The password is too similar to the email.'],
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+
+    await expect(errorPromise).resolves.toEqual({
+      status: 400,
+      message: 'The password is too similar to the email.',
+      fieldErrors: {
+        new_password: ['The password is too similar to the email.'],
+      },
+    });
+  });
 });

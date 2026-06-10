@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import uuid
 from typing import Any, cast
-from urllib.parse import urlencode
 
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import CustomUser, EmailConfirmationToken
+from .models import CustomUser, CustomUserManager, EmailConfirmationToken
 from .selectors import get_user_by_email, get_user_by_phone
 
 
@@ -26,7 +29,8 @@ class AuthBlockedError(Exception):
 
 @transaction.atomic
 def create_user(email: str, phone: str, password: str, full_name: str) -> CustomUser:
-    normalized_email = CustomUser.objects.normalize_email(email).strip()
+    user_manager = cast(CustomUserManager, CustomUser.objects)
+    normalized_email = user_manager.normalize_email(email).strip()
     normalized_phone = phone.strip() if phone else None
 
     if CustomUser.objects.filter(email__iexact=normalized_email).exists():
@@ -34,7 +38,7 @@ def create_user(email: str, phone: str, password: str, full_name: str) -> Custom
     if normalized_phone and CustomUser.objects.filter(phone=normalized_phone).exists():
         raise ValidationError({"phone": "A user with this phone already exists."})
 
-    user = CustomUser.objects.create_user(
+    user = user_manager.create_user(
         email=normalized_email,
         phone=normalized_phone,
         password=password,
@@ -64,8 +68,62 @@ def send_confirmation_email(user: CustomUser, token: EmailConfirmationToken) -> 
 
 
 def build_confirmation_url(token: EmailConfirmationToken) -> str:
-    query = urlencode({"token": str(token.token)})
-    return f"{settings.FRONTEND_BASE_URL}/auth/confirm-email?{query}"
+    return f"{settings.FRONTEND_BASE_URL}/auth/confirm-email/{token.token}"
+
+
+def request_password_reset(email: str) -> None:
+    user = get_user_by_email(email)
+
+    if user is None or user.deleted_at is not None or user.status == CustomUser.Status.DELETED:
+        return
+
+    send_password_reset_email(user)
+
+
+def send_password_reset_email(user: CustomUser) -> int:
+    reset_url = build_password_reset_url(user)
+    message = (
+        f"Hello {user.full_name},\n\n"
+        "We received a request to reset your Stack Commerce password.\n"
+        "Open this link to choose a new password:\n"
+        f"{reset_url}\n\n"
+        "This link expires in one hour. If you did not request a password reset, "
+        "you can ignore this email."
+    )
+
+    return send_mail(
+        subject="Reset your Stack Commerce password",
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+def build_password_reset_url(user: CustomUser) -> str:
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    return f"{settings.FRONTEND_BASE_URL}/auth/reset-password/{uid}/{token}"
+
+
+@transaction.atomic
+def reset_password(uid: str, token: str, new_password: str) -> CustomUser:
+    try:
+        user_id = force_str(urlsafe_base64_decode(uid))
+        user = CustomUser.objects.get(pk=user_id)
+    except (CustomUser.DoesNotExist, TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError({"token": "This password reset link is invalid or expired."}) from exc
+
+    if user.deleted_at is not None or user.status == CustomUser.Status.DELETED:
+        raise ValidationError({"token": "This password reset link is invalid or expired."})
+
+    if not default_token_generator.check_token(user, token):
+        raise ValidationError({"token": "This password reset link is invalid or expired."})
+
+    validate_password(new_password, user=user)
+    user.set_password(new_password)
+    user.save(update_fields=["password", "updated_at"])
+    return user
 
 
 @transaction.atomic
@@ -82,7 +140,7 @@ def confirm_email(token_uuid: uuid.UUID | str) -> CustomUser:
 
     if token.is_used:
         raise ValidationError({"token": "Confirmation token has already been used."})
-    if token.expires_at <= timezone.now():
+    if token.expires_at and token.expires_at <= timezone.now():
         raise ValidationError({"token": "Confirmation token has expired."})
 
     user = token.user
@@ -183,4 +241,15 @@ def update_user_profile(
     if updates:
         user.save(update_fields=[*updates, "updated_at"])
 
+    return user
+
+
+@transaction.atomic
+def change_password(user: CustomUser, current_password: str, new_password: str) -> CustomUser:
+    if not user.check_password(current_password):
+        raise ValidationError({"current_password": "Current password is incorrect."})
+
+    validate_password(new_password, user=user)
+    user.set_password(new_password)
+    user.save(update_fields=["password", "updated_at"])
     return user

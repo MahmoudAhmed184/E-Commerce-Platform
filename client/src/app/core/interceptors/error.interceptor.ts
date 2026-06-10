@@ -32,7 +32,7 @@ function mapHttpError(error: unknown): AppError {
 
   const body = toErrorBody(error.error);
   const fieldErrors = collectFieldErrors(body);
-  const message = findErrorMessage(body) ?? defaultMessage(error.status);
+  const message = findErrorMessage(body) ?? findFirstFieldError(fieldErrors) ?? defaultMessage(error.status);
   const code = typeof body['code'] === 'string' ? body['code'] : undefined;
   const accountStatus = toAccountStatus(body['account_status']);
 
@@ -81,6 +81,16 @@ function findErrorMessage(body: Record<string, unknown>): string | null {
   for (const candidate of candidates) {
     const messages = toMessages(candidate);
 
+    if (messages.length) {
+      return messages.join(' ');
+    }
+  }
+
+  return null;
+}
+
+function findFirstFieldError(fieldErrors: Record<string, string[]>): string | null {
+  for (const messages of Object.values(fieldErrors)) {
     if (messages.length) {
       return messages.join(' ');
     }

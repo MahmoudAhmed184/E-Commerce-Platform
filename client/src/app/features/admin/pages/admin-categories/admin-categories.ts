@@ -17,17 +17,17 @@ type CategoryForm = FormGroup<{
   imports: [ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex gap-6">
+    <div class="flex flex-col gap-6 xl:flex-row">
       <!-- Category list -->
-      <div class="flex-1">
+      <div class="min-w-0 flex-1">
         <h2 class="text-xl font-semibold text-slate-900">Categories</h2>
         <app-error-message [message]="error()" />
 
         @if (isLoading()) {
           <div class="mt-6 flex justify-center"><app-loading-spinner size="md" /></div>
         } @else {
-          <div class="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+          <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <table class="w-full min-w-[620px] text-sm">
               <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th class="px-4 py-3">Name</th>
@@ -61,7 +61,7 @@ type CategoryForm = FormGroup<{
       </div>
 
       <!-- Create / Edit form -->
-      <div class="w-72 shrink-0">
+      <div class="w-full shrink-0 xl:w-72">
         <h3 class="text-base font-semibold text-slate-800">
           {{ editingSlug() ? 'Edit Category' : 'New Category' }}
         </h3>

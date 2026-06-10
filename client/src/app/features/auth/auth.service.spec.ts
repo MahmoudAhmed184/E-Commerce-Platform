@@ -85,6 +85,42 @@ describe('AuthService', () => {
     expect(localStorage.getItem('refresh_token')).toBe('refresh-token');
   });
 
+  it('test_requestPasswordReset_posts_email', () => {
+    let completed = false;
+
+    service.requestPasswordReset('customer@example.com').subscribe(() => {
+      completed = true;
+    });
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/auth/password-reset/`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ email: 'customer@example.com' });
+    request.flush({ message: 'If an account exists for this email, a password reset link has been sent.' });
+
+    expect(completed).toBe(true);
+  });
+
+  it('test_resetPassword_posts_token_and_new_password', () => {
+    service
+      .resetPassword({
+        uid: 'encoded-user-id',
+        token: 'reset-token',
+        new_password: 'ChangedPassword456',
+        confirm_password: 'ChangedPassword456',
+      })
+      .subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/auth/password-reset/confirm/`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      uid: 'encoded-user-id',
+      token: 'reset-token',
+      new_password: 'ChangedPassword456',
+      confirm_password: 'ChangedPassword456',
+    });
+    request.flush({ message: 'Password has been reset.' });
+  });
+
   it('test_login_sets_currentUser_signal', () => {
     service.login({ identifier: 'customer@example.com', password: 'Password1' }).subscribe();
 
@@ -167,6 +203,25 @@ describe('AuthService', () => {
       role: 'customer',
       status: 'active',
     });
+  });
+
+  it('test_changePassword_posts_authenticated_password_payload', () => {
+    service
+      .changePassword({
+        current_password: 'Password1',
+        new_password: 'ChangedPassword2',
+        confirm_password: 'ChangedPassword2',
+      })
+      .subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/users/me/password/`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      current_password: 'Password1',
+      new_password: 'ChangedPassword2',
+      confirm_password: 'ChangedPassword2',
+    });
+    request.flush({ message: 'Password has been changed.' });
   });
 
   it('test_isLoggedIn_computed_reflects_currentUser', () => {

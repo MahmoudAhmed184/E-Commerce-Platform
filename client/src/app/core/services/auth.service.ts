@@ -3,7 +3,15 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 
 import { SKIP_AUTH, SKIP_REFRESH } from '../interceptors/auth-http-context';
-import type { LoginPayload, RegisterPayload, User, UserRole, UserStatus } from '../models/user.model';
+import type {
+  ChangePasswordPayload,
+  LoginPayload,
+  PasswordResetPayload,
+  RegisterPayload,
+  User,
+  UserRole,
+  UserStatus,
+} from '../models/user.model';
 import { ApiService } from './api.service';
 
 interface BackendUser {
@@ -47,6 +55,18 @@ export class AuthService {
 
   confirmEmail(token: string): Observable<void> {
     return this.api.post<unknown>('/auth/confirm-email/', { token }, { context: publicRequestContext() }).pipe(map(() => undefined));
+  }
+
+  requestPasswordReset(email: string): Observable<void> {
+    return this.api
+      .post<unknown>('/auth/password-reset/', { email }, { context: publicRequestContext() })
+      .pipe(map(() => undefined));
+  }
+
+  resetPassword(payload: PasswordResetPayload): Observable<void> {
+    return this.api
+      .post<unknown>('/auth/password-reset/confirm/', payload, { context: publicRequestContext() })
+      .pipe(map(() => undefined));
   }
 
   login(payload: LoginPayload): Observable<void> {
@@ -112,6 +132,10 @@ export class AuthService {
       tap((user) => this.currentUser.set(normalizeUser(user))),
       map(() => undefined),
     );
+  }
+
+  changePassword(payload: ChangePasswordPayload): Observable<void> {
+    return this.api.post<unknown>('/users/me/password/', payload).pipe(map(() => undefined));
   }
 
   getAccessToken(): string | null {

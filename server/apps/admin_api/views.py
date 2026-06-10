@@ -13,7 +13,13 @@ from apps.payments.models import Payment
 from apps.reviews.models import Review
 from apps.users.models import CustomUser
 
-from .serializers import AdminOrderSerializer, AdminPaymentSerializer, AdminReviewSerializer, AdminUserSerializer
+from .serializers import (
+    AdminOrderSerializer,
+    AdminPaymentSerializer,
+    AdminReviewSerializer,
+    AdminReviewVisibilitySerializer,
+    AdminUserSerializer,
+)
 
 
 class AdminPagination(PageNumberPagination):
@@ -92,6 +98,15 @@ class AdminReviewViewSet(viewsets.ReadOnlyModelViewSet):
     def hide(self, request, pk=None):
         review = self.get_object()
         review.is_visible = False
+        review.save(update_fields=["is_visible", "updated_at"])
+        return Response(self.get_serializer(review).data)
+
+    @action(detail=True, methods=["patch"])
+    def visibility(self, request, pk=None):
+        review = self.get_object()
+        serializer = AdminReviewVisibilitySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review.is_visible = serializer.validated_data["is_visible"]
         review.save(update_fields=["is_visible", "updated_at"])
         return Response(self.get_serializer(review).data)
 

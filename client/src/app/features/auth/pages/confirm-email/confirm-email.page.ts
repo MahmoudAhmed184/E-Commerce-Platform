@@ -61,12 +61,20 @@ export class ConfirmEmailPage implements OnInit {
   protected readonly errorMessage = signal('');
 
   ngOnInit(): void {
-    const token = this.route.snapshot.queryParamMap.get('token');
-    this.token.set(token);
+    const token = this.route.snapshot.paramMap.get('token') || this.route.snapshot.queryParamMap.get('token');
     this.email.set(this.route.snapshot.queryParamMap.get('email'));
 
     if (token) {
-      this.confirmToken(token);
+      // Handle cases where the token might be mangled by Quoted-Printable encoding in development terminals
+      // (e.g. leading '3D' or soft line breaks '=')
+      let cleanToken = token;
+      if (cleanToken.startsWith('3D')) {
+        cleanToken = cleanToken.substring(2);
+      }
+      cleanToken = cleanToken.replace(/=/g, '').trim();
+
+      this.token.set(cleanToken);
+      this.confirmToken(cleanToken);
     }
   }
 

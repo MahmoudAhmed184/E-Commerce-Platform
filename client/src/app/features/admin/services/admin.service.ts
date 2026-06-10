@@ -115,12 +115,17 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+interface AdminListParams extends Record<string, string | number | boolean | null | undefined> {
+  page?: number;
+  page_size?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly api = inject(ApiService);
 
   // Users
-  getUsers(params?: { search?: string; page?: number }): Observable<PaginatedResponse<AdminUser>> {
+  getUsers(params?: AdminListParams & { search?: string }): Observable<PaginatedResponse<AdminUser>> {
     return this.api.get<PaginatedResponse<AdminUser>>('/admin/users/', params);
   }
 
@@ -137,7 +142,7 @@ export class AdminService {
   }
 
   // Orders
-  getOrders(params?: { page?: number }): Observable<PaginatedResponse<AdminOrder>> {
+  getOrders(params?: AdminListParams): Observable<PaginatedResponse<AdminOrder>> {
     return this.api.get<PaginatedResponse<AdminOrder>>('/admin/orders/', params);
   }
 
@@ -146,12 +151,14 @@ export class AdminService {
   }
 
   // Reviews moderation
-  getReviews(params?: { page?: number }): Observable<PaginatedResponse<AdminReview>> {
+  getReviews(params?: AdminListParams): Observable<PaginatedResponse<AdminReview>> {
     return this.api.get<PaginatedResponse<AdminReview>>('/admin/reviews/', params);
   }
 
-  hideReview(id: number): Observable<AdminReview> {
-    return this.api.patch<AdminReview>(`/admin/reviews/${id}/hide/`, {});
+  setReviewVisibility(id: number, isVisible: boolean): Observable<AdminReview> {
+    return this.api.patch<AdminReview>(`/admin/reviews/${id}/visibility/`, {
+      is_visible: isVisible,
+    });
   }
 
   deleteReview(id: number): Observable<void> {
@@ -159,7 +166,7 @@ export class AdminService {
   }
 
   // Products
-  getAdminProducts(params?: { page?: number }): Observable<PaginatedResponse<AdminProduct>> {
+  getAdminProducts(params?: AdminListParams): Observable<PaginatedResponse<AdminProduct>> {
     return this.api
       .get<PaginatedResponse<BackendAdminProduct>>('/products/admin/products/', params)
       .pipe(map((response) => mapPaginatedResponse(response, mapAdminProduct)));
@@ -204,7 +211,7 @@ export class AdminService {
   }
 
   // Categories
-  getAdminCategories(params?: { page?: number }): Observable<PaginatedResponse<AdminCategory>> {
+  getAdminCategories(params?: AdminListParams): Observable<PaginatedResponse<AdminCategory>> {
     return this.api
       .get<PaginatedResponse<BackendAdminCategory>>('/products/admin/categories/', params)
       .pipe(map((response) => mapPaginatedResponse(response, mapAdminCategory)));
@@ -227,7 +234,7 @@ export class AdminService {
   }
 
   // Payments
-  getPayments(params?: { page?: number }): Observable<PaginatedResponse<AdminPayment>> {
+  getPayments(params?: AdminListParams): Observable<PaginatedResponse<AdminPayment>> {
     return this.api.get<PaginatedResponse<AdminPayment>>('/admin/payments/', params);
   }
 }

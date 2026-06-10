@@ -8,10 +8,8 @@ from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 
-load_dotenv()
-
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -122,6 +120,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.CustomUser"
+PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", "3600"))
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", os.environ.get("SMTP_HOST", "localhost"))
@@ -135,7 +134,10 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
     os.environ.get("SMTP_FROM", "Stack Commerce <noreply@example.com>"),
 )
-FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://127.0.0.1:4200").rstrip("/")
+FRONTEND_BASE_URL = os.environ.get(
+    "FRONTEND_BASE_URL",
+    os.environ.get("FRONTEND_URL", "http://127.0.0.1:4200"),
+).rstrip("/")
 PAYMENT_WEBHOOK_SECRET = os.environ.get("PAYMENT_WEBHOOK_SECRET", "local-payment-webhook-secret")
 
 if EMAIL_USE_TLS and EMAIL_USE_SSL:

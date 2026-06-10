@@ -1,5 +1,10 @@
 import pytest
+from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
 from django.core.cache import cache
+from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -121,6 +126,117 @@ def test_confirm_email_valid_token() -> None:
     assert response.data == {"message": "Email confirmed."}
     assert user.status == CustomUser.Status.ACTIVE
     assert user.is_email_confirmed is True
+
+
+@pytest.mark.django_db
+def test_confirm_email_without_trailing_slash() -> None:
+    user = CustomUser.objects.create_user(
+        email="confirm-view-no-slash@example.com",
+        phone="+201000000113",
+        password="Password123",
+        full_name="Confirm View No Slash",
+    )
+    token = EmailConfirmationToken.objects.create(user=user)
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/confirm-email",
+        {"token": str(token.token)},
+        format="json",
+    )
+    user.refresh_from_db()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == {"message": "Email confirmed."}
+    assert user.status == CustomUser.Status.ACTIVE
+    assert user.is_email_confirmed is True
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_BASE_URL="http://frontend.test",
+)
+@pytest.mark.django_db
+def test_password_reset_request_returns_generic_response_and_sends_email() -> None:
+    user = _create_active_user(email="reset-request@example.com", phone="+201000000114")
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/password-reset/",
+        {"email": user.email},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == {
+        "message": "If an account exists for this email, a password reset link has been sent."
+    }
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == [user.email]
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@pytest.mark.django_db
+def test_password_reset_request_hides_unknown_email() -> None:
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/password-reset/",
+        {"email": "missing@example.com"},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == {
+        "message": "If an account exists for this email, a password reset link has been sent."
+    }
+    assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_changes_password() -> None:
+    user = _create_active_user(email="reset-confirm@example.com", phone="+201000000115")
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/password-reset/confirm/",
+        {
+            "uid": uid,
+            "token": token,
+            "new_password": "ChangedPassword456",
+            "confirm_password": "ChangedPassword456",
+        },
+        format="json",
+    )
+    user.refresh_from_db()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == {"message": "Password has been reset."}
+    assert user.check_password("ChangedPassword456")
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_rejects_password_mismatch() -> None:
+    user = _create_active_user(email="reset-mismatch@example.com", phone="+201000000116")
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/auth/password-reset/confirm/",
+        {
+            "uid": uid,
+            "token": token,
+            "new_password": "ChangedPassword456",
+            "confirm_password": "DifferentPassword789",
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["confirm_password"] == ["Passwords do not match."]
 
 
 @pytest.mark.django_db
@@ -287,6 +403,89 @@ def test_me_patch_updates_profile() -> None:
     assert response.data["phone"] == "+201000000023"
     assert user.full_name == "Updated User"
     assert user.phone == "+201000000023"
+
+
+@pytest.mark.django_db
+def test_me_password_changes_authenticated_user_password() -> None:
+    user = _create_active_user(email="me-password@example.com", phone="+201000000123")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.post(
+        "/api/v1/users/me/password/",
+        {
+            "current_password": "Password123",
+            "new_password": "ChangedPassword456",
+            "confirm_password": "ChangedPassword456",
+        },
+        format="json",
+    )
+    user.refresh_from_db()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data == {"message": "Password has been changed."}
+    assert user.check_password("ChangedPassword456")
+    assert not user.check_password("Password123")
+
+
+@pytest.mark.django_db
+def test_me_password_rejects_wrong_current_password() -> None:
+    user = _create_active_user(email="me-password-wrong@example.com", phone="+201000000124")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.post(
+        "/api/v1/users/me/password/",
+        {
+            "current_password": "WrongPassword123",
+            "new_password": "ChangedPassword456",
+            "confirm_password": "ChangedPassword456",
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["current_password"] == ["Current password is incorrect."]
+
+
+@pytest.mark.django_db
+def test_me_password_rejects_mismatched_confirmation() -> None:
+    user = _create_active_user(email="me-password-mismatch@example.com", phone="+201000000125")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+
+    response = client.post(
+        "/api/v1/users/me/password/",
+        {
+            "current_password": "Password123",
+            "new_password": "ChangedPassword456",
+            "confirm_password": "DifferentPassword789",
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["confirm_password"] == ["Passwords do not match."]
+
+
+@pytest.mark.django_db
+def test_me_password_unauthenticated_returns_401() -> None:
+    client = APIClient()
+
+    response = client.post(
+        "/api/v1/users/me/password/",
+        {
+            "current_password": "Password123",
+            "new_password": "ChangedPassword456",
+            "confirm_password": "ChangedPassword456",
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db

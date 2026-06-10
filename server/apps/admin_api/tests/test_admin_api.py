@@ -85,15 +85,23 @@ def test_admin_order_and_payment_lists(admin_user: CustomUser, customer: CustomU
 
 
 @pytest.mark.django_db
-def test_admin_can_hide_and_delete_reviews(admin_user: CustomUser, customer: CustomUser, product: Product) -> None:
+def test_admin_can_hide_restore_and_delete_reviews(
+    admin_user: CustomUser,
+    customer: CustomUser,
+    product: Product,
+) -> None:
     review = Review.objects.create(user=customer, product=product, rating=5)
     client = APIClient()
     client.force_authenticate(user=admin_user)
 
-    hide_response = client.patch(f"/api/v1/admin/reviews/{review.id}/hide/")
+    visibility_url = f"/api/v1/admin/reviews/{review.id}/visibility/"
+    hide_response = client.patch(visibility_url, {"is_visible": False}, format="json")
+    restore_response = client.patch(visibility_url, {"is_visible": True}, format="json")
     delete_response = client.delete(f"/api/v1/admin/reviews/{review.id}/")
 
     assert hide_response.status_code == status.HTTP_200_OK
     assert hide_response.data["is_visible"] is False
+    assert restore_response.status_code == status.HTTP_200_OK
+    assert restore_response.data["is_visible"] is True
     assert delete_response.status_code == status.HTTP_204_NO_CONTENT
     assert not Review.objects.filter(id=review.id).exists()

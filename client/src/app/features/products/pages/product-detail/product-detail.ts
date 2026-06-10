@@ -5,12 +5,13 @@ import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { CartService } from '../../../cart/services/cart.service';
+import { ReviewsPage } from '../../../reviews/pages/reviews-page/reviews-page';
 import { ProductService, Product, ProductImage } from '../../services/product';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ReviewsPage],
   templateUrl: './product-detail.html',
   styleUrls: ['./product-detail.css']
 })
@@ -28,6 +29,7 @@ export class ProductDetailPage implements OnInit {
   addingToCart = false;
   cartMessage = '';
   cartError = '';
+  readonly stars = [1, 2, 3, 4, 5];
 
   ngOnInit(): void {
     const slug = this.route.snapshot.paramMap.get('slug');
@@ -64,6 +66,10 @@ export class ProductDetailPage implements OnInit {
 
   selectImage(img: ProductImage): void {
     this.selectedImage = img.image;
+  }
+
+  isFilledStar(star: number): boolean {
+    return star <= Math.round(this.product?.average_rating ?? 0);
   }
 
   addToCart(): void {

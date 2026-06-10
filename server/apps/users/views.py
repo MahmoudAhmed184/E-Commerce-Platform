@@ -12,10 +12,13 @@ from rest_framework.views import APIView
 from .models import CustomUser
 from .selectors import get_current_user_data
 from .serializers import (
+    ChangePasswordSerializer,
     ConfirmEmailSerializer,
     CurrentUserSerializer,
     LoginSerializer,
     LogoutSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RegisterSerializer,
     UpdateCurrentUserSerializer,
 )
@@ -23,9 +26,12 @@ from .services import (
     AuthBlockedError,
     authenticate_user,
     blacklist_refresh_token,
+    change_password,
     confirm_email,
     create_user,
     issue_auth_tokens,
+    request_password_reset,
+    reset_password,
     update_user_profile,
 )
 
@@ -65,6 +71,41 @@ class ConfirmEmailView(APIView):
             _raise_serializer_error(exc)
 
         return Response({"message": "Email confirmed."}, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    throttle_scope = "auth"
+
+    def post(self, request: Request) -> Response:
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request_password_reset(serializer.validated_data["email"])
+
+        return Response(
+            {"message": "If an account exists for this email, a password reset link has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    throttle_scope = "auth"
+
+    def post(self, request: Request) -> Response:
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reset_password(
+                uid=serializer.validated_data["uid"],
+                token=serializer.validated_data["token"],
+                new_password=serializer.validated_data["new_password"],
+            )
+        except DjangoValidationError as exc:
+            _raise_serializer_error(exc)
+
+        return Response({"message": "Password has been reset."}, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):
@@ -132,3 +173,24 @@ class CurrentUserView(APIView):
             _raise_serializer_error(exc)
 
         return Response(get_current_user_data(user), status=status.HTTP_200_OK)
+
+
+class CurrentUserPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "auth"
+
+    def post(self, request: Request) -> Response:
+        user = cast(CustomUser, request.user)
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            change_password(
+                user=user,
+                current_password=serializer.validated_data["current_password"],
+                new_password=serializer.validated_data["new_password"],
+            )
+        except DjangoValidationError as exc:
+            _raise_serializer_error(exc)
+
+        return Response({"message": "Password has been changed."}, status=status.HTTP_200_OK)

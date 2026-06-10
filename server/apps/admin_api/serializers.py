@@ -42,3 +42,7 @@ class AdminReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ("id", "user_name", "product_name", "rating", "comment", "is_visible", "created_at")
         read_only_fields = fields
+
+
+class AdminReviewVisibilitySerializer(serializers.Serializer):
+    is_visible = serializers.BooleanField()

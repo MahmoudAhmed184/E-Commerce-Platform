@@ -4,10 +4,20 @@ import pytest
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
+from django.contrib.auth.tokens import default_token_generator
 
 from apps.users.models import CustomUser, EmailConfirmationToken
-from apps.users.services import confirm_email, create_user, update_user_profile
+from apps.users.services import (
+    change_password,
+    confirm_email,
+    create_user,
+    request_password_reset,
+    reset_password,
+    update_user_profile,
+)
 
 
 @override_settings(
@@ -49,7 +59,7 @@ def test_create_user_sends_confirmation_email() -> None:
     assert message.subject == "Confirm your Stack Commerce email"
     assert message.from_email == "Stack Commerce <noreply@example.com>"
     assert message.to == ["mail@example.com"]
-    assert f"http://frontend.test/auth/confirm-email?token={token.token}" in message.body
+    assert f"http://frontend.test/auth/confirm-email/{token.token}" in message.body
 
 
 @pytest.mark.django_db
@@ -117,6 +127,104 @@ def test_confirm_email_used_token_raises() -> None:
 
     with pytest.raises(ValidationError):
         confirm_email(token.token)
+
+
+@override_settings(
+    DEFAULT_FROM_EMAIL="Stack Commerce <noreply@example.com>",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_BASE_URL="http://frontend.test",
+)
+@pytest.mark.django_db
+def test_request_password_reset_sends_email() -> None:
+    user = CustomUser.objects.create_user(
+        email="reset-mail@example.com",
+        password="Password123",
+        full_name="Reset Mail",
+        phone="+201000000210",
+    )
+
+    request_password_reset(user.email)
+
+    assert len(mail.outbox) == 1
+    message = mail.outbox[0]
+    assert message.subject == "Reset your Stack Commerce password"
+    assert message.from_email == "Stack Commerce <noreply@example.com>"
+    assert message.to == [user.email]
+    assert "http://frontend.test/auth/reset-password/" in message.body
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@pytest.mark.django_db
+def test_request_password_reset_unknown_email_does_not_send() -> None:
+    request_password_reset("missing@example.com")
+
+    assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_reset_password_changes_password_and_invalidates_token() -> None:
+    user = CustomUser.objects.create_user(
+        email="reset-success@example.com",
+        password="Password123",
+        full_name="Reset Success",
+        phone="+201000000211",
+    )
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    reset_password(uid, token, "ChangedPassword456")
+    user.refresh_from_db()
+
+    assert user.check_password("ChangedPassword456")
+
+    with pytest.raises(ValidationError):
+        reset_password(uid, token, "AnotherPassword789")
+
+
+@pytest.mark.django_db
+def test_reset_password_rejects_invalid_token() -> None:
+    user = CustomUser.objects.create_user(
+        email="reset-invalid@example.com",
+        password="Password123",
+        full_name="Reset Invalid",
+        phone="+201000000212",
+    )
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+    with pytest.raises(ValidationError):
+        reset_password(uid, "invalid-token", "ChangedPassword456")
+
+
+@pytest.mark.django_db
+def test_change_password_requires_current_password() -> None:
+    user = CustomUser.objects.create_user(
+        email="change-password@example.com",
+        password="Password123",
+        full_name="Change Password",
+        phone="+201000000213",
+    )
+
+    change_password(user, "Password123", "ChangedPassword456")
+    user.refresh_from_db()
+
+    assert user.check_password("ChangedPassword456")
+    assert not user.check_password("Password123")
+
+
+@pytest.mark.django_db
+def test_change_password_rejects_wrong_current_password() -> None:
+    user = CustomUser.objects.create_user(
+        email="change-wrong@example.com",
+        password="Password123",
+        full_name="Change Wrong",
+        phone="+201000000214",
+    )
+
+    with pytest.raises(ValidationError):
+        change_password(user, "WrongPassword123", "ChangedPassword456")
+
+    user.refresh_from_db()
+    assert user.check_password("Password123")
 
 
 @pytest.mark.django_db

@@ -146,4 +146,12 @@ describe('AdminService', () => {
     expect(body.get('alt_text')).toBe('Camera front');
     expect(body.get('is_primary')).toBe('true');
   });
+
+  it('sets review visibility through the reversible moderation endpoint', () => {
+    service.setReviewVisibility(12, true).subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/admin/reviews/12/visibility/`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ is_visible: true });
+  });
 });

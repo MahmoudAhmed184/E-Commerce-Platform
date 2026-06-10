@@ -27,3 +27,16 @@ export interface RegisterPayload {
   password: string;
   full_name: string;
 }
+
+export interface PasswordResetPayload {
+  uid: string;
+  token: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}

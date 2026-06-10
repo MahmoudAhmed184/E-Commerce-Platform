@@ -1,0 +1,211 @@
+<div class="landing-page">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow"><span aria-hidden="true"></span> The considered collection</p>
+      <h1 id="hero-title">Objects worth <em>living with.</em></h1>
+      <p class="hero-intro">
+        A tightly curated edit of design-led essentials, useful technology, and everyday pieces chosen to last.
+      </p>
+
+      <div class="hero-actions">
+        <a routerLink="/products" class="primary-action">
+          Explore the collection <span aria-hidden="true">&rarr;</span>
+        </a>
+        <a href="#featured-collection" class="text-action">Shop the edit</a>
+      </div>
+
+      <dl class="hero-facts" aria-label="Catalog highlights">
+        <div>
+          <dt>{{ catalogCount() || 'Fresh' }}</dt>
+          <dd>Curated products</dd>
+        </div>
+        <div>
+          <dt>Live</dt>
+          <dd>Stock status</dd>
+        </div>
+        <div>
+          <dt>Real</dt>
+          <dd>Customer ratings</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="hero-art" aria-label="A preview of the latest products">
+      <div class="hero-orbit hero-orbit-one" aria-hidden="true"></div>
+      <div class="hero-orbit hero-orbit-two" aria-hidden="true"></div>
+      <p class="art-index" aria-hidden="true">SC / SELECTED</p>
+
+      @if (heroCards().length > 0) {
+        @for (card of heroCards(); track card.product.id; let index = $index) {
+          <a
+            class="hero-product"
+            [class.hero-product-main]="index === 0"
+            [class.hero-product-top]="index === 1"
+            [class.hero-product-bottom]="index === 2"
+            [routerLink]="['/products', card.product.slug]"
+            [attr.aria-label]="'View ' + card.product.name"
+          >
+            @if (card.imageUrl) {
+              <img [src]="card.imageUrl" [alt]="card.product.name" />
+            } @else {
+              <span class="image-fallback" aria-hidden="true">{{ card.product.name.charAt(0) }}</span>
+            }
+            <span class="hero-product-label">
+              <small>0{{ index + 1 }} / {{ card.product.category.name }}</small>
+              <strong>{{ card.product.name }}</strong>
+            </span>
+          </a>
+        }
+      } @else {
+        <div class="hero-product hero-product-main hero-placeholder" aria-hidden="true">
+          <span class="image-fallback">S</span>
+          <span class="hero-product-label"><small>01 / Curated</small><strong>The daily edit</strong></span>
+        </div>
+        <div class="hero-product hero-product-top hero-placeholder" aria-hidden="true">
+          <span class="image-fallback">C</span>
+        </div>
+        <div class="hero-product hero-product-bottom hero-placeholder" aria-hidden="true">
+          <span class="image-fallback">O</span>
+        </div>
+      }
+
+      <div class="art-note" aria-hidden="true">
+        <span>Selected with intent</span>
+        <span class="note-line"></span>
+        <span>Made for every day</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="value-strip" aria-label="Why shop Stack Commerce">
+    <p><span>01</span> Curated, not crowded</p>
+    <p><span>02</span> Inventory you can trust</p>
+    <p><span>03</span> Reviews from real customers</p>
+  </section>
+
+  <section id="featured-collection" class="collection" aria-labelledby="collection-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow"><span aria-hidden="true"></span> Shop the edit</p>
+        <h2 id="collection-title">Find your next <em>favorite.</em></h2>
+      </div>
+      <p>
+        Browse the newest additions, then narrow the collection by category without leaving the page.
+      </p>
+    </div>
+
+    <div class="category-toolbar">
+      <div class="category-filters" role="group" aria-label="Filter featured products by category">
+        <button
+          type="button"
+          [class.active]="selectedCategory() === ''"
+          [attr.aria-pressed]="selectedCategory() === ''"
+          (click)="selectCategory('')"
+        >
+          All <span>{{ catalogCount() }}</span>
+        </button>
+        @for (category of categories(); track trackCategory($index, category)) {
+          <button
+            type="button"
+            [class.active]="selectedCategory() === category.slug"
+            [attr.aria-pressed]="selectedCategory() === category.slug"
+            (click)="selectCategory(category.slug)"
+          >
+            {{ category.name }} <span>{{ category.product_count }}</span>
+          </button>
+        }
+      </div>
+      <a routerLink="/products" class="view-all-link">View all products <span aria-hidden="true">&rarr;</span></a>
+    </div>
+
+    <div class="collection-status" aria-live="polite">
+      <span>{{ activeCategoryName() }}</span>
+      <span class="status-rule" aria-hidden="true"></span>
+      <span>{{ products().length }} shown</span>
+    </div>
+
+    @if (loading()) {
+      <div class="product-grid" aria-label="Loading products" aria-busy="true">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="product-card product-skeleton" aria-hidden="true">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-line short"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line price"></div>
+          </div>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="collection-message" role="alert">
+        <p>{{ error() }}</p>
+        <button type="button" (click)="retryProducts()">Try again</button>
+      </div>
+    } @else if (productCards().length === 0) {
+      <div class="collection-message">
+        <p>No products are available in this category yet.</p>
+        <button type="button" (click)="selectCategory('')">Browse all products</button>
+      </div>
+    } @else {
+      <div class="product-grid">
+        @for (card of productCards(); track card.product.id; let index = $index) {
+          <article class="product-card" [style.--card-index]="index">
+            <a
+              class="product-image"
+              [routerLink]="['/products', card.product.slug]"
+              [attr.aria-label]="'View ' + card.product.name"
+            >
+              @if (card.imageUrl) {
+                <img [src]="card.imageUrl" [alt]="card.product.name" loading="lazy" />
+              } @else {
+                <span class="image-fallback" aria-hidden="true">{{ card.product.name.charAt(0) }}</span>
+              }
+
+              <span class="product-badges">
+                <span class="category-badge">{{ card.product.category.name }}</span>
+                <span
+                  class="status-badge"
+                  [class.badge-gold]="card.badge.tone === 'gold'"
+                  [class.badge-green]="card.badge.tone === 'green'"
+                  [class.badge-red]="card.badge.tone === 'red'"
+                >
+                  {{ card.badge.label }}
+                </span>
+              </span>
+              <span class="image-arrow" aria-hidden="true">&nearr;</span>
+            </a>
+
+            <div class="product-info">
+              <div class="product-meta">
+                @if (card.product.review_count > 0) {
+                  <span>
+                    Rated {{ card.product.average_rating | number: '1.1-1' }}
+                    ({{ card.product.review_count }})
+                  </span>
+                } @else {
+                  <span>New to the collection</span>
+                }
+                <span>{{ card.product.stock }} in stock</span>
+              </div>
+              <h3>
+                <a [routerLink]="['/products', card.product.slug]">{{ card.product.name }}</a>
+              </h3>
+              <p class="product-price">{{ card.product.price | currency: 'USD' : 'symbol' : '1.2-2' }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="editorial-banner" aria-labelledby="editorial-title">
+    <div class="editorial-number" aria-hidden="true">01</div>
+    <div class="editorial-copy">
+      <p class="eyebrow"><span aria-hidden="true"></span> Less, but better</p>
+      <h2 id="editorial-title">A calmer way to discover what belongs in your life.</h2>
+    </div>
+    <a routerLink="/products" class="round-link" aria-label="Browse the full collection">
+      <span>Browse all</span>
+      <span aria-hidden="true">&rarr;</span>
+    </a>
+  </section>
+</div>
