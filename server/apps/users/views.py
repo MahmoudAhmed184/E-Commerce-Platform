@@ -2,20 +2,24 @@ from __future__ import annotations
 
 from typing import NoReturn, cast
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.views import TokenRefreshView
 
+from .jwt_cookies import clear_auth_cookies, set_auth_cookies
 from .models import CustomUser
 from .selectors import get_current_user_data
 from .serializers import (
     ConfirmEmailSerializer,
     CurrentUserSerializer,
     LoginSerializer,
-    LogoutSerializer,
     RegisterSerializer,
     UpdateCurrentUserSerializer,
 )
@@ -90,28 +94,56 @@ class LoginView(APIView):
             )
 
         tokens = issue_auth_tokens(user)
-        return Response(
-            {
-                **tokens,
-                "user": CurrentUserSerializer(user).data,
-            },
-            status=status.HTTP_200_OK,
+        response = Response({"user": CurrentUserSerializer(user).data}, status=status.HTTP_200_OK)
+        set_auth_cookies(response, access=tokens["access"], refresh=tokens["refresh"])
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    serializer_class = TokenRefreshSerializer
+
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        refresh_cookie = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
+        if not refresh_cookie:
+            raise InvalidToken(
+                {
+                    "detail": "No valid session refresh cookie was provided.",
+                    "code": "token_not_valid",
+                },
+            )
+
+        serializer = self.get_serializer(data={"refresh": refresh_cookie})
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as exc:
+            raise InvalidToken(exc.args[0]) from exc
+
+        response = Response({"message": "Session refreshed."}, status=status.HTTP_200_OK)
+        set_auth_cookies(
+            response,
+            access=serializer.validated_data["access"],
+            refresh=serializer.validated_data.get("refresh"),
         )
+        return response
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
-        serializer = LogoutSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        response = Response({"message": "Logged out."}, status=status.HTTP_200_OK)
+        refresh_token = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
 
-        try:
-            blacklist_refresh_token(serializer.validated_data["refresh"])
-        except DjangoValidationError as exc:
-            _raise_serializer_error(exc)
+        if refresh_token:
+            try:
+                blacklist_refresh_token(str(refresh_token))
+            except DjangoValidationError:
+                pass
 
-        return Response({"message": "Logged out."}, status=status.HTTP_200_OK)
+        clear_auth_cookies(response)
+        return response
 
 
 class CurrentUserView(APIView):

@@ -44,6 +44,3 @@ class LoginSerializer(serializers.Serializer):
     identifier = serializers.CharField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
 
-
-class LogoutSerializer(serializers.Serializer):
-    refresh = serializers.CharField(trim_whitespace=False)

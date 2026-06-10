@@ -1,10 +1,12 @@
 import pytest
+from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.users.models import CustomUser, EmailConfirmationToken
+from apps.users.services import issue_auth_tokens
 
 
 @pytest.fixture(autouse=True)
@@ -124,19 +126,25 @@ def test_confirm_email_valid_token() -> None:
 
 
 @pytest.mark.django_db
-def test_login_with_email_returns_tokens() -> None:
+def test_login_with_email_sets_cookie_session() -> None:
     user = _create_active_user(email="login-email@example.com", phone="+201000000014")
     client = APIClient()
 
     response = _login(client, user.email)
 
     assert response.status_code == status.HTTP_200_OK
-    assert set(response.data) == {"access", "refresh", "user"}
+    assert set(response.data) == {"user"}
     assert response.data["user"]["email"] == user.email
+    assert settings.JWT_ACCESS_COOKIE_NAME in response.cookies
+    assert settings.JWT_REFRESH_COOKIE_NAME in response.cookies
+    assert response.cookies[settings.JWT_ACCESS_COOKIE_NAME]["httponly"] is True
+    assert response.cookies[settings.JWT_REFRESH_COOKIE_NAME]["httponly"] is True
+    assert response.cookies[settings.JWT_ACCESS_COOKIE_NAME]["path"] == settings.JWT_ACCESS_COOKIE_PATH
+    assert response.cookies[settings.JWT_REFRESH_COOKIE_NAME]["path"] == settings.JWT_REFRESH_COOKIE_PATH
 
 
 @pytest.mark.django_db
-def test_login_with_phone_returns_tokens() -> None:
+def test_login_with_phone_sets_cookie_session() -> None:
     user = _create_active_user(email="login-phone@example.com", phone="+201000000015")
     assert user.phone is not None
     client = APIClient()
@@ -144,9 +152,10 @@ def test_login_with_phone_returns_tokens() -> None:
     response = _login(client, user.phone)
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.data["access"]
-    assert response.data["refresh"]
+    assert set(response.data) == {"user"}
     assert response.data["user"]["phone"] == user.phone
+    assert settings.JWT_ACCESS_COOKIE_NAME in response.cookies
+    assert settings.JWT_REFRESH_COOKIE_NAME in response.cookies
 
 
 @pytest.mark.django_db
@@ -205,42 +214,37 @@ def test_login_deleted_user_returns_403() -> None:
 
 
 @pytest.mark.django_db
-def test_logout_blacklists_token() -> None:
-    user = _create_active_user(email="logout@example.com", phone="+201000000019")
+def test_refresh_token_body_without_cookie_is_rejected() -> None:
+    user = _create_active_user(email="refresh-body@example.com", phone="+201000000020")
+    refresh = issue_auth_tokens(user)["refresh"]
     client = APIClient()
-    login_response = _login(client, user.email)
-    refresh = login_response.data["refresh"]
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
-
-    logout_response = client.post("/api/v1/auth/logout/", {"refresh": refresh}, format="json")
-    refresh_response = client.post("/api/v1/auth/token/refresh/", {"refresh": refresh}, format="json")
-
-    assert logout_response.status_code == status.HTTP_200_OK
-    assert logout_response.data == {"message": "Logged out."}
-    assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-@pytest.mark.django_db
-def test_refresh_token_rotates() -> None:
-    user = _create_active_user(email="refresh@example.com", phone="+201000000020")
-    client = APIClient()
-    login_response = _login(client, user.email)
-    refresh = login_response.data["refresh"]
 
     response = client.post("/api/v1/auth/token/refresh/", {"refresh": refresh}, format="json")
 
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
+def test_refresh_token_rotates_from_cookie() -> None:
+    user = _create_active_user(email="refresh-cookie@example.com", phone="+201000000120")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    refresh = login_response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value
+
+    response = client.post("/api/v1/auth/token/refresh/", {}, format="json")
+
     assert response.status_code == status.HTTP_200_OK
-    assert response.data["access"]
-    assert response.data["refresh"]
-    assert response.data["refresh"] != refresh
+    assert response.data == {"message": "Session refreshed."}
+    assert response.cookies[settings.JWT_ACCESS_COOKIE_NAME].value
+    assert response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value
+    assert response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value != refresh
 
 
 @pytest.mark.django_db
 def test_me_returns_current_user_shape() -> None:
     user = _create_active_user(email="me@example.com", phone="+201000000021")
     client = APIClient()
-    login_response = _login(client, user.email)
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+    _login(client, user.email)
 
     response = client.get("/api/v1/users/me/")
 
@@ -260,6 +264,18 @@ def test_me_returns_current_user_shape() -> None:
 
 
 @pytest.mark.django_db
+def test_authorization_header_without_cookie_is_not_authenticated() -> None:
+    user = _create_active_user(email="me-bearer@example.com", phone="+201000000121")
+    tokens = issue_auth_tokens(user)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+
+    response = client.get("/api/v1/users/me/")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
 def test_me_unauthenticated_returns_401() -> None:
     client = APIClient()
 
@@ -272,8 +288,7 @@ def test_me_unauthenticated_returns_401() -> None:
 def test_me_patch_updates_profile() -> None:
     user = _create_active_user(email="me-patch@example.com", phone="+201000000022")
     client = APIClient()
-    login_response = _login(client, user.email)
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+    _login(client, user.email)
 
     response = client.patch(
         "/api/v1/users/me/",
@@ -301,8 +316,7 @@ def test_me_patch_duplicate_phone_returns_400() -> None:
     )
     user = _create_active_user(email="me-duplicate@example.com", phone="+201000000025")
     client = APIClient()
-    login_response = _login(client, user.email)
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+    _login(client, user.email)
 
     response = client.patch(
         "/api/v1/users/me/",
@@ -318,13 +332,31 @@ def test_me_patch_duplicate_phone_returns_400() -> None:
 def test_me_patch_without_fields_returns_400() -> None:
     user = _create_active_user(email="me-empty@example.com", phone="+201000000026")
     client = APIClient()
-    login_response = _login(client, user.email)
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}")
+    _login(client, user.email)
 
     response = client.patch("/api/v1/users/me/", {}, format="json")
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data == {"non_field_errors": ["Provide at least one field to update."]}
+
+
+@pytest.mark.django_db
+def test_logout_blacklists_refresh_cookie_and_clears_cookies() -> None:
+    user = _create_active_user(email="logout-cookie@example.com", phone="+201000000122")
+    client = APIClient()
+    login_response = _login(client, user.email)
+    refresh = login_response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value
+
+    logout_response = client.post("/api/v1/auth/logout/", {}, format="json")
+    refresh_client = APIClient()
+    refresh_client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = refresh
+    refresh_response = refresh_client.post("/api/v1/auth/token/refresh/", {}, format="json")
+
+    assert logout_response.status_code == status.HTTP_200_OK
+    assert logout_response.data == {"message": "Logged out."}
+    assert logout_response.cookies[settings.JWT_ACCESS_COOKIE_NAME].value == ""
+    assert logout_response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value == ""
+    assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
