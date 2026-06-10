@@ -68,7 +68,7 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
-        return Order.objects.all().order_by("-created_at")
+        return Order.objects.select_related("payment").order_by("-created_at")
 
 
 class AdminPaymentViewSet(viewsets.ReadOnlyModelViewSet):

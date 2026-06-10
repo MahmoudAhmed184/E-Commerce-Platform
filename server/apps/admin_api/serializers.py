@@ -17,11 +17,18 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 class AdminOrderSerializer(serializers.ModelSerializer):
     customer_email = serializers.EmailField(source="email", read_only=True)
+    payment_method = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ("id", "order_number", "customer_email", "status", "payment_status", "total_amount", "created_at")
-        read_only_fields = ("id", "order_number", "customer_email", "payment_status", "total_amount", "created_at")
+        fields = ("id", "order_number", "customer_email", "status", "payment_status", "payment_method", "total_amount", "created_at")
+        read_only_fields = ("id", "order_number", "customer_email", "payment_status", "payment_method", "total_amount", "created_at")
+
+    def get_payment_method(self, order: Order) -> str:
+        try:
+            return order.payment.method
+        except Payment.DoesNotExist:
+            return ""
 
 
 class AdminPaymentSerializer(serializers.ModelSerializer):

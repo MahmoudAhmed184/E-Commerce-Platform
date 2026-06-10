@@ -80,8 +80,27 @@ def test_admin_order_and_payment_lists(admin_user: CustomUser, customer: CustomU
 
     assert orders_response.status_code == status.HTTP_200_OK
     assert orders_response.data["results"][0]["customer_email"] == customer.email
+    assert orders_response.data["results"][0]["payment_method"] == Payment.Method.CARD
     assert payments_response.status_code == status.HTTP_200_OK
     assert payments_response.data["results"][0]["order_number"] == order.order_number
+
+
+@pytest.mark.django_db
+def test_admin_order_list_handles_orders_without_payments(admin_user: CustomUser, customer: CustomUser, product: Product) -> None:
+    Order.objects.create(
+        user=customer,
+        email=customer.email,
+        phone=customer.phone or "",
+        shipping_address={"line1": "A", "city": "B", "state": "C", "postal_code": "D", "country": "E"},
+        total_amount=Decimal("30.00"),
+    )
+    client = APIClient()
+    client.force_authenticate(user=admin_user)
+
+    response = client.get("/api/v1/admin/orders/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["results"][0]["payment_method"] == ""
 
 
 @pytest.mark.django_db
