@@ -8,6 +8,7 @@ export interface User {
   full_name: string;
   role: UserRole;
   status: UserStatus;
+  is_email_confirmed: boolean;
 }
 
 export interface LoginPayload {

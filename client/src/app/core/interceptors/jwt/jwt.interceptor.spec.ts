@@ -16,6 +16,7 @@ const backendCustomer: User = {
   full_name: 'Customer User',
   role: 'customer',
   status: 'active',
+  is_email_confirmed: true,
 };
 
 describe('jwtInterceptor', () => {

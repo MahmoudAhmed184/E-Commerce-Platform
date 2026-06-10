@@ -9,6 +9,7 @@ const adminUser: User = {
   full_name: 'Admin User',
   role: 'admin',
   status: 'active',
+  is_email_confirmed: true,
 };
 
 const customerUser: User = {
@@ -18,6 +19,7 @@ const customerUser: User = {
   full_name: 'Customer User',
   role: 'customer',
   status: 'active',
+  is_email_confirmed: true,
 };
 
 describe('loginErrorMessage', () => {

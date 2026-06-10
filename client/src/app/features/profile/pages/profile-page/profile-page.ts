@@ -189,6 +189,11 @@ export class ProfilePage implements OnInit {
     return [
       { id: 'role', tone: currentUser.role === 'admin' ? 'primary' : 'neutral', label: currentUser.role },
       { id: 'status', tone: currentUser.status === 'active' ? 'success' : 'warning', label: currentUser.status.replace(/_/g, ' ') },
+      {
+        id: 'email-confirmation',
+        tone: currentUser.is_email_confirmed ? 'success' : 'warning',
+        label: currentUser.is_email_confirmed ? 'email confirmed' : 'email pending',
+      },
     ];
   });
   protected readonly tabs: readonly UiTab[] = [

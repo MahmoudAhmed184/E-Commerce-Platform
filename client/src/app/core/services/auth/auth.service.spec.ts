@@ -13,6 +13,7 @@ const backendCustomer = {
   full_name: 'Customer User',
   role: 'customer',
   status: 'active',
+  is_email_confirmed: true,
 } as const;
 
 const adminUser: User = {
@@ -22,6 +23,7 @@ const adminUser: User = {
   full_name: 'Admin User',
   role: 'admin',
   status: 'active',
+  is_email_confirmed: true,
 };
 
 describe('AuthService', () => {
@@ -97,6 +99,7 @@ describe('AuthService', () => {
       full_name: backendCustomer.full_name,
       role: 'customer',
       status: 'active',
+      is_email_confirmed: true,
     });
   });
 
@@ -125,6 +128,7 @@ describe('AuthService', () => {
 
     expect(service.currentUser()?.email).toBe('customer@example.com');
     expect(service.currentUser()?.role).toBe('customer');
+    expect(service.currentUser()?.is_email_confirmed).toBe(true);
   });
 
   it('test_updateProfile_updates_currentUser_signal', () => {
@@ -151,6 +155,7 @@ describe('AuthService', () => {
       full_name: 'Updated Customer',
       role: 'customer',
       status: 'active',
+      is_email_confirmed: true,
     });
   });
 

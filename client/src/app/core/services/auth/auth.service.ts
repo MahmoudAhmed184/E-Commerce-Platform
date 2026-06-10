@@ -3,6 +3,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, finalize, map, type Observable, tap, throwError } from 'rxjs';
 
 import {
+  parseBooleanField,
   parseLiteral,
   parseNullableStringField,
   parseRecord,
@@ -19,6 +20,7 @@ interface BackendUser {
   full_name: string;
   role: UserRole | 'CUSTOMER' | 'ADMIN';
   status: UserStatus | 'PENDING' | 'ACTIVE' | 'RESTRICTED' | 'DELETED';
+  is_email_confirmed: boolean;
 }
 
 interface LoadCurrentUserOptions {
@@ -173,6 +175,7 @@ function normalizeUser(user: Partial<BackendUser | User>): User {
     full_name: user.full_name ?? 'Customer User',
     role: normalizeRole(user.role),
     status: normalizeStatus(user.status),
+    is_email_confirmed: user.is_email_confirmed ?? false,
   };
 }
 
@@ -195,6 +198,7 @@ function parseBackendUser(value: unknown, context: string): BackendUser {
       ['pending_approval', 'active', 'restricted', 'soft_deleted', 'PENDING', 'ACTIVE', 'RESTRICTED', 'DELETED'],
       `${context}.status`,
     ),
+    is_email_confirmed: parseBooleanField(record, 'is_email_confirmed', context),
   };
 }
 
