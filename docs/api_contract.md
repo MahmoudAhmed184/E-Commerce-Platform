@@ -8,7 +8,7 @@ This document records the shared backend/frontend contract for the implemented D
 ## Conventions
 
 - Base URL: `/api/v1`
-- Authentication: JWT bearer token for authenticated customer/admin endpoints.
+- Authentication: HttpOnly JWT cookie session for authenticated customer/admin endpoints. Browser requests send cookies with credentials; bearer tokens are not part of the frontend contract.
 - Money fields are decimal strings with two fractional digits.
 - User roles and statuses use lowercase SRS values, for example `admin`, `customer`, `active`, and `pending_approval`.
 - Paginated list responses use `{ count, next, previous, results }`.
@@ -67,8 +67,6 @@ Response `200`:
 
 ```json
 {
-  "access": "<jwt>",
-  "refresh": "<jwt>",
   "user": {
     "id": "uuid",
     "email": "buyer@example.com",
@@ -78,6 +76,34 @@ Response `200`:
     "status": "active"
   }
 }
+```
+
+The response sets HttpOnly access and refresh cookies.
+
+### Refresh Session
+
+`POST /auth/token/refresh/`
+
+Request body: empty. The endpoint uses the refresh cookie.
+
+Response `200`:
+
+```json
+{ "message": "Session refreshed." }
+```
+
+The response rotates the HttpOnly access and refresh cookies.
+
+### Logout
+
+`POST /auth/logout/`
+
+Request body: empty. The endpoint uses the refresh cookie, blacklists it when present, and clears auth cookies.
+
+Response `200`:
+
+```json
+{ "message": "Logged out." }
 ```
 
 ### Current User
@@ -142,7 +168,7 @@ Returns a non-paginated active category list.
 
 ## Admin Catalog
 
-Admin catalog endpoints require an admin JWT.
+Admin catalog endpoints require an admin cookie session.
 
 - `GET|POST /products/admin/products/`
 - `GET|PUT|PATCH|DELETE /products/admin/products/{slug}/`
@@ -155,7 +181,7 @@ Admin catalog endpoints require an admin JWT.
 
 ## Cart
 
-Cart endpoints require an authenticated customer JWT.
+Cart endpoints require an authenticated customer cookie session.
 
 ### Get Cart
 

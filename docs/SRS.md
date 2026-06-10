@@ -29,7 +29,7 @@ The core release covers customer registration and authentication, product browsi
 - Backend: Django + DRF, managed with `uv`
 - Frontend: Angular latest standalone-component workflow
 - Database: PostgreSQL
-- Authentication: JWT access and refresh tokens
+- Authentication: HttpOnly JWT access and refresh cookies
 - Payments: One configured card provider, either Stripe or PayPal, plus COD and wallet
 - Repository strategy: GitHub feature branches merged through `develop`
 - Guest cart strategy: guest cart state is maintained in the Angular application and submitted during guest checkout; authenticated carts are persisted server-side
@@ -52,16 +52,16 @@ The core release covers customer registration and authentication, product browsi
 | FR-USR-003 | Reject duplicate phone registration. | High | Registration returns a validation error when the phone number is already assigned to another account. |
 | FR-USR-004 | Send a confirmation email after registration. | High | Successful registration creates a confirmation token or link and dispatches it to the submitted email address. |
 | FR-USR-005 | Confirm an email address using a token or link. | High | Submitting a valid unused confirmation token or link marks the user's email as confirmed. |
-| FR-USR-006 | Prevent unconfirmed users from logging in. | High | Token creation fails for accounts whose email is not confirmed. |
-| FR-USR-007 | Authenticate with email and password. | High | Valid confirmed credentials submitted with email return a JWT access and refresh token pair. |
-| FR-USR-008 | Authenticate with phone number and password. | High | Valid confirmed credentials submitted with phone number return a JWT access and refresh token pair. |
-| FR-USR-009 | Issue JWT access and refresh tokens after login. | High | Successful login responses include both token types. |
-| FR-USR-010 | Refresh access tokens. | High | A valid refresh token returns a new access token. |
-| FR-USR-011 | Log out by invalidating or blacklisting refresh tokens. | High | A logged-out refresh token can no longer be reused. |
+| FR-USR-006 | Prevent unconfirmed users from logging in. | High | Session creation fails for accounts whose email is not confirmed. |
+| FR-USR-007 | Authenticate with email and password. | High | Valid confirmed credentials submitted with email establish an HttpOnly cookie session. |
+| FR-USR-008 | Authenticate with phone number and password. | High | Valid confirmed credentials submitted with phone number establish an HttpOnly cookie session. |
+| FR-USR-009 | Issue HttpOnly JWT access and refresh cookies after login. | High | Successful login responses set both cookie types and do not expose raw tokens in the JSON body. |
+| FR-USR-010 | Refresh access sessions. | High | A valid refresh cookie rotates the HttpOnly access and refresh cookies. |
+| FR-USR-011 | Log out by invalidating or blacklisting refresh cookies. | High | A logged-out refresh cookie can no longer be reused. |
 | FR-USR-012 | Support exactly two application roles: Customer and Admin. | High | Admin-only APIs and routes reject authenticated users without the Admin role. |
 | FR-USR-013 | Expose the current authenticated user's identity, role, email confirmation state, and account status. | High | The current-user endpoint returns the fields required for route protection and UI state. |
-| FR-USR-014 | Block pending-approval and restricted users from login and new orders. | High | Pending-approval and restricted accounts cannot obtain new JWT tokens or place checkout requests. |
-| FR-USR-015 | Block soft-deleted users from login. | High | Soft-deleted accounts cannot obtain new JWT tokens. |
+| FR-USR-014 | Block pending-approval and restricted users from login and new orders. | High | Pending-approval and restricted accounts cannot obtain session cookies or place checkout requests. |
+| FR-USR-015 | Block soft-deleted users from login. | High | Soft-deleted accounts cannot obtain session cookies. |
 
 ### 4.2 Product Catalog
 
@@ -168,7 +168,7 @@ The core release covers customer registration and authentication, product browsi
 |---|---|---|
 | NFR-SEC-001 | Production traffic uses HTTPS. | Production deployment terminates HTTPS before serving authenticated or payment traffic. |
 | NFR-SEC-002 | Passwords use Django password hashers. | Password values are stored as hashes only and are never returned through APIs. |
-| NFR-SEC-003 | JWT access tokens are short-lived relative to refresh tokens. | Access tokens expire sooner than refresh tokens and are renewed only through the refresh endpoint. |
+| NFR-SEC-003 | JWT access cookies are short-lived relative to refresh cookies. | Access cookies expire sooner than refresh cookies and are renewed only through the refresh endpoint. |
 | NFR-SEC-004 | API input is validated server-side before database writes. | Invalid input is rejected before persistence and surfaced through predictable validation errors. |
 | NFR-SEC-005 | CORS allow-lists are environment-controlled. | Only approved frontend origins can call the production API cross-origin. |
 | NFR-SEC-006 | Authentication, payment-sensitive, and review-submission endpoints are rate-limited. | Repeated abusive requests are throttled without disabling normal user flows. |
@@ -428,9 +428,9 @@ Base path: `/api/v1`
 |---|---|---|---|
 | POST | `/api/v1/auth/register/` | Public | Register a new customer account with email, phone, and password. |
 | POST | `/api/v1/auth/confirm-email/` | Public | Confirm a user's email address using a confirmation token. |
-| POST | `/api/v1/auth/login/` | Public | Log in with email or phone plus password and return JWT tokens. |
-| POST | `/api/v1/auth/token/refresh/` | Public | Exchange a valid refresh token for a new access token. |
-| POST | `/api/v1/auth/logout/` | Authenticated | Invalidate or blacklist the submitted refresh token. |
+| POST | `/api/v1/auth/login/` | Public | Log in with email or phone plus password and set HttpOnly JWT cookies. |
+| POST | `/api/v1/auth/token/refresh/` | Public | Rotate the session using the refresh cookie. |
+| POST | `/api/v1/auth/logout/` | Public | Invalidate or blacklist the refresh cookie and clear auth cookies. |
 | GET | `/api/v1/users/me/` | Authenticated | Retrieve the current user's identity, role, email confirmation state, and account status. |
 
 ### 8.2 Products and Categories
@@ -498,7 +498,7 @@ Base path: `/api/v1`
 |---|---|
 | `src/app/core/services/` | Shared API client, auth state, cart service, payment service, and feature-facing HTTP helpers |
 | `src/app/core/guards/` | Authentication and admin route protection |
-| `src/app/core/interceptors/` | JWT token attachment and shared error handling |
+| `src/app/core/interceptors/` | Cookie-session refresh and shared error handling |
 | `src/app/core/models/` | Shared TypeScript interfaces for users, products, carts, orders, payments, and reviews |
 | `src/app/shared/` | Reusable UI components, pipes, and directives |
 | `src/app/layout/` | Header, footer, navigation, and application shell elements |

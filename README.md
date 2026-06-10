@@ -26,7 +26,7 @@ Phase 1 is focused on repository readiness, backend and frontend scaffolds, shar
 
 Current baseline:
 
-- Django project under `server/` with split settings, DRF, JWT auth, CORS, filtering, and media/static configuration
+- Django project under `server/` with split settings, DRF, HttpOnly JWT cookie auth, CORS, filtering, and media/static configuration
 - Python dependency management with `uv`
 - Angular standalone workspace under `client/` with `core`, `shared`, `layout`, and feature folders
 - Implemented backend slices for users/auth and product catalog
@@ -46,7 +46,7 @@ The first release focuses on the following customer and admin workflows:
 - Customer registration with unique email and phone number
 - Email confirmation before login
 - Login with email or phone number
-- JWT access and refresh tokens
+- HttpOnly cookie sessions backed by JWT access and refresh cookies
 - Customer and Admin roles
 - Product listing, product detail, search, filtering, categories, images, prices, and stock state
 - Authenticated cart management
@@ -74,7 +74,7 @@ Backend:
 - Python 3.14
 - Django 6
 - `uv` for Python dependency and virtual environment management
-- Django REST Framework, JWT authentication, CORS handling, filtering, image uploads, and backend test tooling
+- Django REST Framework, HttpOnly JWT cookie authentication, CORS handling, filtering, image uploads, and backend test tooling
 - Database configured through environment variables; local defaults currently target MariaDB/MySQL, while `psycopg` is available if the team switches to PostgreSQL
 
 Frontend:
@@ -292,7 +292,7 @@ Frontend conventions from the SRS and Angular guidance:
 Security and data handling expectations:
 
 - Passwords use Django's configured password hashing
-- JWT access tokens are short-lived relative to refresh tokens
+- JWT access cookies are short-lived relative to refresh cookies
 - Authentication, payment-sensitive, and review-submission endpoints should be rate-limited
 - Card numbers, CVV values, and raw card payloads must never be stored
 - Product image uploads should validate file type and size
