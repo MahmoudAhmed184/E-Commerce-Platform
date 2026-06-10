@@ -3,16 +3,22 @@ products/views.py — HTTP request/response orchestration (NFR-MNT-005).
 
 Views delegate reads to selectors and writes to services.
 """
-from django.db.models import Count
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Category, Product, ProductImage
-from .selectors import get_active_products, get_active_categories
+from apps.users.permissions import IsAdminRole
+
+from .selectors import (
+    get_active_categories,
+    get_admin_categories,
+    get_admin_product_images,
+    get_admin_products,
+    get_filtered_active_products,
+)
 from .serializers import (
     CategorySerializer,
     ProductListSerializer,
@@ -72,14 +78,10 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        queryset = get_active_products()
-        min_price = self.request.query_params.get('min_price')
-        max_price = self.request.query_params.get('max_price')
-        if min_price is not None:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price is not None:
-            queryset = queryset.filter(price__lte=max_price)
-        return queryset
+        return get_filtered_active_products(
+            min_price=self.request.query_params.get('min_price'),
+            max_price=self.request.query_params.get('max_price'),
+        )
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -92,33 +94,49 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AdminCategoryViewSet(viewsets.ModelViewSet):
     """Admin CRUD for categories (FR-ADM-009)."""
-    queryset = Category.objects.annotate(product_count=Count('products')).order_by('name')
     serializer_class = AdminCategorySerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
     lookup_field = 'slug'
     pagination_class = StandardPagination
+
+    def get_queryset(self):
+        return get_admin_categories()
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, slug=None):
         category = self.get_object()
+        category = services.deactivate_category(category)
+        serializer = self.get_serializer(category)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        category = self.get_object()
         services.deactivate_category(category)
-        return Response({'status': 'deactivated'})
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminProductViewSet(viewsets.ModelViewSet):
     """Admin CRUD for products (FR-ADM-006, FR-ADM-007, FR-ADM-008)."""
-    queryset = Product.objects.select_related('category').prefetch_related('images').all()
     serializer_class = AdminProductSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
     lookup_field = 'slug'
     pagination_class = StandardPagination
+
+    def get_queryset(self):
+        return get_admin_products()
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, slug=None):
         """Soft-deactivate product without deleting historical order data."""
         product = self.get_object()
+        product = services.deactivate_product(product)
+        serializer = self.get_serializer(product)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        product = self.get_object()
         services.deactivate_product(product)
-        return Response({'status': 'deactivated'})
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
     def update_stock(self, request, slug=None):
@@ -146,6 +164,8 @@ class AdminProductViewSet(viewsets.ModelViewSet):
 
 class AdminProductImageViewSet(viewsets.ModelViewSet):
     """Admin CRUD for product images."""
-    queryset = ProductImage.objects.select_related('product').all()
     serializer_class = AdminProductImageSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        return get_admin_product_images()

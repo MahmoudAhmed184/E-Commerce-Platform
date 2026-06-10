@@ -3,20 +3,35 @@ products/tests.py — Automated tests covering services, selectors,
 and API endpoints (NFR-TST-001, NFR-TST-002).
 """
 
-from io import StringIO
+import os
+from io import BytesIO, StringIO
 from decimal import Decimal
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.utils import timezone
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.reviews.models import Review
 from apps.users.models import CustomUser
 
 from . import services
-from .models import Category, Product, ProductImage
-from .selectors import get_active_categories, get_active_products, get_product_by_slug
+from .models import Category, MAX_IMAGE_SIZE_MB, Product, ProductImage
+from .selectors import (
+    get_active_categories,
+    get_active_products,
+    get_admin_categories,
+    get_admin_product_images,
+    get_admin_products,
+    get_filtered_active_products,
+    get_product_by_slug,
+)
 
 # ─── Helpers ───────────────────────────────────────────────────────
 
@@ -46,6 +61,23 @@ def make_admin():
         full_name="Admin User",
         phone="01000000000",
     )
+
+
+def make_image_upload(
+    *,
+    name: str = "product.png",
+    content_type: str = "image/png",
+    image_format: str = "PNG",
+    size: tuple[int, int] = (8, 8),
+    random_pixels: bool = False,
+):
+    buffer = BytesIO()
+    if random_pixels:
+        image = Image.frombytes("RGB", size, os.urandom(size[0] * size[1] * 3))
+    else:
+        image = Image.new("RGB", size, color=(16, 120, 220))
+    image.save(buffer, format=image_format)
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
 
 
 # ─── Services Tests ────────────────────────────────────────────────
@@ -174,6 +206,15 @@ class ProductSelectorsTest(TestCase):
         self.assertIn("Active Product", names)
         self.assertNotIn("Inactive Product", names)
 
+    def test_get_filtered_active_products_applies_price_bounds(self):
+        make_product(self.category, name="Budget Product", price=Decimal("10.00"))
+        make_product(self.category, name="Premium Product", price=Decimal("500.00"))
+
+        qs = get_filtered_active_products(min_price="50", max_price="100")
+        names = set(qs.values_list("name", flat=True))
+
+        self.assertEqual(names, {"Active Product"})
+
     def test_get_active_categories(self):
         inactive_cat = make_category(name="Old Category", is_active=False)
         qs = get_active_categories()
@@ -181,9 +222,73 @@ class ProductSelectorsTest(TestCase):
         self.assertIn(self.category.pk, ids)
         self.assertNotIn(inactive_cat.pk, ids)
 
+    def test_admin_selectors_include_inactive_records(self):
+        inactive_category = make_category(name="Inactive Admin Category", is_active=False)
+        inactive_product = make_product(
+            inactive_category,
+            name="Inactive Admin Product",
+            is_active=False,
+        )
+        image = ProductImage.objects.create(product=inactive_product, image="products/admin-test.png")
+
+        self.assertIn(
+            inactive_category.pk,
+            list(get_admin_categories().values_list("pk", flat=True)),
+        )
+        self.assertIn(
+            inactive_product.pk,
+            list(get_admin_products().values_list("pk", flat=True)),
+        )
+        self.assertIn(
+            image.pk,
+            list(get_admin_product_images().values_list("pk", flat=True)),
+        )
+
     def test_get_product_by_slug(self):
         product = get_product_by_slug(self.active.slug)
         self.assertEqual(product.pk, self.active.pk)
+
+    def test_product_review_aggregates_exclude_hidden_and_soft_deleted_reviews(self):
+        user = CustomUser.objects.create_user(
+            email="aggregate-reviewer@test.com",
+            password="Password123",
+            full_name="Aggregate Reviewer",
+            phone="01000000991",
+            status=CustomUser.Status.ACTIVE,
+            is_email_confirmed=True,
+        )
+        Review.objects.create(product=self.active, user=user, rating=5)
+        Review.objects.create(
+            product=self.active,
+            user=CustomUser.objects.create_user(
+                email="hidden-reviewer@test.com",
+                password="Password123",
+                full_name="Hidden Reviewer",
+                phone="01000000992",
+                status=CustomUser.Status.ACTIVE,
+                is_email_confirmed=True,
+            ),
+            rating=1,
+            is_visible=False,
+        )
+        Review.objects.create(
+            product=self.active,
+            user=CustomUser.objects.create_user(
+                email="deleted-reviewer@test.com",
+                password="Password123",
+                full_name="Deleted Reviewer",
+                phone="01000000993",
+                status=CustomUser.Status.ACTIVE,
+                is_email_confirmed=True,
+            ),
+            rating=1,
+            deleted_at=timezone.now(),
+        )
+
+        product = get_product_by_slug(self.active.slug)
+
+        self.assertEqual(product.review_count, 1)
+        self.assertEqual(product.average_rating, 5.0)
 
     def test_get_product_by_slug_404_for_inactive(self):
         from django.core.exceptions import ObjectDoesNotExist
@@ -204,6 +309,7 @@ class ProductSelectorsTest(TestCase):
 
 class ProductAPITest(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.cat_electronics = make_category(name="Electronics")
         self.cat_clothing = make_category(name="Clothing")
@@ -236,6 +342,16 @@ class ProductAPITest(TestCase):
         names = [p["name"] for p in response.data["results"]]
         self.assertNotIn("Old Phone", names)
 
+    def test_list_excludes_products_in_inactive_categories(self):
+        self.cat_electronics.is_active = False
+        self.cat_electronics.save(update_fields=["is_active", "updated_at"])
+
+        response = self.client.get("/api/v1/products/products/")
+
+        names = [p["name"] for p in response.data["results"]]
+        self.assertNotIn("Smartphone", names)
+        self.assertNotIn("Laptop", names)
+
     def test_list_includes_availability(self):
         response = self.client.get("/api/v1/products/products/")
         for item in response.data["results"]:
@@ -258,6 +374,14 @@ class ProductAPITest(TestCase):
 
     def test_product_detail_inactive_returns_404(self):
         response = self.client.get(f"/api/v1/products/products/{self.inactive.slug}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_product_detail_in_inactive_category_returns_404(self):
+        self.cat_electronics.is_active = False
+        self.cat_electronics.save(update_fields=["is_active", "updated_at"])
+
+        response = self.client.get(f"/api/v1/products/products/{self.phone.slug}/")
+
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     # FR-PRD-004: search by name
@@ -337,6 +461,7 @@ class ProductAPITest(TestCase):
 
 class CategoryAPITest(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.cat = make_category(name="Electronics")
         make_category(name="Inactive Cat", is_active=False)
@@ -358,6 +483,7 @@ class CategoryAPITest(TestCase):
 
 class AdminProductAPITest(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.admin = make_admin()
         self.client.force_authenticate(user=self.admin)
@@ -396,8 +522,21 @@ class AdminProductAPITest(TestCase):
             f"/api/v1/products/admin/products/{product.slug}/deactivate/"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["is_active"], False)
         product.refresh_from_db()
         self.assertFalse(product.is_active)
+
+    def test_admin_delete_product_deactivates_without_deleting(self):
+        product = make_product(self.category)
+
+        response = self.client.delete(f"/api/v1/products/admin/products/{product.slug}/")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
+        self.assertTrue(Product.objects.filter(pk=product.pk).exists())
+        public_response = self.client.get(f"/api/v1/products/products/{product.slug}/")
+        self.assertEqual(public_response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_admin_update_stock(self):
         product = make_product(self.category, stock=5)
@@ -428,7 +567,7 @@ class AdminProductAPITest(TestCase):
         for index in range(15):
             make_product(self.category, name=f"Admin Perf Product {index}")
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             response = self.client.get("/api/v1/products/admin/products/?page_size=12")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -444,6 +583,35 @@ class AdminProductAPITest(TestCase):
         self.client.force_authenticate(user=user)
         response = self.client.get("/api/v1/products/admin/products/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_customer_cannot_access_admin_endpoints(self):
+        user = CustomUser.objects.create_user(
+            email="staff-customer@test.com",
+            password="pass",
+            full_name="Staff Customer",
+            phone="01111111112",
+            status=CustomUser.Status.ACTIVE,
+            is_email_confirmed=True,
+            is_staff=True,
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.get("/api/v1/products/admin/products/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_role_can_access_admin_endpoints_without_staff_flag(self):
+        user = CustomUser.objects.create_user(
+            email="role-admin@test.com",
+            password="pass",
+            full_name="Role Admin",
+            phone="01111111113",
+            role=CustomUser.Role.ADMIN,
+            status=CustomUser.Status.ACTIVE,
+            is_email_confirmed=True,
+            is_staff=False,
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.get("/api/v1/products/admin/products/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_admin_create_category(self):
         response = self.client.post(
@@ -466,5 +634,83 @@ class AdminProductAPITest(TestCase):
             f"/api/v1/products/admin/categories/{cat.slug}/deactivate/"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["is_active"], False)
         cat.refresh_from_db()
         self.assertFalse(cat.is_active)
+
+    def test_admin_delete_category_deactivates_without_deleting(self):
+        cat = make_category(name="Archive")
+        product = make_product(cat, name="Archived Product")
+
+        response = self.client.delete(f"/api/v1/products/admin/categories/{cat.slug}/")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        cat.refresh_from_db()
+        self.assertFalse(cat.is_active)
+        self.assertTrue(Category.objects.filter(pk=cat.pk).exists())
+        product.refresh_from_db()
+        self.assertTrue(product.is_active)
+
+        public_category_response = self.client.get("/api/v1/products/categories/")
+        self.assertNotIn("Archive", [item["name"] for item in public_category_response.data])
+        public_product_response = self.client.get(f"/api/v1/products/products/{product.slug}/")
+        self.assertEqual(public_product_response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_admin_upload_product_image_accepts_valid_image(self):
+        product = make_product(self.category)
+        upload = make_image_upload()
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            response = self.client.post(
+                "/api/v1/products/admin/product-images/",
+                {"product": product.pk, "image": upload, "alt_text": "Product image", "is_primary": True},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ProductImage.objects.count(), 1)
+        self.assertEqual(response.data["alt_text"], "Product image")
+        self.assertTrue(response.data["is_primary"])
+
+    def test_admin_upload_product_image_rejects_invalid_content(self):
+        product = make_product(self.category)
+        upload = SimpleUploadedFile("product.png", b"not an image", content_type="image/png")
+
+        response = self.client.post(
+            "/api/v1/products/admin/product-images/",
+            {"product": product.pk, "image": upload},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
+        self.assertEqual(ProductImage.objects.count(), 0)
+
+    def test_admin_upload_product_image_rejects_mime_content_mismatch(self):
+        product = make_product(self.category)
+        upload = make_image_upload(name="product.png", content_type="image/jpeg", image_format="PNG")
+
+        response = self.client.post(
+            "/api/v1/products/admin/product-images/",
+            {"product": product.pk, "image": upload},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
+        self.assertEqual(ProductImage.objects.count(), 0)
+
+    def test_admin_upload_product_image_rejects_oversized_file(self):
+        product = make_product(self.category)
+        upload = make_image_upload(size=(1600, 1600), random_pixels=True)
+        self.assertGreater(upload.size, MAX_IMAGE_SIZE_MB * 1024 * 1024)
+
+        response = self.client.post(
+            "/api/v1/products/admin/product-images/",
+            {"product": product.pk, "image": upload},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Image size must not exceed", str(response.data["image"][0]))
+        self.assertEqual(ProductImage.objects.count(), 0)

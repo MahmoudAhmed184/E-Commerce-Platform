@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+from http.client import RemoteDisconnected
 from decimal import Decimal, InvalidOperation
 from pathlib import PurePosixPath
 from typing import Any
@@ -400,6 +401,8 @@ def download_image(url: str, timeout: float) -> tuple[bytes, str]:
         raise CommandError(f"image request failed with HTTP {exc.code}: {url}") from exc
     except URLError as exc:
         raise CommandError(f"image request failed: {url} ({exc.reason})") from exc
+    except (ConnectionResetError, RemoteDisconnected) as exc:
+        raise CommandError(f"image request was disconnected: {url}") from exc
     except TimeoutError as exc:
         raise CommandError(f"image request timed out: {url}") from exc
 

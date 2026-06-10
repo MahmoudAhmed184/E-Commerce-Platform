@@ -1,5 +1,22 @@
+from pathlib import Path
+
+from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
-from .models import Category, Product, ProductImage, MAX_IMAGE_SIZE_MB
+
+from .models import ALLOWED_IMAGE_EXTENSIONS, Category, MAX_IMAGE_SIZE_MB, Product, ProductImage
+
+
+ALLOWED_IMAGE_TYPES = {
+    'GIF': {'extensions': {'gif'}, 'content_types': {'image/gif'}},
+    'JPEG': {'extensions': {'jpg', 'jpeg'}, 'content_types': {'image/jpeg'}},
+    'PNG': {'extensions': {'png'}, 'content_types': {'image/png'}},
+    'WEBP': {'extensions': {'webp'}, 'content_types': {'image/webp'}},
+}
+ALLOWED_IMAGE_CONTENT_TYPES = {
+    content_type
+    for image_type in ALLOWED_IMAGE_TYPES.values()
+    for content_type in image_type['content_types']
+}
 
 
 # ─── Public Serializers ────────────────────────────────────────────
@@ -97,6 +114,7 @@ class AdminCategorySerializer(serializers.ModelSerializer):
 
 class AdminProductImageSerializer(serializers.ModelSerializer):
     """Admin serializer for product image CRUD."""
+    image = serializers.FileField()
 
     class Meta:
         model = ProductImage
@@ -110,6 +128,35 @@ class AdminProductImageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f'Image size must not exceed {MAX_IMAGE_SIZE_MB}MB.'
             )
+
+        extension = Path(value.name).suffix.lower().lstrip('.')
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            allowed = ', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))
+            raise serializers.ValidationError(f'Image extension must be one of: {allowed}.')
+
+        content_type = getattr(value, 'content_type', '')
+        if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+            allowed = ', '.join(sorted(ALLOWED_IMAGE_CONTENT_TYPES))
+            raise serializers.ValidationError(f'Image MIME type must be one of: {allowed}.')
+
+        try:
+            value.seek(0)
+            with Image.open(value) as image:
+                detected_format = image.format
+                image.verify()
+        except (OSError, UnidentifiedImageError):
+            raise serializers.ValidationError('Uploaded file must be a valid image.') from None
+        finally:
+            value.seek(0)
+
+        image_type = ALLOWED_IMAGE_TYPES.get(str(detected_format))
+        if image_type is None:
+            raise serializers.ValidationError('Uploaded image format is not supported.')
+        if extension not in image_type['extensions'] or content_type not in image_type['content_types']:
+            raise serializers.ValidationError(
+                'Image extension and MIME type must match the uploaded image content.'
+            )
+
         return value
 
 
