@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
 import { type FormControl, type FormGroup, NonNullableFormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
+import { LucideFolderTree, LucidePackage, LucidePencil, LucideTags, LucideTrash2, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { DropdownMenuComponent } from '../../../../shared/components/dropdown-menu/dropdown-menu.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
-import type { UiAction, UiMenuItem, UiTableColumn } from '../../../../shared/components/ui.types';
+import { TooltipComponent } from '../../../../shared/components/tooltip/tooltip.component';
+import type { UiAction, UiTableColumn } from '../../../../shared/components/ui.types';
 import { AdminService, type AdminCategory } from '../../../../core/services/admin/admin.service';
 import { AdminWorkflowService, type AdminCategorySaveResult } from '../../services/admin-workflow/admin-workflow.service';
 
@@ -27,83 +29,166 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [AlertBannerComponent, AlertDialogComponent, ButtonComponent, DropdownMenuComponent, ReactiveFormsModule, SkeletonLoaderComponent],
+  imports: [
+    AlertBannerComponent,
+    AlertDialogComponent,
+    BadgeComponent,
+    ButtonComponent,
+    LucideFolderTree,
+    LucidePackage,
+    LucidePencil,
+    LucideTags,
+    LucideTrash2,
+    LucideTriangleAlert,
+    ReactiveFormsModule,
+    SkeletonLoaderComponent,
+    TooltipComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="grid gap-lg">
-      <header class="grid gap-xs">
-        <p class="type-label-sm text-text-muted">Admin</p>
-        <h2 class="type-heading-xl text-text-primary">Categories</h2>
-        <p class="type-body-md text-text-secondary">Maintain product departments used by customers to browse and filter the catalog.</p>
+    <section class="admin-page">
+      <header class="admin-page-header">
+        <div class="admin-page-heading">
+          <p class="admin-kicker">Taxonomy</p>
+          <h2 class="admin-title">Categories</h2>
+          <p class="admin-description">Maintain product departments used by customers to browse and filter the catalog.</p>
+        </div>
       </header>
 
+      <dl class="admin-stat-grid">
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Categories</dt>
+            <span class="admin-stat-icon" data-tone="info" aria-hidden="true">
+              <svg lucideTags class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ categories().length }}</dd>
+          <dd class="type-body-sm text-text-secondary">Browse departments</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Assigned products</dt>
+            <span class="admin-stat-icon" data-tone="success" aria-hidden="true">
+              <svg lucidePackage class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ assignedProductCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Across all categories</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Empty</dt>
+            <span class="admin-stat-icon" data-tone="warning" aria-hidden="true">
+              <svg lucideTriangleAlert class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ emptyCategoryCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Can be cleaned up</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Editing</dt>
+            <span class="admin-stat-icon" data-tone="info" aria-hidden="true">
+              <svg lucideFolderTree class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ editingSlug() ? '1' : '0' }}</dd>
+          <dd class="type-body-sm text-text-secondary">Active form target</dd>
+        </div>
+      </dl>
+
       @if (statusMessage()) {
-        <app-alert-banner tone="success" title="Category updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
+        <app-alert-banner tone="success" [title]="'Category updated'" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
       }
       @if (formError()) {
-        <app-alert-banner tone="error" title="Category issue" [message]="formError()" [dismissible]="true" (dismissed)="formError.set('')" />
+        <app-alert-banner tone="error" [title]="'Category issue'" [message]="formError()" [dismissible]="true" (dismissed)="formError.set('')" />
       }
 
-      <section class="grid gap-lg xl:grid-cols-[var(--ui-layout-admin-editor-grid)] xl:items-start">
-        <section class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs" aria-labelledby="categories-table-title">
-          <h3 id="categories-table-title" class="sr-only">Category management</h3>
-          @if (isLoading()) {
-            <div class="p-md">
-              <app-skeleton-loader shape="block" [count]="5" label="Loading categories" />
+      <section class="admin-editor-grid">
+        <section class="admin-panel" aria-labelledby="categories-table-title">
+          <div class="admin-panel-header">
+            <div>
+              <h3 id="categories-table-title" class="admin-panel-title">Category management</h3>
+              <p class="admin-panel-copy">Keep browse departments clear, named, and tied to active product inventory.</p>
             </div>
-          } @else {
-            <table class="w-full min-w-container-md border-collapse text-start">
-              <caption class="sr-only">Category management</caption>
-              <thead class="bg-surface-subtle text-text-secondary">
-                <tr>
-                  @for (column of columns; track column.id) {
-                    <th class="p-sm text-start type-label-sm">{{ column.header }}</th>
-                  }
-                  <th class="p-sm text-end type-label-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y-hairline divide-border-default">
-                @for (category of sortedCategories(); track category.slug) {
-                  <tr class="interactive-transition hover:bg-surface-subtle">
-                    <td class="p-sm type-body-sm text-text-primary">{{ category.name }}</td>
-                    <td class="p-sm type-body-sm text-text-primary">{{ category.slug }}</td>
-                    <td class="p-sm type-body-sm text-text-primary">{{ category.description }}</td>
-                    <td class="p-sm type-body-sm text-text-primary">{{ category.product_count }}</td>
-                    <td class="p-sm text-end">
-                      <app-dropdown-menu label="Row actions" [items]="rowActions" (selected)="handleRowAction(category.slug, $event)" />
-                    </td>
-                  </tr>
-                } @empty {
+            <app-badge tone="info" [label]="categories().length + ' categories'" />
+          </div>
+          <div class="admin-table-wrap">
+            @if (isLoading()) {
+              <div class="p-md">
+                <app-skeleton-loader shape="block" [count]="5" label="Loading categories" />
+              </div>
+            } @else {
+              <table class="admin-table admin-table-categories">
+                <caption class="sr-only">Category management</caption>
+                <thead>
                   <tr>
-                    <td class="p-xl text-center type-body-md text-text-muted" colspan="5">No rows to display.</td>
+                    @for (column of columns; track column.id) {
+                      <th>{{ column.header }}</th>
+                    }
+                    <th class="admin-table-action">Actions</th>
                   </tr>
-                }
-              </tbody>
-            </table>
-          }
+                </thead>
+                <tbody>
+                  @for (category of sortedCategories(); track category.slug) {
+                    <tr>
+                      <td class="admin-table-primary-cell">
+                        <div class="grid gap-2xs">
+                          <span class="admin-table-title">{{ category.name }}</span>
+                          <span class="admin-table-subtext">{{ category.slug }}</span>
+                        </div>
+                      </td>
+                      <td class="admin-table-token">{{ category.slug }}</td>
+                      <td class="admin-table-description">{{ category.description || 'No description' }}</td>
+                      <td class="admin-table-status"><app-badge [tone]="category.product_count ? 'success' : 'warning'" [label]="category.product_count + ' products'" /></td>
+                      <td class="admin-table-action">
+                        <div class="admin-row-actions" role="group" [attr.aria-label]="'Actions for ' + category.name">
+                          <app-tooltip content="Edit category">
+                            <button class="admin-icon-action" data-tone="info" type="button" [attr.aria-label]="'Edit ' + category.name" (click)="handleRowAction(category.slug, 'edit-category')">
+                              <svg lucidePencil class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                          <app-tooltip content="Delete category">
+                            <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Delete ' + category.name" (click)="handleRowAction(category.slug, 'delete-category')">
+                              <svg lucideTrash2 class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td class="p-xl text-center type-body-md text-text-muted" colspan="5">No rows to display.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
         </section>
 
-        <aside class="grid gap-md rounded-md border-hairline border-border-default bg-surface-raised p-md shadow-xs" aria-labelledby="category-form-title">
+        <aside class="admin-form-panel" aria-labelledby="category-form-title">
           <div>
             <p class="type-label-sm text-text-muted">{{ formMode().eyebrow }}</p>
             <h3 id="category-form-title" class="type-heading-lg text-text-primary">{{ formMode().title }}</h3>
           </div>
 
-          <form class="grid gap-md" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
-            <label class="grid gap-xs type-label-md text-text-primary">
+          <form class="admin-form" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
+            <label class="admin-field">
               Name
               <input
-                class="min-h-control-md rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring aria-invalid:border-border-error"
+                class="admin-input"
                 type="text"
                 [attr.aria-invalid]="nameAriaInvalid()"
                 formControlName="name"
               />
             </label>
 
-            <label class="grid gap-xs type-label-md text-text-primary">
+            <label class="admin-field">
               Description
               <textarea
-                class="min-h-thumbnail-sm rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs text-text-primary focus-visible:focus-ring"
+                class="admin-textarea"
                 formControlName="description"
               ></textarea>
             </label>
@@ -120,7 +205,7 @@ const requiredValidator: ValidatorFn = (control) => Validators.required(control)
 
       <app-alert-dialog
         [open]="!!deleteSlug()"
-        title="Delete category"
+        [title]="'Delete category'"
         description="Delete only categories that no longer contain products."
         [destructive]="true"
         [confirmAction]="deleteConfirmAction()"
@@ -147,11 +232,6 @@ export class AdminCategoriesPage implements OnInit {
     { id: 'description', header: 'Description' },
     { id: 'products', header: 'Products', sortable: true },
   ];
-  protected readonly rowActions: readonly UiMenuItem[] = [
-    { id: 'edit-category', label: 'Edit category' },
-    { id: 'delete-category', label: 'Delete category', destructive: true },
-  ];
-
   protected readonly categories = signal<readonly AdminCategory[]>([]);
   protected readonly editingSlug = signal<string | null>(null);
   protected readonly deleteSlug = signal<string | null>(null);
@@ -165,6 +245,8 @@ export class AdminCategoriesPage implements OnInit {
   });
 
   protected readonly sortedCategories = computed(() => [...this.categories()].sort((left, right) => left.name.localeCompare(right.name)));
+  protected readonly assignedProductCount = computed(() => this.categories().reduce((total, category) => total + category.product_count, 0));
+  protected readonly emptyCategoryCount = computed(() => this.categories().filter((category) => category.product_count === 0).length);
   protected readonly deleteTarget = computed(() => this.categories().find((category) => category.slug === this.deleteSlug()) ?? null);
   protected readonly editingName = computed(() => this.categories().find((category) => category.slug === this.editingSlug())?.name ?? '');
   protected readonly formMode = computed<CategoryFormMode>(() => ({
@@ -189,16 +271,16 @@ export class AdminCategoriesPage implements OnInit {
     this.loadCategories();
   }
 
-  protected handleRowAction(categorySlug: string, action: UiMenuItem): void {
+  protected handleRowAction(categorySlug: string, actionId: string): void {
     const category = this.categories().find((item) => item.slug === categorySlug);
     if (!category) {
       return;
     }
 
-    if (action.id === 'edit-category') {
+    if (actionId === 'edit-category') {
       this.editingSlug.set(category.slug);
       this.categoryForm.setValue({ name: category.name, description: category.description });
-    } else if (action.id === 'delete-category') {
+    } else if (actionId === 'delete-category') {
       this.deleteSlug.set(category.slug);
     }
   }

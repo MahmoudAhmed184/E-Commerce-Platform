@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject } from '@angular/core';
+import { LucideCheckCheck, LucideLockKeyhole, LucideShieldCheck, LucideTrash2, LucideUsersRound } from '@lucide/angular';
 
 import type { AdminUser } from '../../../../core/services/admin/admin.service';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
+import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
-import { DropdownMenuComponent } from '../../../../shared/components/dropdown-menu/dropdown-menu.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { SearchBarComponent } from '../../../../shared/components/search-bar/search-bar.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { TooltipComponent } from '../../../../shared/components/tooltip/tooltip.component';
 import type { UiMenuItem, UiSortState, UiTableColumn } from '../../../../shared/components/ui.types';
 import { AdminUsersFacade } from '../../services/admin-users/admin-users.facade';
 
@@ -20,21 +22,36 @@ interface UserTableRow {
   user: AdminUser;
   selected: boolean;
   statusLabel: string;
+  statusTone: 'success' | 'warning' | 'error' | 'neutral';
   joinedDate: string;
 }
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [AlertBannerComponent, CheckboxComponent, DropdownMenuComponent, EmptyStateComponent, PaginationComponent, SearchBarComponent, SkeletonLoaderComponent],
+  imports: [
+    AlertBannerComponent,
+    BadgeComponent,
+    CheckboxComponent,
+    EmptyStateComponent,
+    LucideCheckCheck,
+    LucideLockKeyhole,
+    LucideShieldCheck,
+    LucideTrash2,
+    LucideUsersRound,
+    PaginationComponent,
+    SearchBarComponent,
+    SkeletonLoaderComponent,
+    TooltipComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="grid gap-lg">
-      <header class="grid gap-md lg:grid-cols-[var(--ui-layout-search-header-grid)] lg:items-end">
-        <div class="grid gap-xs">
-          <p class="type-label-sm text-text-muted">Admin</p>
-          <h2 class="type-heading-xl text-text-primary">Users</h2>
-          <p class="type-body-md text-text-secondary">Approve customers, restrict risky accounts, and keep admin access visible.</p>
+    <section class="admin-page">
+      <header class="admin-page-header">
+        <div class="admin-page-heading">
+          <p class="admin-kicker">Accounts</p>
+          <h2 class="admin-title">Users</h2>
+          <p class="admin-description">Approve customers, restrict risky accounts, and keep admin access visible.</p>
         </div>
         <app-search-bar
           scope="User"
@@ -49,30 +66,76 @@ interface UserTableRow {
         />
       </header>
 
+      <dl class="admin-stat-grid">
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Total users</dt>
+            <span class="admin-stat-icon" data-tone="info" aria-hidden="true">
+              <svg lucideUsersRound class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ totalItems() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Registered accounts</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Active</dt>
+            <span class="admin-stat-icon" data-tone="success" aria-hidden="true">
+              <svg lucideShieldCheck class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ activeUserCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Loaded on this page</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Pending</dt>
+            <span class="admin-stat-icon" data-tone="warning" aria-hidden="true">
+              <svg lucideCheckCheck class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ pendingUserCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Awaiting approval</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Restricted</dt>
+            <span class="admin-stat-icon" data-tone="error" aria-hidden="true">
+              <svg lucideLockKeyhole class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ restrictedUserCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Access limited</dd>
+        </div>
+      </dl>
+
       @if (statusMessage()) {
-        <app-alert-banner tone="success" title="User updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="clearStatusMessage()" />
+        <app-alert-banner tone="success" [title]="'User updated'" [message]="statusMessage()" [dismissible]="true" (dismissed)="clearStatusMessage()" />
       }
       @if (errorMessage()) {
-        <app-alert-banner tone="error" title="User issue" [message]="errorMessage()" [dismissible]="true" (dismissed)="clearErrorMessage()" />
+        <app-alert-banner tone="error" [title]="'User issue'" [message]="errorMessage()" [dismissible]="true" (dismissed)="clearErrorMessage()" />
       }
 
       @if (!isLoading() && users().length === 0) {
         <app-empty-state
           type="admin"
-          title="No users found"
+          [title]="'No users found'"
           message="Clear search or wait for new customer registrations."
           [action]="{ label: 'Clear search', variant: 'secondary' }"
           (actionPressed)="clearSearch()"
         />
       } @else {
-        <section class="grid gap-md" aria-labelledby="users-table-title">
-          <div class="flex flex-wrap items-center justify-between gap-sm">
-            <h3 id="users-table-title" class="type-heading-md text-text-primary">User records</h3>
+        <section class="admin-panel" aria-labelledby="users-table-title">
+          <div class="admin-panel-header">
+            <div>
+              <h3 id="users-table-title" class="admin-panel-title">User records</h3>
+              <p class="admin-panel-copy">Sort, select, and apply account actions without leaving the list.</p>
+            </div>
             @if (selectedIds().length) {
-              <div class="flex flex-wrap items-center gap-xs rounded-md border-hairline border-border-default bg-surface-subtle p-xs">
+              <div class="admin-selected-bar">
                 <p class="px-xs type-body-sm text-text-secondary">{{ selectedIds().length }} selected</p>
                 @for (action of bulkActions; track action.id) {
-                  <button class="min-h-control-sm rounded-md border-hairline border-border-default bg-surface-raised px-sm type-label-sm interactive-transition hover:bg-surface-subtle focus-visible:focus-ring" type="button" [disabled]="action.disabled" (click)="handleBulkAction(action)">
+                  <button class="min-h-touch-min rounded-md border-hairline border-border-default bg-surface-raised px-sm type-label-sm interactive-transition hover:bg-surface-subtle focus-visible:focus-ring" type="button" [disabled]="action.disabled" (click)="handleBulkAction(action)">
                     {{ action.label }}
                   </button>
                 }
@@ -80,21 +143,21 @@ interface UserTableRow {
             }
           </div>
 
-          <div class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs">
+          <div class="admin-table-wrap">
             @if (isLoading()) {
               <div class="p-md">
                 <app-skeleton-loader shape="block" [count]="5" label="Loading users" />
               </div>
             } @else {
-              <table class="w-full min-w-container-md border-collapse text-start">
+              <table class="admin-table admin-table-users">
                 <caption class="sr-only">User management</caption>
-                <thead class="bg-surface-subtle text-text-secondary">
+                <thead>
                   <tr>
-                    <th class="p-sm text-start">
-                      <app-checkbox label="Select all users" [checked]="allUsersSelected()" (checkedChange)="toggleAllUsers($event)" />
+                    <th class="admin-table-select">
+                      <app-checkbox label="Select all users" [labelHidden]="true" [checked]="allUsersSelected()" (checkedChange)="toggleAllUsers($event)" />
                     </th>
                     @for (column of displayColumns(); track column.id) {
-                      <th class="p-sm text-start type-label-sm" [attr.aria-sort]="column.ariaSort">
+                      <th [attr.aria-sort]="column.ariaSort">
                         @if (column.sortable) {
                           <button class="inline-flex items-center gap-2xs rounded-sm type-label-sm text-text-secondary interactive-transition hover:text-text-primary focus-visible:focus-ring" type="button" (click)="sortBy(column)">
                             {{ column.header }}
@@ -107,23 +170,48 @@ interface UserTableRow {
                         }
                       </th>
                     }
-                    <th class="p-sm text-end type-label-sm">Actions</th>
+                    <th class="admin-table-action">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y-hairline divide-border-default">
+                <tbody>
                   @for (row of userRows(); track row.user.id) {
-                    <tr class="interactive-transition hover:bg-surface-subtle">
-                      <td class="p-sm">
-                        <app-checkbox [label]="'Select ' + row.user.email" [checked]="row.selected" (checkedChange)="toggleUser(row.user.id, $event)" />
+                    <tr>
+                      <td class="admin-table-select">
+                        <app-checkbox [label]="'Select ' + row.user.email" [labelHidden]="true" [checked]="row.selected" (checkedChange)="toggleUser(row.user.id, $event)" />
                       </td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.full_name }}</td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.email }}</td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.phone ?? '—' }}</td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.user.role }}</td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.statusLabel }}</td>
-                      <td class="p-sm type-body-sm text-text-primary">{{ row.joinedDate }}</td>
-                      <td class="p-sm text-end">
-                        <app-dropdown-menu label="Row actions" [items]="rowActions" (selected)="handleRowAction(row.user.id, $event)" />
+                      <td class="admin-table-primary-cell">
+                        <div class="grid gap-2xs">
+                          <span class="admin-table-title">{{ row.user.full_name }}</span>
+                          <span class="admin-table-subtext">{{ row.user.id }}</span>
+                        </div>
+                      </td>
+                      <td class="admin-table-token">{{ row.user.email }}</td>
+                      <td>{{ row.user.phone ?? 'Not set' }}</td>
+                      <td>
+                        <app-badge variant="outline" [label]="row.user.role" />
+                      </td>
+                      <td>
+                        <app-badge [tone]="row.statusTone" [label]="row.statusLabel" />
+                      </td>
+                      <td class="admin-table-date">{{ row.joinedDate }}</td>
+                      <td class="admin-table-action">
+                        <div class="admin-row-actions" role="group" [attr.aria-label]="'Actions for ' + row.user.email">
+                          <app-tooltip content="Approve user">
+                            <button class="admin-icon-action" data-tone="success" type="button" [attr.aria-label]="'Approve ' + row.user.email" (click)="handleRowAction(row.user.id, 'approve-user')">
+                              <svg lucideCheckCheck class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                          <app-tooltip content="Restrict user">
+                            <button class="admin-icon-action" data-tone="warning" type="button" [attr.aria-label]="'Restrict ' + row.user.email" (click)="handleRowAction(row.user.id, 'restrict-user')">
+                              <svg lucideLockKeyhole class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                          <app-tooltip content="Delete user">
+                            <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Delete ' + row.user.email" (click)="handleRowAction(row.user.id, 'delete-user')">
+                              <svg lucideTrash2 class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                        </div>
                       </td>
                     </tr>
                   }
@@ -150,11 +238,6 @@ export class AdminUsersPage implements OnInit {
     { id: 'status', header: 'Status', sortable: true },
     { id: 'joined', header: 'Joined', sortable: true },
   ];
-  protected readonly rowActions: readonly UiMenuItem[] = [
-    { id: 'approve-user', label: 'Approve user' },
-    { id: 'restrict-user', label: 'Restrict user' },
-    { id: 'delete-user', label: 'Delete user', destructive: true },
-  ];
   protected readonly bulkActions: readonly UiMenuItem[] = [
     { id: 'approve-selected-users', label: 'Approve selected' },
     { id: 'restrict-selected-users', label: 'Restrict selected' },
@@ -172,6 +255,9 @@ export class AdminUsersPage implements OnInit {
 
   protected readonly sortedUsers = computed(() => sortUsers(this.users(), this.sort()));
   protected readonly allUsersSelected = computed(() => this.sortedUsers().length > 0 && this.sortedUsers().every((user) => this.selectedIds().includes(user.id)));
+  protected readonly activeUserCount = computed(() => this.users().filter((user) => user.status === 'active').length);
+  protected readonly pendingUserCount = computed(() => this.users().filter((user) => user.status === 'pending_approval').length);
+  protected readonly restrictedUserCount = computed(() => this.users().filter((user) => user.status === 'restricted').length);
   protected readonly displayColumns = computed<readonly UserTableColumn[]>(() =>
     this.columns.map((column) => ({
       ...column,
@@ -184,6 +270,7 @@ export class AdminUsersPage implements OnInit {
       user,
       selected: this.selectedIds().includes(user.id),
       statusLabel: statusLabel(user.status),
+      statusTone: statusTone(user.status),
       joinedDate: formatDate(user.created_at),
     })),
   );
@@ -208,8 +295,8 @@ export class AdminUsersPage implements OnInit {
     this.adminUsers.setPage(page);
   }
 
-  protected handleRowAction(userId: string, action: UiMenuItem): void {
-    this.adminUsers.runUserAction(userId, action.id);
+  protected handleRowAction(userId: string, actionId: string): void {
+    this.adminUsers.runUserAction(userId, actionId);
   }
 
   protected handleBulkAction(action: UiMenuItem): void {
@@ -281,6 +368,20 @@ function statusLabel(status: AdminUser['status']): string {
       return 'soft deleted';
     default:
       return status;
+  }
+}
+
+function statusTone(status: AdminUser['status']): 'success' | 'warning' | 'error' | 'neutral' {
+  switch (status) {
+    case 'active':
+      return 'success';
+    case 'pending_approval':
+      return 'warning';
+    case 'restricted':
+    case 'soft_deleted':
+      return 'error';
+    default:
+      return 'neutral';
   }
 }
 

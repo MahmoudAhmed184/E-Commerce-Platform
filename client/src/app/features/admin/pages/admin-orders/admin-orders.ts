@@ -1,15 +1,18 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, type OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
+import { LucideCheckCheck, LucideCircleX, LucideCreditCard, LucideEye, LucideReceiptText, LucideRefreshCw, LucideTriangleAlert } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
 
 import { AlertDialogComponent } from '../../../../shared/components/alert-dialog/alert-dialog.component';
 import { AlertBannerComponent } from '../../../../shared/components/alert-banner/alert-banner.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
-import { DropdownMenuComponent } from '../../../../shared/components/dropdown-menu/dropdown-menu.component';
-import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { SearchBarComponent } from '../../../../shared/components/search-bar/search-bar.component';
 import { SheetComponent } from '../../../../shared/components/sheet/sheet.component';
 import { SkeletonLoaderComponent } from '../../../../shared/components/skeleton-loader/skeleton-loader.component';
-import type { UiAction, UiMenuItem, UiTableColumn } from '../../../../shared/components/ui.types';
+import { TooltipComponent } from '../../../../shared/components/tooltip/tooltip.component';
+import type { UiAction, UiTableColumn } from '../../../../shared/components/ui.types';
 import { AdminService, type AdminOrder, type AdminPayment } from '../../../../core/services/admin/admin.service';
 
 interface AdminOrderRowView {
@@ -19,7 +22,9 @@ interface AdminOrderRowView {
   readonly customerEmail: string;
   readonly totalAmountLabel: string;
   readonly statusLabel: string;
+  readonly statusTone: 'success' | 'warning' | 'error' | 'info';
   readonly paymentStatusLabel: string;
+  readonly paymentStatusTone: 'success' | 'warning' | 'error' | 'info';
   readonly paymentMethodLabel: string;
   readonly createdLabel: string;
 }
@@ -32,6 +37,7 @@ interface AdminPaymentRowView {
   readonly amountLabel: string;
   readonly methodLabel: string;
   readonly statusLabel: string;
+  readonly statusTone: 'success' | 'warning' | 'error' | 'info';
 }
 
 interface AdminOrderDetailView {
@@ -51,146 +57,280 @@ interface AdminOrderDetailView {
     AlertDialogComponent,
     AlertBannerComponent,
     BadgeComponent,
-    DropdownMenuComponent,
-    EmptyStateComponent,
+    ButtonComponent,
+    LucideCheckCheck,
+    LucideCircleX,
+    LucideCreditCard,
+    LucideEye,
+    LucideReceiptText,
+    LucideRefreshCw,
+    LucideTriangleAlert,
+    NgTemplateOutlet,
+    RouterLink,
+    RouterLinkActive,
     SearchBarComponent,
     SheetComponent,
     SkeletonLoaderComponent,
+    TooltipComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="grid gap-lg">
-      <header class="grid gap-md lg:grid-cols-[var(--ui-layout-search-header-grid)] lg:items-end">
-        <div class="grid gap-xs">
-          <p class="type-label-sm text-text-muted">Admin</p>
-          <h2 class="type-heading-xl text-text-primary">Orders and payments</h2>
-          <p class="type-body-md text-text-secondary">Review order status, payment method, fulfillment readiness, and cash-on-delivery records.</p>
+    <section class="admin-page">
+      <header class="admin-page-header">
+        <div class="admin-page-heading">
+          <p class="admin-kicker">Commerce operations</p>
+          <h2 class="admin-title">{{ pageKind === 'payments' ? 'Payments' : 'Orders' }}</h2>
+          <p class="admin-description">Review order status, payment method, fulfillment readiness, and cash-on-delivery records.</p>
         </div>
-	        <app-search-bar
-	          scope="Order"
-	          placeholder="Search orders or customers"
-	          [query]="query()"
-	          [resultCount]="recordCount()"
-	          [suggestions]="[]"
-	          [loading]="isLoading()"
-	          (queryChange)="query.set($event)"
+        <app-search-bar
+          scope="Order"
+          placeholder="Search orders or customers"
+          [query]="query()"
+          [resultCount]="recordCount()"
+          [suggestions]="[]"
+          [loading]="isLoading()"
+          (queryChange)="query.set($event)"
           (cleared)="query.set('')"
         />
       </header>
 
+      <nav class="admin-tabs" aria-label="Order workspace tabs">
+        <a
+          class="admin-tab-link focus-visible:focus-ring"
+          routerLink="/admin/orders"
+          routerLinkActive="admin-tab-link-active"
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Orders
+        </a>
+        <a
+          class="admin-tab-link focus-visible:focus-ring"
+          routerLink="/admin/payments"
+          routerLinkActive="admin-tab-link-active"
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          Payments
+        </a>
+      </nav>
+
+      <dl class="admin-stat-grid">
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Orders loaded</dt>
+            <span class="admin-stat-icon" data-tone="info" aria-hidden="true">
+              <svg lucideReceiptText class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ recordsUnavailable() ? '-' : filteredOrderRows().length }}</dd>
+          <dd class="type-body-sm text-text-secondary">Matching current search</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Open orders</dt>
+            <span class="admin-stat-icon" data-tone="warning" aria-hidden="true">
+              <svg lucideRefreshCw class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ recordsUnavailable() ? '-' : openOrderCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Need fulfillment movement</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Payments</dt>
+            <span class="admin-stat-icon" data-tone="success" aria-hidden="true">
+              <svg lucideCreditCard class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ recordsUnavailable() ? '-' : filteredPaymentRows().length }}</dd>
+          <dd class="type-body-sm text-text-secondary">Transaction records</dd>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card-row">
+            <dt class="type-label-sm text-text-muted">Payment issues</dt>
+            <span class="admin-stat-icon" data-tone="error" aria-hidden="true">
+              <svg lucideTriangleAlert class="size-icon-sm"></svg>
+            </span>
+          </div>
+          <dd class="admin-stat-value">{{ recordsUnavailable() ? '-' : failedPaymentCount() }}</dd>
+          <dd class="type-body-sm text-text-secondary">Failed records loaded</dd>
+        </div>
+      </dl>
+
       @if (statusMessage()) {
-        <app-alert-banner tone="success" title="Order updated" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
+        <app-alert-banner tone="success" [title]="'Order updated'" [message]="statusMessage()" [dismissible]="true" (dismissed)="statusMessage.set('')" />
       }
       @if (errorMessage()) {
-        <app-alert-banner tone="error" title="Order issue" [message]="errorMessage()" [dismissible]="true" (dismissed)="errorMessage.set('')" />
+        <app-alert-banner tone="error" [title]="'Order issue'" [message]="errorMessage()" [dismissible]="true" (dismissed)="errorMessage.set('')" />
       }
 
-	      @if (!isLoading() && filteredOrderRows().length === 0 && filteredPaymentRows().length === 0) {
-        <app-empty-state
-          type="admin"
-          title="No records found"
-          message="Clear the search or wait for new orders and payment records."
-          [action]="{ label: 'Clear search', variant: 'secondary' }"
-          (actionPressed)="query.set('')"
-        />
-      } @else {
-        <section class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs" aria-labelledby="orders-table-title">
-          <h3 id="orders-table-title" class="sr-only">Orders</h3>
-          @if (isLoading()) {
-            <div class="p-md">
-              <app-skeleton-loader shape="block" [count]="5" label="Loading orders" />
+      @if (recordsUnavailable()) {
+        <section class="admin-panel" aria-labelledby="records-unavailable-title">
+          <div class="admin-panel-header">
+            <div>
+              <p class="type-label-sm text-text-muted">Records</p>
+              <h3 id="records-unavailable-title" class="admin-panel-title">Records unavailable</h3>
+              <p class="admin-panel-copy">Orders and payments could not be loaded from the server.</p>
             </div>
-          } @else {
-            <table class="w-full min-w-container-md border-collapse text-start">
-              <caption class="sr-only">Orders</caption>
-              <thead class="bg-surface-subtle text-text-secondary">
-                <tr>
-                  @for (column of orderColumns; track column.id) {
-                    <th class="p-sm text-start type-label-sm">{{ column.header }}</th>
-                  }
-                  <th class="p-sm text-end type-label-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y-hairline divide-border-default">
-	                @for (order of filteredOrderRows(); track order.id) {
-	                  <tr class="interactive-transition hover:bg-surface-subtle">
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.orderNumber }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.customerEmail }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.totalAmountLabel }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.statusLabel }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.paymentStatusLabel }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.paymentMethodLabel }}</td>
-	                    <td class="p-sm type-body-sm text-text-primary">{{ order.createdLabel }}</td>
-	                    <td class="p-sm text-end">
-	                      <app-dropdown-menu label="Row actions" [items]="orderActions" (selected)="handleOrderAction(order.idString, $event)" />
-		                    </td>
-		                  </tr>
-		                } @empty {
-		                  <tr>
-		                    <td class="p-xl text-center type-body-md text-text-muted" colspan="8">No order rows to display.</td>
-		                  </tr>
-		                }
-              </tbody>
-            </table>
-          }
+            <app-button variant="secondary" size="sm" (pressed)="loadRecords()">Retry</app-button>
+          </div>
         </section>
-
-        @defer (on viewport) {
-          <section class="grid gap-md" aria-labelledby="payments-title">
-            <div class="flex flex-wrap items-center justify-between gap-md">
-              <div>
-                <p class="type-label-sm text-text-muted">Payments</p>
-                <h3 id="payments-title" class="type-heading-lg text-text-primary">Recent payment activity</h3>
-              </div>
-              <app-badge tone="info" [label]="paymentRecordLabel()" />
+      } @else if (!isLoading() && filteredOrderRows().length === 0 && filteredPaymentRows().length === 0) {
+        <section class="admin-panel" aria-labelledby="records-empty-title">
+          <div class="admin-panel-header">
+            <div>
+              <p class="type-label-sm text-text-muted">Records</p>
+              <h3 id="records-empty-title" class="admin-panel-title">No records found</h3>
+              <p class="admin-panel-copy">Clear the search or wait for new orders and payment records.</p>
             </div>
-            <div class="overflow-x-auto rounded-md border-hairline border-border-default bg-surface-raised shadow-xs">
-              @if (isLoading()) {
-                <div class="p-md">
-                  <app-skeleton-loader shape="block" [count]="5" label="Loading payments" />
-                </div>
-              } @else {
-                <table class="w-full min-w-container-md border-collapse text-start">
-                  <caption class="sr-only">Payments</caption>
-                  <thead class="bg-surface-subtle text-text-secondary">
-                    <tr>
-                      @for (column of paymentColumns; track column.id) {
-                        <th class="p-sm text-start type-label-sm">{{ column.header }}</th>
-                      }
-                      <th class="p-sm text-end type-label-sm">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y-hairline divide-border-default">
-                    @for (payment of filteredPaymentRows(); track payment.id) {
-                      <tr class="interactive-transition hover:bg-surface-subtle">
-                        <td class="p-sm type-body-sm text-text-primary">{{ payment.orderNumber }}</td>
-                        <td class="p-sm type-body-sm text-text-primary">{{ payment.customerEmail }}</td>
-                        <td class="p-sm type-body-sm text-text-primary">{{ payment.amountLabel }}</td>
-                        <td class="p-sm type-body-sm text-text-primary">{{ payment.methodLabel }}</td>
-                        <td class="p-sm type-body-sm text-text-primary">{{ payment.statusLabel }}</td>
-                        <td class="p-sm text-end">
-                          <app-dropdown-menu label="Row actions" [items]="paymentActions" (selected)="handlePaymentAction(payment.idString, $event)" />
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr>
-                        <td class="p-xl text-center type-body-md text-text-muted" colspan="6">No payment rows to display.</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              }
-            </div>
-          </section>
-        } @placeholder {
-          <section class="grid gap-md" aria-label="Loading payment activity">
-            <app-skeleton-loader shape="block" [count]="4" label="Loading payment activity" />
-          </section>
+            @if (query()) {
+              <app-button variant="secondary" size="sm" (pressed)="query.set('')">Clear search</app-button>
+            }
+          </div>
+        </section>
+      } @else {
+        @if (pageKind === 'payments') {
+          <ng-container [ngTemplateOutlet]="paymentsPanel" />
+          <ng-container [ngTemplateOutlet]="ordersPanel" />
+        } @else {
+          <ng-container [ngTemplateOutlet]="ordersPanel" />
+          <ng-container [ngTemplateOutlet]="paymentsPanel" />
         }
       }
 
+      <ng-template #ordersPanel>
+        <section class="admin-panel" aria-labelledby="orders-table-title">
+          <div class="admin-panel-header">
+            <div>
+              <p class="type-label-sm text-text-muted">Orders</p>
+              <h3 id="orders-table-title" class="admin-panel-title">Fulfillment queue</h3>
+              <p class="admin-panel-copy">Confirm, inspect, or cancel orders from the current activity window.</p>
+            </div>
+            <app-badge tone="info" [label]="filteredOrderRows().length + ' rows'" />
+          </div>
+          <div class="admin-table-wrap">
+            @if (isLoading()) {
+              <div class="p-md">
+                <app-skeleton-loader shape="block" [count]="5" label="Loading orders" />
+              </div>
+            } @else {
+              <table class="admin-table admin-table-orders">
+                <caption class="sr-only">Orders</caption>
+                <thead>
+                  <tr>
+                    @for (column of orderColumns; track column.id) {
+                      <th>{{ column.header }}</th>
+                    }
+                    <th class="admin-table-action">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of filteredOrderRows(); track order.id) {
+                    <tr>
+                      <td>
+                        <button class="rounded-sm type-label-md text-text-primary underline-offset-4 hover:underline focus-visible:focus-ring" type="button" (click)="detailOrderId.set(order.id)">
+                          {{ order.orderNumber }}
+                        </button>
+                      </td>
+                      <td class="admin-table-token">{{ order.customerEmail }}</td>
+                      <td class="admin-table-number">{{ order.totalAmountLabel }}</td>
+                      <td class="admin-table-status"><app-badge [tone]="order.statusTone" [label]="order.statusLabel" /></td>
+                      <td class="admin-table-status"><app-badge [tone]="order.paymentStatusTone" [label]="order.paymentStatusLabel" /></td>
+                      <td><app-badge variant="outline" [label]="order.paymentMethodLabel" /></td>
+                      <td class="admin-table-date">{{ order.createdLabel }}</td>
+                      <td class="admin-table-action">
+                        <div class="admin-row-actions" role="group" [attr.aria-label]="'Actions for ' + order.orderNumber">
+                          <app-tooltip content="View order">
+                            <button class="admin-icon-action" data-tone="info" type="button" [attr.aria-label]="'View ' + order.orderNumber" (click)="handleOrderAction(order.idString, 'view-order-detail')">
+                              <svg lucideEye class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                          <app-tooltip content="Confirm order">
+                            <button class="admin-icon-action" data-tone="success" type="button" [attr.aria-label]="'Confirm ' + order.orderNumber" (click)="handleOrderAction(order.idString, 'confirm-order')">
+                              <svg lucideCheckCheck class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                          <app-tooltip content="Cancel order">
+                            <button class="admin-icon-action" data-tone="danger" type="button" [attr.aria-label]="'Cancel ' + order.orderNumber" (click)="handleOrderAction(order.idString, 'cancel-order')">
+                              <svg lucideCircleX class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td class="p-xl text-center type-body-md text-text-muted" colspan="8">No order rows to display.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </section>
+      </ng-template>
+
+      <ng-template #paymentsPanel>
+        <section class="admin-panel" aria-labelledby="payments-title">
+          <div class="admin-panel-header">
+            <div>
+              <div>
+                <p class="type-label-sm text-text-muted">Payments</p>
+                <h3 id="payments-title" class="admin-panel-title">Recent payment activity</h3>
+                <p class="admin-panel-copy">Review payment method, status, and linked order context.</p>
+              </div>
+            </div>
+            <app-badge tone="info" [label]="paymentRecordLabel()" />
+          </div>
+          <div class="admin-table-wrap">
+            @if (isLoading()) {
+              <div class="p-md">
+                <app-skeleton-loader shape="block" [count]="5" label="Loading payments" />
+              </div>
+            } @else {
+              <table class="admin-table admin-table-orders">
+                <caption class="sr-only">Payments</caption>
+                <thead>
+                  <tr>
+                    @for (column of paymentColumns; track column.id) {
+                      <th>{{ column.header }}</th>
+                    }
+                    <th class="admin-table-action">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (payment of filteredPaymentRows(); track payment.id) {
+                    <tr>
+                      <td class="admin-table-token">{{ payment.orderNumber }}</td>
+                      <td class="admin-table-token">{{ payment.customerEmail }}</td>
+                      <td class="admin-table-number">{{ payment.amountLabel }}</td>
+                      <td><app-badge variant="outline" [label]="payment.methodLabel" /></td>
+                      <td class="admin-table-status"><app-badge [tone]="payment.statusTone" [label]="payment.statusLabel" /></td>
+                      <td class="admin-table-action">
+                        <div class="admin-row-actions" role="group" [attr.aria-label]="'Actions for payment ' + payment.orderNumber">
+                          <app-tooltip content="View order">
+                            <button class="admin-icon-action" data-tone="info" type="button" [attr.aria-label]="'View order for payment ' + payment.orderNumber" (click)="handlePaymentAction(payment.idString, 'view-order-detail')">
+                              <svg lucideEye class="size-icon-sm" aria-hidden="true"></svg>
+                            </button>
+                          </app-tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td class="p-xl text-center type-body-md text-text-muted" colspan="6">No payment rows to display.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </section>
+      </ng-template>
+
       <app-sheet
-        title="Order detail"
+        [title]="'Order detail'"
         description="Review the order, payment method, and current order status."
         [open]="!!detailOrder()"
         size="md"
@@ -230,7 +370,7 @@ interface AdminOrderDetailView {
 
       <app-alert-dialog
         [open]="!!cancelOrderId()"
-        title="Cancel order"
+        [title]="'Cancel order'"
         description="Cancel this order only after payment and delivery checks have been reviewed."
         [destructive]="true"
         [confirmAction]="cancelConfirmAction()"
@@ -243,8 +383,10 @@ interface AdminOrderDetailView {
   `,
 })
 export class AdminOrdersPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   private readonly adminService = inject(AdminService);
 
+  protected readonly pageKind = this.route.snapshot.routeConfig?.path === 'payments' ? 'payments' : 'orders';
   protected readonly orderColumns: readonly UiTableColumn[] = [
     { id: 'orderNumber', header: 'Order', sortable: true },
     { id: 'customer', header: 'Customer', sortable: true },
@@ -261,13 +403,6 @@ export class AdminOrdersPage implements OnInit {
     { id: 'method', header: 'Method' },
     { id: 'status', header: 'Status', sortable: true },
   ];
-  protected readonly orderActions: readonly UiMenuItem[] = [
-    { id: 'view-order-detail', label: 'View order detail' },
-    { id: 'confirm-order', label: 'Confirm order' },
-    { id: 'cancel-order', label: 'Cancel order', destructive: true },
-  ];
-  protected readonly paymentActions: readonly UiMenuItem[] = [{ id: 'view-order-detail', label: 'View order detail' }];
-
   protected readonly orders = signal<readonly AdminOrder[]>([]);
   protected readonly payments = signal<readonly AdminPayment[]>([]);
   protected readonly query = signal('');
@@ -309,25 +444,30 @@ export class AdminOrdersPage implements OnInit {
   });
   protected readonly recordCount = computed(() => this.filteredOrderRows().length + this.filteredPaymentRows().length);
   protected readonly paymentRecordLabel = computed(() => `${this.filteredPaymentRows().length} records`);
+  protected readonly recordsUnavailable = computed(() => !!this.errorMessage() && this.orders().length === 0 && this.payments().length === 0 && !this.isLoading());
+  protected readonly openOrderCount = computed(() =>
+    this.orders().filter((order) => !['cancelled', 'completed', 'delivered'].includes(order.status)).length,
+  );
+  protected readonly failedPaymentCount = computed(() => this.payments().filter((payment) => payment.status === 'failed').length);
   protected readonly cancelConfirmAction = computed<UiAction>(() => ({ label: 'Cancel order', variant: 'danger', loading: this.isSaving() }));
 
   ngOnInit(): void {
     this.loadRecords();
   }
 
-  protected handleOrderAction(orderId: string, action: UiMenuItem): void {
+  protected handleOrderAction(orderId: string, actionId: string): void {
     const numericId = Number(orderId);
-    if (action.id === 'view-order-detail') {
+    if (actionId === 'view-order-detail') {
       this.detailOrderId.set(numericId);
-    } else if (action.id === 'confirm-order') {
+    } else if (actionId === 'confirm-order') {
       this.updateOrderStatus(numericId, 'confirmed', 'Order confirmed.');
-    } else if (action.id === 'cancel-order') {
+    } else if (actionId === 'cancel-order') {
       this.cancelOrderId.set(numericId);
     }
   }
 
-  protected handlePaymentAction(paymentId: string, action: UiMenuItem): void {
-    if (action.id !== 'view-order-detail') {
+  protected handlePaymentAction(paymentId: string, actionId: string): void {
+    if (actionId !== 'view-order-detail') {
       return;
     }
 
@@ -350,7 +490,7 @@ export class AdminOrdersPage implements OnInit {
     this.cancelOrderId.set(null);
   }
 
-  private loadRecords(): void {
+  protected loadRecords(): void {
     this.errorMessage.set('');
     this.isLoading.set(true);
     forkJoin({
@@ -395,6 +535,25 @@ function currencyValue(amount: string): string {
   return `$${Number(amount).toFixed(2)}`;
 }
 
+function statusTone(value: string): 'success' | 'warning' | 'error' | 'info' {
+  switch (value) {
+    case 'paid':
+    case 'confirmed':
+    case 'completed':
+    case 'delivered':
+      return 'success';
+    case 'failed':
+    case 'cancelled':
+      return 'error';
+    case 'pending':
+    case 'cod_pending':
+    case 'processing':
+      return 'warning';
+    default:
+      return 'info';
+  }
+}
+
 function toOrderRow(order: AdminOrder): AdminOrderRowView {
   return {
     id: order.id,
@@ -403,7 +562,9 @@ function toOrderRow(order: AdminOrder): AdminOrderRowView {
     customerEmail: order.customer_email,
     totalAmountLabel: currencyValue(order.total_amount),
     statusLabel: formatLabel(order.status),
+    statusTone: statusTone(order.status),
     paymentStatusLabel: formatLabel(order.payment_status),
+    paymentStatusTone: statusTone(order.payment_status),
     paymentMethodLabel: formatLabel(order.payment_method || 'unknown'),
     createdLabel: formatDate(order.created_at),
   };
@@ -418,5 +579,6 @@ function toPaymentRow(payment: AdminPayment): AdminPaymentRowView {
     amountLabel: currencyValue(payment.amount),
     methodLabel: formatLabel(payment.method),
     statusLabel: formatLabel(payment.status),
+    statusTone: statusTone(payment.status),
   };
 }
