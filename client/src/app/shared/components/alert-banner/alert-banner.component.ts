@@ -35,7 +35,7 @@ export type AlertTone = 'success' | 'warning' | 'error' | 'info';
 
       @if (dismissible()) {
         <button
-          class="inline-flex size-control-sm items-center justify-center rounded-full text-current interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+          class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-current interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
           type="button"
           aria-label="Dismiss message"
           (click)="dismissed.emit()"
@@ -59,12 +59,12 @@ export class AlertBannerComponent {
   protected readonly role = computed(() => this.tone() === 'error' ? 'alert' : 'status');
   protected readonly classes = computed(() => {
     const tones: Record<AlertTone, string> = {
-      success: 'border-success-600 bg-success-50 text-text-success shadow-glass-flat',
-      warning: 'border-warning-600 bg-warning-50 text-text-warning shadow-glass-flat',
-      error: 'border-border-error bg-error-50 text-text-error shadow-glass-flat',
-      info: 'border-info-600 bg-info-50 text-text-info shadow-glass-flat',
+      success: 'border-success-600 bg-success-50 text-text-success shadow-xs',
+      warning: 'border-warning-600 bg-warning-50 text-text-warning shadow-xs',
+      error: 'border-border-error bg-error-50 text-text-error shadow-xs',
+      info: 'border-info-600 bg-info-50 text-text-info shadow-xs',
     };
 
-    return `flex items-start gap-sm rounded-md border-hairline p-md backdrop-blur-md ${tones[this.tone()]}`;
+    return `flex items-start gap-sm rounded-md border-hairline p-md  ${tones[this.tone()]}`;
   });
 }

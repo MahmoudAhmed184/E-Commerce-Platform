@@ -32,11 +32,11 @@ export class SkeletonLoaderComponent {
   protected readonly classes = computed(() => {
     const shapes: Record<SkeletonShape, string> = {
       line: 'h-4 w-full rounded-full',
-      block: 'h-10 w-full rounded-lg',
+      block: 'h-10 w-full rounded-md',
       circle: 'aspect-square w-14 rounded-full',
-      media: 'aspect-square w-full rounded-xl',
+      media: 'aspect-square w-full rounded-md',
     };
 
-    return ['block', 'shimmer', 'rounded-lg', shapes[this.shape()]].join(' ');
+    return ['block', 'shimmer', 'rounded-md', shapes[this.shape()]].join(' ');
   });
 }

@@ -6,7 +6,7 @@ import { InputControlComponent, type InputControlType as PrimitiveInputControlTy
 import { SpinnerComponent } from '../spinner/spinner.component';
 import { TextareaComponent } from '../textarea/textarea.component';
 
-export type InputControlType = 'text' | 'email' | 'password' | 'number' | 'textarea';
+export type InputControlType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'search' | 'textarea';
 
 @Component({
   selector: 'app-input',

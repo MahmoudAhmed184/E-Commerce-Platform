@@ -1,6 +1,6 @@
 export type UiSize = 'sm' | 'md' | 'lg';
-export type UiTone = 'neutral' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'accent';
-export type UiActionVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type UiTone = 'default' | 'neutral' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'accent' | 'outline';
+export type UiActionVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'danger';
 
 export interface UiAction {
   label: string;

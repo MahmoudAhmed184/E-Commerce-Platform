@@ -53,8 +53,8 @@ export class ToggleComponent {
     'border-hairline',
     'interactive-transition',
     this.checked()
-      ? 'border-iridescent-cyan bg-[linear-gradient(90deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] shadow-glass-raised'
-      : 'border-glass-border bg-glass-white-6 shadow-glass-flat backdrop-blur-md',
+      ? 'border-border-focus bg-surface-primary shadow-sm'
+      : 'border-border-default bg-surface-raised shadow-xs',
   ].join(' '));
 
   protected readonly thumbClasses = computed(() => [
@@ -67,7 +67,7 @@ export class ToggleComponent {
     'rounded-full',
     'bg-text-primary',
     'text-icon-muted',
-    'shadow-glass-flat',
+    'shadow-xs',
     'interactive-transition',
     this.checked() ? 'end-2xs' : 'start-2xs',
   ].join(' '));

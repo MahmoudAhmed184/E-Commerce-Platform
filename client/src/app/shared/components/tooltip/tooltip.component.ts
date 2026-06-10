@@ -40,10 +40,10 @@ export class TooltipComponent {
     const placements: Record<TooltipPlacement, string> = {
       top: 'bottom-full start-1/2 mb-xs -translate-x-1/2',
       bottom: 'top-full start-1/2 mt-xs -translate-x-1/2',
-      start: 'end-full me-xs top-[var(--ui-position-half)] -translate-y-[var(--ui-position-half)]',
-      end: 'start-full ms-xs top-[var(--ui-position-half)] -translate-y-[var(--ui-position-half)]',
+      start: 'end-full me-xs top-1/2 -translate-y-1/2',
+      end: 'start-full ms-xs top-1/2 -translate-y-1/2',
     };
-    return `glass-panel glass-depth-floating absolute z-dropdown max-w-[var(--ui-container-sm)] rounded-sm px-xs py-2xs type-label-sm text-text-primary ${placements[this.placement()]}`;
+    return `surface-panel surface-depth-floating absolute z-dropdown max-w-[var(--ui-container-sm)] rounded-sm px-xs py-2xs type-label-sm text-text-primary ${placements[this.placement()]}`;
   });
 
   protected show(): void {

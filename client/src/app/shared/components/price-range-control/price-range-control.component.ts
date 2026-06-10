@@ -18,11 +18,11 @@ export interface PriceRangeValue {
       <div class="grid min-w-0 gap-sm">
         <label class="grid min-w-0 gap-2xs type-label-sm text-text-secondary">
           Minimum {{ currency() }}
-          <input class="no-number-spin min-h-control-md w-full min-w-0 rounded-sm border-hairline border-glass-border bg-glass-white-6 px-sm py-xs text-text-primary shadow-glass-flat backdrop-blur-md focus-visible:border-border-focus focus-visible:focus-ring aria-invalid:border-border-error" type="number" [value]="min() ?? ''" [attr.aria-invalid]="errorMessage() ? 'true' : null" (input)="change('min', $event)" />
+          <input class="no-number-spin min-h-touch-min w-full min-w-0 rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition focus-visible:border-border-focus focus-visible:focus-ring aria-invalid:border-border-error" type="number" [value]="min() ?? ''" [attr.aria-invalid]="errorMessage() ? 'true' : null" (input)="change('min', $event)" />
         </label>
         <label class="grid min-w-0 gap-2xs type-label-sm text-text-secondary">
           Maximum {{ currency() }}
-          <input class="no-number-spin min-h-control-md w-full min-w-0 rounded-sm border-hairline border-glass-border bg-glass-white-6 px-sm py-xs text-text-primary shadow-glass-flat backdrop-blur-md focus-visible:border-border-focus focus-visible:focus-ring aria-invalid:border-border-error" type="number" [value]="max() ?? ''" [attr.aria-invalid]="errorMessage() ? 'true' : null" (input)="change('max', $event)" />
+          <input class="no-number-spin min-h-touch-min w-full min-w-0 rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition focus-visible:border-border-focus focus-visible:focus-ring aria-invalid:border-border-error" type="number" [value]="max() ?? ''" [attr.aria-invalid]="errorMessage() ? 'true' : null" (input)="change('max', $event)" />
         </label>
       </div>
 
@@ -31,7 +31,7 @@ export interface PriceRangeValue {
       }
 
       @if (applyMode() === 'manual') {
-        <button class="min-h-control-md w-full rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-md type-label-md text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="!!errorMessage()" (click)="applied.emit({ min: min(), max: max() })">
+        <button class="min-h-touch-min w-full rounded-md bg-surface-primary px-md type-label-md text-text-on-primary shadow-xs interactive-transition hover:bg-surface-primary-hover focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="!!errorMessage()" (click)="applied.emit({ min: min(), max: max() })">
           Apply price
         </button>
       }

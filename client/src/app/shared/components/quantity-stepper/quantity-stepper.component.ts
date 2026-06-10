@@ -14,7 +14,7 @@ import { ButtonGroupComponent } from '../button-group/button-group.component';
     <div class="grid gap-2xs">
       <app-button-group [label]="groupLabel()">
         <button
-          class="size-control-md border-e-hairline border-glass-border text-text-primary interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring disabled:state-disabled"
+          class="min-h-touch-min min-w-touch-min border-e-hairline border-border-default text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring disabled:state-disabled"
           type="button"
           [disabled]="disabled() || loading() || value() <= min()"
           [attr.aria-label]="'Decrease quantity for ' + itemLabel()"
@@ -23,7 +23,7 @@ import { ButtonGroupComponent } from '../button-group/button-group.component';
           <svg lucideMinus class="mx-auto size-icon-sm" aria-hidden="true"></svg>
         </button>
         <input
-          class="no-number-spin h-control-md min-w-control-md bg-transparent text-center type-label-md text-text-primary focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-100 disabled:text-text-muted"
+          class="no-number-spin min-h-touch-min min-w-touch-min bg-transparent text-center type-label-md text-text-primary focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-100 disabled:text-text-muted"
           [id]="inputId"
           type="number"
           [value]="value()"
@@ -37,7 +37,7 @@ import { ButtonGroupComponent } from '../button-group/button-group.component';
           (input)="handleInput($event)"
         />
         <button
-          class="size-control-md border-s-hairline border-glass-border text-text-primary interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring disabled:state-disabled"
+          class="min-h-touch-min min-w-touch-min border-s-hairline border-border-default text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring disabled:state-disabled"
           type="button"
           [disabled]="disabled() || loading() || value() >= max()"
           [attr.aria-label]="'Increase quantity for ' + itemLabel()"

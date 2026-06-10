@@ -26,12 +26,8 @@ export class SpinnerComponent {
 
     return [
       'inline-block',
-      'animate-spin',
       'rounded-full',
-      'border-focus',
-      'border-current',
-      'border-e-transparent',
-      'motion-reduce:animate-none',
+      'shimmer',
       sizes[this.size()],
     ].join(' ');
   });

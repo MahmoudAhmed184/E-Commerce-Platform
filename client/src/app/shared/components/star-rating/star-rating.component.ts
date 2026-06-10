@@ -19,7 +19,7 @@ import type { UiSize } from '../ui.types';
         <legend class="type-label-md text-text-primary">{{ label() }}</legend>
         <div class="flex items-center gap-2xs" role="radiogroup">
           @if (allowClear()) {
-            <button class="min-h-control-sm rounded-sm px-xs type-label-sm text-text-muted interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring" type="button" (click)="valueChange.emit(0)">Clear</button>
+            <button class="min-h-touch-min rounded-sm px-xs type-label-sm text-text-muted interactive-transition hover:bg-surface-subtle focus-visible:focus-ring" type="button" (click)="valueChange.emit(0)">Clear</button>
           }
           @for (star of editableStars(); track star.rating) {
             <label class="inline-flex min-h-touch-min cursor-pointer items-center">

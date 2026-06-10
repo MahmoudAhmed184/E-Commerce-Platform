@@ -15,7 +15,7 @@ import type { UiTone } from '../ui.types';
       }
       @if (removable()) {
         <button
-          class="inline-flex size-icon-md items-center justify-center rounded-full text-current interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+          class="inline-flex size-icon-md items-center justify-center rounded-full text-current interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
           type="button"
           [attr.aria-label]="'Remove ' + label()"
           (click)="removed.emit()"
@@ -37,14 +37,16 @@ export class ChipComponent {
 
   protected readonly classes = computed(() => {
     const tones: Record<UiTone, string> = {
-      neutral: 'border-glass-border bg-glass-white-6 text-text-secondary',
-      primary: 'border-iridescent-violet/60 bg-glass-white-12 text-primary-900',
-      secondary: 'border-iridescent-cyan/60 bg-glass-white-12 text-secondary-900',
+      default: 'border-border-default bg-surface-subtle text-text-secondary',
+      neutral: 'border-border-default bg-surface-raised text-text-secondary',
+      primary: 'border-info-600 bg-surface-info text-text-info',
+      secondary: 'border-border-default bg-surface-raised text-text-secondary',
       success: 'border-success-600 bg-success-50 text-text-success',
       warning: 'border-warning-600 bg-warning-50 text-text-warning',
       error: 'border-border-error bg-error-50 text-text-error',
       info: 'border-info-600 bg-info-50 text-text-info',
-      accent: 'border-iridescent-emerald/60 bg-glass-white-12 text-accent-900',
+      accent: 'border-info-600 bg-surface-info text-text-info',
+      outline: 'border-border-default bg-surface-raised text-text-secondary',
     };
 
     return [
@@ -57,9 +59,9 @@ export class ChipComponent {
       'px-xs',
       'py-2xs',
       'type-label-sm',
-      'backdrop-blur-md',
+      '',
       tones[this.tone()],
-      this.selected() ? 'shadow-glass-raised' : 'shadow-glass-flat',
+      this.selected() ? 'shadow-sm' : 'shadow-xs',
     ].filter(Boolean).join(' ');
   });
 }

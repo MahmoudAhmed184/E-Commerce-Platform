@@ -9,16 +9,18 @@ export interface NavigationMenuLink {
 
 @Component({
   selector: 'app-navigation-menu',
-  standalone: true,
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <nav class="glass-panel glass-depth-raised hidden items-center gap-2xs rounded-md p-2xs lg:flex" [attr.aria-label]="label()">
+    <nav
+      class="hidden items-center gap-1 rounded-md border-hairline border-border-default bg-surface-subtle p-1 xl:flex"
+      [attr.aria-label]="label()"
+    >
       @for (link of links(); track link.path) {
         <a
-          class="inline-flex min-h-control-md items-center rounded-md px-sm type-label-md text-muted-foreground interactive-transition hover:bg-glass-white-12 hover:text-card-foreground focus-visible:focus-ring"
-          routerLinkActive="bg-glass-white-12 text-text-primary shadow-glass-flat"
+          class="inline-flex min-h-touch-min items-center rounded-sm px-sm type-label-md text-text-secondary no-underline interactive-transition hover:bg-surface-raised hover:text-text-primary hover:shadow-xs focus-visible:focus-ring"
+          routerLinkActive="!bg-surface-raised !text-text-primary font-semibold shadow-xs ring-1 ring-border-default"
           [routerLink]="link.path"
           [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
         >

@@ -20,20 +20,20 @@ interface UiDisplayTab extends UiTab {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="grid gap-md">
+    <div class="grid gap-6">
       <div
-        class="inline-flex w-fit flex-wrap gap-1 rounded-lg bg-neutral-100 p-1"
+        class="inline-flex w-fit flex-wrap gap-1 rounded-md bg-surface-subtle p-1"
         role="tablist"
         [attr.aria-orientation]="orientation()"
       >
         @for (tab of displayTabs(); track tab.id) {
           <button
-            class="rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:state-disabled"
-            [class.bg-white]="tab.id === selectedId()"
-            [class.text-neutral-900]="tab.id === selectedId()"
-            [class.shadow-sm]="tab.id === selectedId()"
-            [class.text-neutral-500]="tab.id !== selectedId()"
-            [class.hover:text-neutral-700]="tab.id !== selectedId()"
+            class="min-h-touch-min rounded-sm px-md py-xs type-label-md interactive-transition focus-visible:focus-ring disabled:state-disabled"
+            [class.bg-surface-raised]="tab.id === selectedId()"
+            [class.text-text-primary]="tab.id === selectedId()"
+            [class.shadow-xs]="tab.id === selectedId()"
+            [class.text-text-muted]="tab.id !== selectedId()"
+            [class.hover:text-text-secondary]="tab.id !== selectedId()"
             type="button"
             role="tab"
             [id]="tab.tabId"
@@ -49,7 +49,7 @@ interface UiDisplayTab extends UiTab {
 
       @if (selectedTab(); as tab) {
         <section
-          class="text-sm text-neutral-600"
+          class="type-body-md text-text-secondary"
           role="tabpanel"
           [id]="tab.panelId"
           [attr.aria-labelledby]="tab.tabId"

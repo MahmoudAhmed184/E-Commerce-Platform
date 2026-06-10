@@ -11,7 +11,7 @@ import { uniqueId } from '../component-utils';
     <div class="grid gap-2xs">
       <label class="flex min-h-touch-min items-start gap-xs text-text-primary">
         <input
-          class="mt-2xs size-icon-md border-hairline border-glass-border bg-glass-white-6 accent-iridescent-cyan focus-visible:focus-ring disabled:state-disabled"
+          class="mt-2xs size-icon-md border-hairline border-border-default bg-surface-raised accent-surface-primary focus-visible:focus-ring disabled:state-disabled"
           type="radio"
           [id]="controlId"
           [name]="name()"

@@ -52,11 +52,11 @@ export class AvatarComponent {
   protected readonly classes = computed(() => {
     const sizes: Record<UiSize, string> = {
       sm: 'size-control-sm type-label-sm',
-      md: 'size-control-md type-label-md',
+      md: 'min-h-touch-min min-w-touch-min type-label-md',
       lg: 'size-control-lg type-label-lg',
     };
 
-    return `relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-hairline border-glass-border bg-glass-white-12 text-primary-900 shadow-glass-flat backdrop-blur-md ${sizes[this.size()]}`;
+    return `relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-hairline border-border-default bg-surface-subtle text-primary-900 shadow-xs  ${sizes[this.size()]}`;
   });
 
   protected readonly statusClasses = computed(() => {

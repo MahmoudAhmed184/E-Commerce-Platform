@@ -11,7 +11,7 @@ export type InputControlType = 'text' | 'email' | 'password' | 'number' | 'tel' 
   host: { class: 'contents' },
   template: `
     <input
-      class="min-h-control-md w-full rounded-sm border-hairline border-glass-border bg-glass-white-6 px-sm py-xs text-text-primary shadow-glass-flat backdrop-blur-md interactive-transition placeholder:text-text-muted focus-visible:border-border-focus focus-visible:focus-ring disabled:state-disabled aria-invalid:border-border-error"
+      class="min-h-touch-min w-full rounded-sm border-hairline border-border-default bg-surface-raised px-sm py-xs type-body-sm text-text-primary shadow-xs interactive-transition placeholder:text-text-muted focus-visible:border-border-focus focus-visible:focus-ring disabled:state-disabled aria-invalid:border-border-error"
       [id]="id()"
       [name]="name() || id()"
       [type]="type()"

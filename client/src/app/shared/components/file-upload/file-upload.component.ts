@@ -21,7 +21,7 @@ interface UploadErrorItem {
   host: { class: 'contents' },
   template: `
     <section class="grid gap-md">
-      <label class="glass-panel glass-depth-raised grid cursor-pointer gap-xs rounded-md border-dashed p-lg text-center interactive-transition hover:shadow-glass-floating focus-within:border-border-focus focus-within:focus-ring">
+      <label class="surface-panel surface-depth-raised grid cursor-pointer gap-xs rounded-md border-dashed p-lg text-center interactive-transition hover:shadow-md focus-within:border-border-focus focus-within:focus-ring">
         <span class="type-label-md text-text-primary">{{ label() }}</span>
         <span class="type-body-sm text-text-muted">{{ helperText() }}</span>
         <input class="sr-only" type="file" [id]="inputId" [attr.accept]="accept()" [multiple]="multiple()" (change)="handleFiles($event)" />
@@ -37,7 +37,7 @@ interface UploadErrorItem {
 
       <div class="grid gap-sm md:grid-cols-2">
         @for (item of files(); track item.id) {
-          <article class="glass-panel glass-depth-raised grid gap-xs rounded-md p-sm">
+          <article class="surface-panel surface-depth-raised grid gap-xs rounded-md p-sm">
             @if (item.previewUrl) {
               <img class="aspect-square w-full rounded-sm object-cover" [src]="item.previewUrl" [alt]="item.file.name" />
             }
@@ -46,7 +46,7 @@ interface UploadErrorItem {
                 <p class="truncate type-label-md text-text-primary">{{ item.file.name }}</p>
                 <p class="type-body-sm text-text-muted">{{ item.file.size }} bytes</p>
               </div>
-              <button class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring" type="button" [attr.aria-label]="'Remove ' + item.file.name" (click)="remove(item.id)">
+              <button class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-surface-subtle focus-visible:focus-ring" type="button" [attr.aria-label]="'Remove ' + item.file.name" (click)="remove(item.id)">
                 <span aria-hidden="true">x</span>
               </button>
             </div>
@@ -54,7 +54,7 @@ interface UploadErrorItem {
               <p class="type-body-sm text-text-error">{{ item.error }}</p>
             }
             <label class="flex min-h-touch-min items-center gap-xs type-label-sm text-text-primary">
-              <input class="size-icon-md accent-iridescent-cyan focus-visible:focus-ring" type="radio" name="primary-upload" [checked]="item.id === primaryId()" (change)="primaryChanged.emit(item.id)" />
+              <input class="size-icon-md accent-surface-primary focus-visible:focus-ring" type="radio" name="primary-upload" [checked]="item.id === primaryId()" (change)="primaryChanged.emit(item.id)" />
               Primary image
             </label>
           </article>

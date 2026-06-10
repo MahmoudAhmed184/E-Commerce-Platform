@@ -8,7 +8,7 @@ import { uniqueId } from '../component-utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="grid gap-xs">
+    <div class="grid gap-1.5">
       @if (label()) {
         <label class="type-label-md text-text-primary" [for]="forId()">
           {{ label() }}

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import type { UiTone } from '../ui.types';
 
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
+
 @Component({
   selector: 'app-badge',
   standalone: true,
@@ -17,22 +19,43 @@ import type { UiTone } from '../ui.types';
   `,
 })
 export class BadgeComponent {
-  readonly tone = input<UiTone>('neutral');
+  readonly variant = input<BadgeVariant>('default');
+  readonly tone = input<UiTone | null>(null);
   readonly label = input.required<string>();
   readonly count = input<number | null>(null);
 
   protected readonly classes = computed(() => {
-    const tones: Record<UiTone, string> = {
-      neutral: 'bg-neutral-100 text-neutral-700',
-      primary: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-      secondary: 'border border-neutral-200 text-neutral-600',
-      success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-      warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-      error: 'bg-red-50 text-red-700 border border-red-200',
-      info: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-      accent: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+    const variants: Record<BadgeVariant, string> = {
+      default: 'bg-surface-subtle text-text-secondary',
+      success: 'border-hairline border-success-600 bg-surface-success text-text-success',
+      warning: 'border-hairline border-warning-600 bg-surface-warning text-text-warning',
+      error: 'border-hairline border-border-error bg-surface-error text-text-error',
+      info: 'border-hairline border-info-600 bg-surface-info text-text-info',
+      outline: 'border-hairline border-border-default text-text-secondary',
     };
 
-    return `inline-flex items-center rounded-full text-xs font-medium px-2.5 py-0.5 font-mono ${tones[this.tone()]}`;
+    return `inline-flex items-center gap-1 rounded-full px-xs py-2xs type-label-sm ${variants[this.resolvedVariant()]}`;
   });
+
+  private resolvedVariant(): BadgeVariant {
+    const tone = this.tone();
+    if (!tone) {
+      return this.variant();
+    }
+
+    const tones: Record<UiTone, BadgeVariant> = {
+      default: 'default',
+      neutral: 'default',
+      primary: 'info',
+      secondary: 'outline',
+      success: 'success',
+      warning: 'warning',
+      error: 'error',
+      info: 'info',
+      accent: 'info',
+      outline: 'outline',
+    };
+
+    return tones[tone];
+  }
 }

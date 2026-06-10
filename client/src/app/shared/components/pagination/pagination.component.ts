@@ -19,15 +19,15 @@ interface PageItem {
       </p>
 
       <div class="flex flex-wrap items-center justify-center gap-xs md:justify-self-center">
-        <button class="glass-panel glass-depth-flat min-h-control-md rounded-md px-sm type-label-md interactive-transition hover:shadow-glass-raised focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="page() <= 1 || loading()" (click)="pageChange.emit(page() - 1)">
+        <button class="surface-panel surface-depth-flat min-h-touch-min rounded-md px-sm type-label-md interactive-transition hover:shadow-sm focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="page() <= 1 || loading()" (click)="pageChange.emit(page() - 1)">
           Previous
         </button>
         @for (candidate of pages(); track candidate.id) {
           <button
-            class="min-h-control-md min-w-control-md rounded-md border-hairline px-sm type-label-md interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring disabled:state-disabled"
+            class="min-h-touch-min min-w-touch-min rounded-md border-hairline px-sm type-label-md interactive-transition hover:bg-surface-subtle focus-visible:focus-ring disabled:state-disabled"
             [class.border-border-focus]="candidate.value === page()"
-            [class.border-glass-border]="candidate.value !== page()"
-            [class.bg-glass-white-12]="candidate.value === page()"
+            [class.border-border-default]="candidate.value !== page()"
+            [class.bg-surface-subtle]="candidate.value === page()"
             type="button"
             [attr.aria-current]="candidate.value === page() ? 'page' : null"
             [disabled]="loading()"
@@ -36,7 +36,7 @@ interface PageItem {
             {{ candidate.value }}
           </button>
         }
-        <button class="glass-panel glass-depth-flat min-h-control-md rounded-md px-sm type-label-md interactive-transition hover:shadow-glass-raised focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="page() >= totalPages() || loading()" (click)="pageChange.emit(page() + 1)">
+        <button class="surface-panel surface-depth-flat min-h-touch-min rounded-md px-sm type-label-md interactive-transition hover:shadow-sm focus-visible:focus-ring disabled:state-disabled" type="button" [disabled]="page() >= totalPages() || loading()" (click)="pageChange.emit(page() + 1)">
           Next
         </button>
       </div>
@@ -44,7 +44,7 @@ interface PageItem {
       @if (pageSizeOptions().length) {
         <label class="flex items-center gap-xs type-body-sm text-text-muted md:justify-self-end">
           Rows
-          <select class="min-h-control-sm rounded-sm border-hairline border-glass-border bg-glass-white-6 px-xs shadow-glass-flat backdrop-blur-md focus-visible:focus-ring" [value]="pageSize()" (change)="changePageSize($event)">
+          <select class="min-h-touch-min rounded-sm border-hairline border-border-default bg-surface-raised px-xs shadow-xs  focus-visible:focus-ring" [value]="pageSize()" (change)="changePageSize($event)">
             @for (size of pageSizeItems(); track size.id) {
               <option [value]="size.value">{{ size.value }}</option>
             }

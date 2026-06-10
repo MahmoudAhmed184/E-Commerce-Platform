@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="glass-panel glass-depth-raised inline-flex overflow-hidden rounded-md" role="group" [attr.aria-label]="label()">
+    <div class="surface-panel surface-depth-raised inline-flex overflow-hidden rounded-md" role="group" [attr.aria-label]="label()">
       <ng-content />
     </div>
   `,

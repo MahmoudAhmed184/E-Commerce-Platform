@@ -33,7 +33,7 @@ export type SonnerTone = 'info' | 'success' | 'warning' | 'error';
       }
       @if (dismissible()) {
         <button
-          class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+          class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
           type="button"
           aria-label="Dismiss notification"
           (click)="dismiss.emit()"
@@ -68,7 +68,7 @@ export class SonnerComponent implements OnDestroy {
       error: 'border-destructive/40',
     };
 
-    return `glass-panel glass-depth-floating fixed end-gutter-xs bottom-gutter-xs z-toast flex max-w-[var(--ui-container-sm)] items-center gap-sm rounded-lg p-sm ${tones[this.tone()]}`;
+    return `surface-panel surface-depth-floating fixed end-gutter-xs bottom-gutter-xs z-toast flex max-w-[var(--ui-container-sm)] items-center gap-sm rounded-md p-sm ${tones[this.tone()]}`;
   });
 
   constructor() {

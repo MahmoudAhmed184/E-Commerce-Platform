@@ -55,7 +55,7 @@ interface NormalizedMenuGroup extends Omit<UiMenuGroup, 'items'> {
           }
           @for (item of group.items; track item.id) {
             <button
-              class="grid min-h-control-sm w-full gap-2xs rounded-sm px-sm py-xs text-start interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring disabled:state-disabled"
+              class="grid min-h-touch-min w-full gap-2xs rounded-sm px-sm py-xs text-start interactive-transition hover:bg-surface-subtle focus-visible:focus-ring disabled:state-disabled"
               [class.text-text-error]="item.destructive"
               [class.text-text-primary]="!item.destructive"
               type="button"
@@ -95,19 +95,19 @@ export class DropdownMenuComponent {
     if (this.trigger() === 'avatar') {
       return [
         'inline-flex',
-        'size-control-md',
+        'min-h-touch-min min-w-touch-min',
         'items-center',
         'justify-center',
         'rounded-full',
         'p-0',
         'interactive-transition',
-        'hover:shadow-glass-floating',
+        'hover:shadow-md',
         'focus-visible:focus-ring',
         'disabled:state-disabled',
       ].join(' ');
     }
 
-    return 'glass-panel glass-depth-raised inline-flex min-h-control-md items-center gap-xs rounded-md px-md py-xs type-label-md text-text-primary interactive-transition hover:shadow-glass-floating focus-visible:focus-ring disabled:state-disabled';
+    return 'surface-panel surface-depth-raised inline-flex min-h-touch-min items-center gap-xs rounded-md px-md py-xs type-label-md text-text-primary interactive-transition hover:shadow-md focus-visible:focus-ring disabled:state-disabled';
   });
   protected readonly normalizedGroups = computed<readonly NormalizedMenuGroup[]>(() => {
     const disabledIds = new Set(this.disabledIds());
@@ -123,7 +123,7 @@ export class DropdownMenuComponent {
   });
   protected readonly menuClasses = computed(() => {
     const placement = this.placement() === 'end' ? 'end-0' : 'start-0';
-    return `glass-panel glass-depth-floating absolute ${placement} top-full z-dropdown mt-2xs grid w-[18rem] max-w-[90vw] gap-2xs rounded-md p-2xs`;
+    return `surface-panel surface-depth-floating absolute ${placement} top-full z-dropdown mt-2xs grid w-[18rem] max-w-[90vw] gap-2xs rounded-md p-2xs`;
   });
 
   protected choose(item: NormalizedMenuItem): void {

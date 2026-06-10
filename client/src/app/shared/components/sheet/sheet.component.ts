@@ -13,7 +13,7 @@ export type SheetSize = 'sm' | 'md' | 'lg';
   template: `
     @if (open()) {
       <div
-        class="fixed inset-[var(--ui-space-0)] z-drawer bg-overlay-backdrop backdrop-blur-xl"
+        class="fixed inset-[var(--ui-space-0)] z-drawer bg-overlay-backdrop "
         [attr.role]="modal() ? 'dialog' : null"
         [attr.aria-modal]="modal() ? 'true' : null"
         [attr.aria-labelledby]="titleId"
@@ -22,11 +22,11 @@ export type SheetSize = 'sm' | 'md' | 'lg';
         (keydown)="handleKeydown($event)"
       >
         <aside [class]="panelClasses()" tabindex="-1">
-          <header class="flex items-center justify-between gap-md border-b border-glass-border pb-md">
+          <header class="flex items-center justify-between gap-md border-b border-border-default pb-md">
             <div class="flex items-center gap-xs">
               @if (backButton()) {
                 <button
-                  class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+                  class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
                   type="button"
                   aria-label="Go back"
                   (click)="back.emit()"
@@ -43,7 +43,7 @@ export type SheetSize = 'sm' | 'md' | 'lg';
             </div>
             @if (dismissible()) {
               <button
-                class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+                class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
                 type="button"
                 aria-label="Close panel"
                 (click)="closed.emit()"
@@ -79,7 +79,7 @@ export class SheetComponent {
   private lastFocused: HTMLElement | null = null;
 
   protected readonly panelClasses = computed(() => {
-    const base = 'glass-panel glass-depth-overlay absolute inset-y-0 flex h-full flex-col p-md text-card-foreground';
+    const base = 'surface-panel surface-depth-overlay absolute inset-y-0 flex h-full flex-col p-md text-card-foreground';
     const sizes: Record<SheetSize, string> = {
       sm: 'w-full max-w-[var(--ui-container-sm)]',
       md: 'w-full max-w-[var(--ui-container-md)]',

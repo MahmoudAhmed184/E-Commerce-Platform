@@ -6,8 +6,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="h-2 overflow-hidden rounded-full bg-glass-white-6 shadow-glass-flat backdrop-blur-md" role="progressbar" [attr.aria-label]="label()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="boundedValue()">
-      <div class="h-full rounded-full bg-[linear-gradient(90deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] interactive-transition" [style.width.%]="boundedValue()"></div>
+    <div class="h-2 overflow-hidden rounded-full bg-surface-raised shadow-xs" role="progressbar" [attr.aria-label]="label()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="boundedValue()">
+      <div class="h-full rounded-full bg-surface-primary interactive-transition" [style.width.%]="boundedValue()"></div>
     </div>
   `,
 })

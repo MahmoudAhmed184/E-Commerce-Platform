@@ -12,7 +12,7 @@ export type EmptyStateType = 'cart' | 'search' | 'orders' | 'reviews' | 'admin' 
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <section class="glass-panel glass-depth-floating mx-auto grid max-w-[var(--ui-container-md)] justify-items-center gap-md rounded-md p-xl text-center">
+    <section class="surface-panel surface-depth-floating mx-auto grid max-w-[var(--ui-container-md)] justify-items-center gap-md rounded-md p-xl text-center">
       <div class="text-text-muted" aria-hidden="true">
         <ng-content select="[empty-illustration]" />
       </div>

@@ -27,13 +27,13 @@ export type DialogSize = 'sm' | 'md' | 'lg';
   template: `
     @if (open()) {
       <div
-        class="fixed inset-[var(--ui-space-0)] z-modal grid place-items-center bg-overlay-backdrop p-gutter-xs backdrop-blur-xl"
+        class="fixed inset-[var(--ui-space-0)] z-modal grid place-items-center bg-overlay-backdrop p-gutter-xs "
         tabindex="-1"
         (click)="backdropClick($event)"
         (keydown)="handleKeydown($event)"
       >
         <section
-          class="glass-panel glass-depth-modal max-h-[var(--ui-layout-modal-max-block)] w-full overflow-auto rounded-lg p-lg text-card-foreground"
+          class="surface-panel surface-depth-modal max-h-[var(--ui-layout-modal-max-block)] w-full overflow-auto rounded-md p-lg text-card-foreground"
           [class]="sizeClass()"
           role="dialog"
           aria-modal="true"
@@ -50,7 +50,7 @@ export type DialogSize = 'sm' | 'md' | 'lg';
             </div>
             @if (dismissible()) {
               <button
-                class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring"
+                class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center rounded-full text-icon-default interactive-transition hover:bg-surface-subtle focus-visible:focus-ring"
                 type="button"
                 aria-label="Close dialog"
                 (click)="closed.emit()"

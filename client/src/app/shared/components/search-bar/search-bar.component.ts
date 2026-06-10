@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { LucideSearch, LucideX } from '@lucide/angular';
 
 import { inputValue, uniqueId } from '../component-utils';
-import { SpinnerComponent } from '../spinner/spinner.component';
 
 export interface SearchSuggestion {
   id: string;
@@ -12,16 +12,27 @@ export interface SearchSuggestion {
 
 @Component({
   selector: 'app-search-bar',
-  standalone: true,
-  imports: [SpinnerComponent],
+  imports: [LucideSearch, LucideX],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <form class="relative" role="search" (submit)="submit($event)">
+    <form
+      class="relative min-w-0"
+      role="search"
+      (submit)="submit($event)"
+      (focusout)="handleFocusOut($event)"
+    >
       <label class="sr-only" [for]="inputId">{{ scope() }} search</label>
-      <div class="glass-panel glass-depth-raised flex min-h-control-lg items-center gap-xs rounded-md px-sm py-2xs interactive-transition focus-within:border-border-focus focus-within:shadow-glass-floating focus-within:focus-ring">
+      <div
+        class="flex min-h-touch-min items-center overflow-hidden rounded-md border-hairline border-border-default bg-surface-raised shadow-xs interactive-transition focus-within:border-border-focus focus-within:focus-ring"
+      >
+        <svg
+          lucideSearch
+          class="ms-sm size-icon-sm shrink-0 text-icon-muted"
+          aria-hidden="true"
+        ></svg>
         <input
-          class="min-h-control-md min-w-0 flex-1 bg-transparent type-body-md text-text-primary outline-none placeholder:text-text-muted disabled:state-disabled"
+          class="min-h-touch-min min-w-0 flex-1 bg-transparent px-xs type-body-sm text-text-primary outline-none placeholder:text-text-muted disabled:state-disabled"
           role="combobox"
           aria-autocomplete="list"
           [id]="inputId"
@@ -31,40 +42,82 @@ export interface SearchSuggestion {
           [disabled]="disabled()"
           [attr.aria-controls]="listboxId"
           [attr.aria-expanded]="open()"
+          [attr.aria-activedescendant]="activeDescendant()"
           [attr.aria-describedby]="liveId"
           (input)="onInput(inputValue($event))"
-          (focus)="open.set(query().length >= minChars())"
-          (keydown.escape)="open.set(false)"
+          (focus)="handleFocus()"
+          (keydown)="handleKeydown($event)"
         />
         @if (loading()) {
-          <app-spinner size="sm" label="Loading suggestions" />
+          <span class="px-xs type-code-sm text-text-muted">Loading</span>
         }
         @if (query()) {
-          <button class="inline-flex size-control-sm items-center justify-center rounded-full text-icon-muted interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring" type="button" aria-label="Clear search" (click)="clearSearch()">
-            <span aria-hidden="true">x</span>
+          <button
+            class="inline-flex min-h-touch-min min-w-touch-min items-center justify-center text-icon-muted interactive-transition hover:bg-surface-subtle hover:text-icon-default focus-visible:focus-ring"
+            type="button"
+            aria-label="Clear search"
+            (click)="clearSearch()"
+          >
+            <svg lucideX class="size-icon-sm" aria-hidden="true"></svg>
           </button>
         }
         @if (showSubmit()) {
-          <button class="min-h-control-md rounded-md border-hairline border-glass-border bg-[linear-gradient(135deg,var(--ui-color-iridescent-violet),var(--ui-color-iridescent-cyan),var(--ui-color-iridescent-emerald))] px-md type-label-md text-text-on-primary shadow-glass-raised interactive-transition hover:shadow-glass-floating focus-visible:focus-ring disabled:state-disabled" type="submit" [disabled]="disabled() || query().length < minChars()">
-            Search
+          <button
+            class="inline-flex min-h-touch-min items-center gap-xs border-s border-border-default bg-surface-primary px-md type-label-md text-text-on-primary interactive-transition hover:bg-surface-primary-hover focus-visible:focus-ring disabled:state-disabled"
+            type="submit"
+            [disabled]="disabled() || query().length < minChars()"
+          >
+            <svg lucideSearch class="size-icon-sm" aria-hidden="true"></svg>
+            <span>{{ submitLabel() }}</span>
           </button>
         }
       </div>
 
       @if (open()) {
-        <div class="glass-panel glass-depth-floating absolute z-dropdown mt-xs grid w-full gap-2xs rounded-md p-xs" role="listbox" [id]="listboxId">
+        <div
+          class="surface-panel surface-depth-floating absolute z-dropdown mt-2xs grid w-full gap-2xs rounded-md p-2xs"
+          role="listbox"
+          [id]="listboxId"
+          [attr.aria-labelledby]="inputId"
+        >
           @if (error()) {
-            <p class="px-sm py-xs type-body-sm text-text-error" role="option" aria-disabled="true" aria-selected="false">{{ error() }}</p>
+            <p
+              class="px-sm py-xs type-body-sm text-text-error"
+              role="option"
+              aria-disabled="true"
+              aria-selected="false"
+            >
+              {{ error() }}
+            </p>
           } @else {
-            @for (suggestion of suggestions(); track suggestion.id) {
-              <button class="grid min-h-control-md w-full rounded-md px-sm py-xs text-start interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring" type="button" role="option" aria-selected="false" (click)="selectSuggestion(suggestion)">
+            @for (suggestion of suggestions(); track suggestion.id; let index = $index) {
+              <div
+                class="grid min-h-touch-min cursor-pointer rounded-sm px-sm py-xs text-start interactive-transition hover:bg-surface-subtle"
+                role="option"
+                tabindex="-1"
+                [id]="suggestionId(index)"
+                [attr.aria-selected]="isActiveIndex(index)"
+                [class.bg-surface-subtle]="isActiveIndex(index)"
+                (mouseenter)="activeIndex.set(index)"
+                (mousedown)="$event.preventDefault()"
+                (click)="selectSuggestion(suggestion)"
+                (keydown.enter)="selectSuggestion(suggestion)"
+                (keydown.space)="selectSuggestion(suggestion)"
+              >
                 <span class="type-label-md text-text-primary">{{ suggestion.label }}</span>
                 @if (suggestion.description) {
                   <span class="type-body-sm text-text-muted">{{ suggestion.description }}</span>
                 }
-              </button>
+              </div>
             } @empty {
-              <p class="px-sm py-xs type-body-sm text-text-muted" role="option" aria-disabled="true" aria-selected="false">No suggestions</p>
+              <p
+                class="px-sm py-xs type-body-sm text-text-muted"
+                role="option"
+                aria-disabled="true"
+                aria-selected="false"
+              >
+                No suggestions
+              </p>
             }
           }
         </div>
@@ -79,6 +132,7 @@ export class SearchBarComponent {
   readonly suggestions = input<readonly SearchSuggestion[]>([]);
   readonly scope = input('Product');
   readonly placeholder = input('Search products');
+  readonly submitLabel = input('Search');
   readonly showSubmit = input(true);
   readonly minChars = input(2);
   readonly resultCount = input<number | null>(null);
@@ -95,6 +149,10 @@ export class SearchBarComponent {
   protected readonly listboxId = `${this.inputId}-listbox`;
   protected readonly liveId = `${this.inputId}-live`;
   protected readonly open = signal(false);
+  protected readonly activeIndex = signal(-1);
+  protected readonly activeDescendant = computed(() =>
+    this.open() && this.activeIndex() >= 0 ? this.suggestionId(this.activeIndex()) : null,
+  );
   protected readonly announcement = computed(() => {
     if (this.resultCount() !== null) {
       return `${this.resultCount()} results available.`;
@@ -109,24 +167,125 @@ export class SearchBarComponent {
   protected onInput(value: string): void {
     this.queryChange.emit(value);
     this.open.set(value.length >= this.minChars());
+    this.activateFirst();
   }
 
   protected submit(event: Event): void {
     event.preventDefault();
     if (this.query().length >= this.minChars()) {
       this.submitted.emit(this.query());
-      this.open.set(false);
+      this.close();
     }
   }
 
   protected selectSuggestion(suggestion: SearchSuggestion): void {
     this.suggestionSelected.emit(suggestion);
-    this.open.set(false);
+    this.close();
   }
 
   protected clearSearch(): void {
     this.queryChange.emit('');
     this.cleared.emit();
+    this.close();
+  }
+
+  protected suggestionId(index: number): string {
+    return `${this.listboxId}-option-${index}`;
+  }
+
+  protected isActiveIndex(index: number): boolean {
+    return this.activeIndex() === index;
+  }
+
+  protected handleFocus(): void {
+    this.open.set(this.query().length >= this.minChars());
+    this.activateFirst();
+  }
+
+  protected handleFocusOut(event: FocusEvent): void {
+    if (
+      event.currentTarget instanceof HTMLElement &&
+      event.relatedTarget instanceof Node &&
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+
+    this.close();
+  }
+
+  protected handleKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.openSuggestions();
+        this.moveActive(1);
+        return;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.openSuggestions();
+        this.moveActive(-1);
+        return;
+      case 'Home':
+        if (!this.open() || !this.suggestions().length) {
+          return;
+        }
+        event.preventDefault();
+        this.activateFirst();
+        return;
+      case 'End':
+        if (!this.open() || !this.suggestions().length) {
+          return;
+        }
+        event.preventDefault();
+        this.activeIndex.set(this.suggestions().length - 1);
+        return;
+      case 'Enter':
+        if (this.open() && this.activeIndex() >= 0) {
+          const suggestion = this.suggestions()[this.activeIndex()];
+          if (suggestion) {
+            event.preventDefault();
+            this.selectSuggestion(suggestion);
+          }
+        }
+        return;
+      case 'Escape':
+        event.preventDefault();
+        this.close();
+        return;
+      default:
+        return;
+    }
+  }
+
+  private openSuggestions(): void {
+    if (this.disabled() || this.query().length < this.minChars()) {
+      return;
+    }
+    this.open.set(true);
+    if (this.activeIndex() < 0) {
+      this.activateFirst();
+    }
+  }
+
+  private close(): void {
     this.open.set(false);
+    this.activeIndex.set(-1);
+  }
+
+  private activateFirst(): void {
+    this.activeIndex.set(this.suggestions().length ? 0 : -1);
+  }
+
+  private moveActive(delta: 1 | -1): void {
+    const suggestions = this.suggestions();
+    if (!suggestions.length) {
+      this.activeIndex.set(-1);
+      return;
+    }
+
+    const startIndex =
+      this.activeIndex() < 0 ? (delta > 0 ? -1 : suggestions.length) : this.activeIndex();
+    this.activeIndex.set((startIndex + delta + suggestions.length) % suggestions.length);
   }
 }

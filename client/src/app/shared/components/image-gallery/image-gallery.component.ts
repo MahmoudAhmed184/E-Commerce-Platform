@@ -16,7 +16,7 @@ import type { UiGalleryImage } from '../ui.types';
     } @else {
       <section class="grid gap-sm" aria-label="Image gallery">
         @if (selectedImage(); as image) {
-          <button class="glass-panel glass-depth-raised glass-border-shimmer grid overflow-hidden rounded-lg bg-surface-subtle focus-visible:focus-ring disabled:cursor-default" type="button" [disabled]="!zoomable()" (click)="openLightbox()">
+          <button class="surface-panel surface-depth-raised grid overflow-hidden rounded-md bg-surface-subtle focus-visible:focus-ring disabled:cursor-default" type="button" [disabled]="!zoomable()" (click)="openLightbox()">
             <img
               class="aspect-[var(--ui-ratio-hero-media)] max-h-[var(--ui-layout-product-gallery-max-block)] w-full object-contain p-sm sm:p-md"
               [src]="image.src"
@@ -28,10 +28,10 @@ import type { UiGalleryImage } from '../ui.types';
         <div class="flex gap-sm overflow-x-auto pb-2xs" role="list">
           @for (image of images(); track image.id; let index = $index) {
             <button
-              class="h-thumbnail-sm w-thumbnail-lg shrink-0 overflow-hidden rounded-full border-hairline bg-glass-white-12 p-2xs shadow-glass-flat backdrop-blur-md interactive-transition hover:border-border-focus hover:shadow-glass-floating focus-visible:focus-ring"
+              class="h-thumbnail-sm w-thumbnail-lg shrink-0 overflow-hidden rounded-full border-hairline bg-surface-subtle p-2xs shadow-xs  interactive-transition hover:border-border-focus hover:shadow-md focus-visible:focus-ring"
               [class.border-border-focus]="index === selectedIndex()"
-              [class.border-glass-border]="index !== selectedIndex()"
-              [class.shadow-glass-raised]="index === selectedIndex()"
+              [class.border-border-default]="index !== selectedIndex()"
+              [class.shadow-sm]="index === selectedIndex()"
               [class.opacity-100]="index === selectedIndex()"
               [class.opacity-75]="index !== selectedIndex()"
               type="button"

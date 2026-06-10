@@ -15,12 +15,12 @@ export interface AccordionItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <div class="glass-panel glass-depth-raised divide-y-hairline divide-glass-border rounded-md">
+    <div class="surface-panel surface-depth-raised divide-y-hairline divide-border-default rounded-md">
       @for (item of displayItems(); track item.id) {
         <section>
           <h3>
             <button
-              class="flex min-h-control-md w-full items-center justify-between gap-md px-md py-sm text-start type-label-md text-text-primary interactive-transition hover:bg-glass-white-12 focus-visible:focus-ring disabled:state-disabled"
+              class="flex min-h-touch-min w-full items-center justify-between gap-md px-md py-sm text-start type-label-md text-text-primary interactive-transition hover:bg-surface-subtle focus-visible:focus-ring disabled:state-disabled"
               type="button"
               [id]="item.buttonId"
               [disabled]="item.disabled"

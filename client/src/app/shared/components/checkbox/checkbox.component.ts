@@ -11,7 +11,7 @@ import { inputChecked, uniqueId } from '../component-utils';
     <div class="grid gap-2xs">
       <label class="flex min-h-touch-min items-start gap-xs text-text-primary">
         <input
-          class="mt-2xs size-icon-md rounded-sm border-hairline border-glass-border bg-glass-white-6 accent-iridescent-cyan focus-visible:focus-ring disabled:state-disabled"
+          class="mt-2xs size-icon-md rounded-sm border-hairline border-border-default bg-surface-raised accent-surface-primary focus-visible:focus-ring disabled:state-disabled"
           type="checkbox"
           [id]="controlId"
           [name]="name()"
@@ -23,7 +23,7 @@ import { inputChecked, uniqueId } from '../component-utils';
           [attr.aria-describedby]="error() ? errorId : null"
           (change)="checkedChange.emit(inputChecked($event))"
         />
-        <span class="grid gap-3xs">
+        <span [class]="labelHidden() ? 'sr-only' : 'grid gap-3xs'">
           <span class="type-label-md">{{ label() }}</span>
           @if (helper()) {
             <span class="type-body-sm text-text-muted">{{ helper() }}</span>
@@ -42,6 +42,7 @@ export class CheckboxComponent {
   readonly value = input<string | number>('on');
   readonly name = input<string | null>(null);
   readonly label = input.required<string>();
+  readonly labelHidden = input(false);
   readonly helper = input<string | null>(null);
   readonly disabled = input(false);
   readonly required = input(false);

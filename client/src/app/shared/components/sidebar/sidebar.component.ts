@@ -13,7 +13,7 @@ export interface SidebarLink {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <aside class="glass-panel glass-depth-raised hidden border-e border-glass-border p-md lg:block" [attr.aria-label]="ariaLabel()">
+    <aside class="surface-panel surface-depth-raised hidden border-e border-border-default p-md lg:block" [attr.aria-label]="ariaLabel()">
       <a class="inline-flex items-center gap-xs rounded-sm type-heading-sm text-card-foreground focus-visible:focus-ring" [routerLink]="homeLink()">
         <img class="size-8 object-contain" [src]="brandIconSrc()" alt="" width="1024" height="1024" />
         <span>{{ brandLabel() }}</span>
@@ -21,9 +21,9 @@ export interface SidebarLink {
       <nav class="mt-lg grid gap-2xs" [attr.aria-label]="navLabel()">
         @for (link of links(); track link.path) {
           <a
-            class="min-h-control-md rounded-md px-sm py-xs type-label-md text-muted-foreground interactive-transition hover:bg-glass-white-12 hover:text-card-foreground focus-visible:focus-ring"
+            class="min-h-touch-min rounded-md px-sm py-xs type-label-md text-muted-foreground interactive-transition hover:bg-surface-subtle hover:text-card-foreground focus-visible:focus-ring"
             [routerLink]="link.path"
-            routerLinkActive="bg-glass-white-12 text-text-primary shadow-glass-flat"
+            routerLinkActive="bg-surface-subtle text-text-primary shadow-xs"
             [routerLinkActiveOptions]="{ exact: link.path === homeLink() }"
           >
             {{ link.label }}

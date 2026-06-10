@@ -13,13 +13,13 @@ import type { UiAction } from '../ui.types';
   template: `
     @if (open()) {
       <div
-        class="fixed inset-[var(--ui-space-0)] z-modal grid place-items-center bg-overlay-backdrop p-gutter-xs backdrop-blur-xl"
+        class="fixed inset-[var(--ui-space-0)] z-modal grid place-items-center bg-overlay-backdrop p-gutter-xs "
         tabindex="-1"
         (click)="backdropClick($event)"
         (keydown)="handleKeydown($event)"
       >
         <section
-          class="glass-panel glass-depth-modal w-full max-w-[var(--ui-container-sm)] rounded-lg p-lg text-card-foreground"
+          class="surface-panel surface-depth-modal w-full max-w-[var(--ui-container-sm)] rounded-md p-lg text-card-foreground"
           role="alertdialog"
           aria-modal="true"
           [attr.aria-labelledby]="titleId"
