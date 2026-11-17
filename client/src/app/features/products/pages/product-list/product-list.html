@@ -1,155 +1,74 @@
-<div class="product-list-container">
-  <!-- Sidebar Filters -->
-  <aside class="filters-sidebar">
-    <div class="filter-header">
-      <h2>Filters</h2>
-      <button class="btn-clear" (click)="resetFilters()">Clear All</button>
-    </div>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+  <header class="mb-12">
+    <h1 class="text-3xl font-semibold tracking-tight text-neutral-950">Catalog</h1>
+    <p class="mt-2 text-neutral-600">Equipment designed for daily utility. In stock and ready to ship.</p>
+  </header>
 
-    <!-- Search -->
-    <div class="filter-group">
-      <label for="search">Search</label>
-      <input
-        type="text"
-        id="search"
-        [(ngModel)]="searchQuery"
-        (keyup.enter)="applyFilters()"
-        placeholder="Search products..."
-        class="form-control"
-      />
-    </div>
-
-    <!-- Categories -->
-    <div class="filter-group">
-      <label for="category">Category</label>
-      <select
-        id="category"
-        [(ngModel)]="selectedCategory"
-        (change)="applyFilters()"
-        class="form-control"
-      >
-        <option value="">All Categories</option>
-        @for (cat of categories; track cat.id) {
-          <option [value]="cat.slug">
-            {{ cat.name }}
-            @if (cat.product_count) {
-              ({{ cat.product_count }})
-            }
-          </option>
-        }
-      </select>
-    </div>
-
-    <!-- Price Range -->
-    <div class="filter-group">
-      <div class="filter-label">Price Range</div>
-      <div class="price-inputs">
-        <label for="min-price" class="sr-only">Minimum price</label>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <!-- Sidebar Filters -->
+    <aside class="md:col-span-1 space-y-6">
+      <!-- Search -->
+      <div>
+        <label class="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Search</label>
         <input
-          id="min-price"
-          type="number"
-          [(ngModel)]="minPrice"
-          placeholder="Min"
-          class="form-control"
-          min="0"
-        />
-        <span class="separator">–</span>
-        <label for="max-price" class="sr-only">Maximum price</label>
-        <input
-          id="max-price"
-          type="number"
-          [(ngModel)]="maxPrice"
-          placeholder="Max"
-          class="form-control"
-          min="0"
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="applyFilters()"
+          placeholder="Search by SKU or title..."
+          class="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:border-neutral-900 outline-none"
         />
       </div>
-    </div>
 
-    <button class="btn-apply" (click)="applyFilters()">Apply Filters</button>
-  </aside>
-
-  <!-- Product Grid -->
-  <main class="products-main">
-    <div class="products-header">
-      <div class="header-left">
-        <h1>Our Products</h1>
-        @if (!loading) {
-          <span class="results-count">{{ totalCount }} results</span>
-        }
-      </div>
-      <div class="header-right">
-        <label for="ordering" class="sr-only">Sort by</label>
-        <select id="ordering" [(ngModel)]="ordering" (change)="applyFilters()" class="form-control sort-control">
-          <option value="-created_at">Newest First</option>
-          <option value="created_at">Oldest First</option>
-          <option value="price">Price: Low to High</option>
-          <option value="-price">Price: High to Low</option>
-          <option value="name">Name A–Z</option>
+      <!-- Categories -->
+      <div>
+        <label class="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Category</label>
+        <select
+          [(ngModel)]="selectedCategory"
+          (change)="applyFilters()"
+          class="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white outline-none"
+        >
+          <option value="">All Categories</option>
+          @for (cat of categories; track cat.id) {
+            <option [value]="cat.slug">{{ cat.name }}</option>
+          }
         </select>
       </div>
-    </div>
 
-    <!-- Error -->
-    @if (error) {
-      <div class="error-state">
-        <p>{{ error }}</p>
-        <button class="btn-primary" (click)="loadProducts()">Retry</button>
+      <!-- Price Range -->
+      <div>
+        <label class="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Price Range</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="number"
+            [(ngModel)]="minPrice"
+            placeholder="Min"
+            class="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+          />
+          <span class="text-neutral-400">&mdash;</span>
+          <input
+            type="number"
+            [(ngModel)]="maxPrice"
+            placeholder="Max"
+            class="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm"
+          />
+        </div>
       </div>
-    }
+    </aside>
 
-    <!-- Loading -->
-    @if (loading) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading products...</p>
-      </div>
-    }
-
-    <!-- Empty -->
-    @if (!loading && !error && products.length === 0) {
-      <div class="empty-state">
-        <h3>No products found</h3>
-        <p>Try adjusting your filters to find what you're looking for.</p>
-        <button class="btn-primary" (click)="resetFilters()">Clear Filters</button>
-      </div>
-    }
-
-    <!-- Grid -->
-    @if (!loading && products.length > 0) {
-      <div class="products-grid">
-        @for (product of products; track product.id) {
-          <app-product-card [product]="product"></app-product-card>
-        }
-      </div>
-    }
-
-    <!-- Pagination -->
-    @if (!loading && totalPages > 1) {
-      <nav class="pagination" aria-label="Product pages">
-        <button
-          class="page-btn"
-          [disabled]="currentPage === 1"
-          (click)="goToPage(currentPage - 1)"
-          aria-label="Previous page"
-        >&#8592;</button>
-
-        @for (p of pages; track p) {
-          <button
-            class="page-btn"
-            [class.active]="p === currentPage"
-            (click)="goToPage(p)"
-            [attr.aria-current]="p === currentPage ? 'page' : null"
-          >{{ p }}</button>
-        }
-
-        <button
-          class="page-btn"
-          [disabled]="currentPage === totalPages"
-          (click)="goToPage(currentPage + 1)"
-          aria-label="Next page"
-        >&#8594;</button>
-      </nav>
-    }
-  </main>
+    <!-- Product Grid -->
+    <main class="md:col-span-3">
+      @if (products.length > 0) {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (product of products; track product.id) {
+            <app-product-card [product]="product"></app-product-card>
+          }
+        </div>
+      } @else if (!loading) {
+        <div class="text-center py-24 border border-dashed border-neutral-200 rounded-xl">
+          <h3 class="text-sm font-medium text-neutral-950">No products match</h3>
+          <button class="mt-4 text-xs text-neutral-600 underline" (click)="resetFilters()">Clear Filters</button>
+        </div>
+      }
+    </main>
+  </div>
 </div>
