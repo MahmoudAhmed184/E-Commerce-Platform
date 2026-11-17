@@ -92,6 +92,13 @@ DATABASES = {
     }
 }
 
+if "sqlite" in DATABASES["default"]["ENGINE"]:
+    db_name = os.environ.get("DB_NAME", "db.sqlite3")
+    if not os.path.isabs(db_name):
+        DATABASES["default"]["NAME"] = BASE_DIR / db_name
+    else:
+        DATABASES["default"]["NAME"] = db_name
+
 if "mysql" in DATABASES["default"]["ENGINE"]:
     DATABASES["default"]["OPTIONS"] = {
         "charset": "utf8mb4",

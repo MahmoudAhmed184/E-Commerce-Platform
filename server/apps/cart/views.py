@@ -54,3 +54,11 @@ class CartItemDetailView(APIView):
         except ObjectDoesNotExist:
             return Response({"detail": "Cart item not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(CartSerializer(cart, context={"request": request}).data)
+
+
+class CartClearView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        services.clear_cart_for_user(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)

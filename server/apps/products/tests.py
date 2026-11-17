@@ -428,7 +428,7 @@ class AdminProductAPITest(TestCase):
         for index in range(15):
             make_product(self.category, name=f"Admin Perf Product {index}")
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             response = self.client.get("/api/v1/products/admin/products/?page_size=12")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -12,3 +12,13 @@ DATABASES = {
 }
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "1000/minute",
+        "user": "1000/minute",
+        "auth": "10/minute",
+    },
+}
+

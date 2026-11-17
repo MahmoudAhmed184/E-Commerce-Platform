@@ -67,6 +67,7 @@ export class ProductDetailPage implements OnInit {
   }
 
   addToCart(): void {
+    console.log('Adding to cart, product:', this.product);
     if (!this.product || this.product.stock === 0 || this.addingToCart) {
       return;
     }

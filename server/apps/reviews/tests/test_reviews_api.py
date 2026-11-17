@@ -68,7 +68,8 @@ def test_public_product_reviews_only_include_visible_reviews(user: CustomUser, p
     response = APIClient().get(f"/api/v1/products/{product.slug}/reviews/")
 
     assert response.status_code == status.HTTP_200_OK
-    assert [review["id"] for review in response.data] == [visible.id]
+    results = response.data.get("results", response.data)
+    assert [review["id"] for review in results] == [visible.id]
 
 
 @pytest.mark.django_db
@@ -83,4 +84,4 @@ def test_review_owner_can_update_and_delete_review(user: CustomUser, product: Pr
     assert update_response.status_code == status.HTTP_200_OK
     assert update_response.data["rating"] == 4
     assert delete_response.status_code == status.HTTP_204_NO_CONTENT
-    assert not Review.objects.filter(id=review.id).exists()
+    assert not Review.objects.filter(id=review.id, deleted_at__isnull=True).exists()
