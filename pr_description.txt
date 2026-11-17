@@ -1,0 +1,10 @@
+feat: unsloop storefront components
+
+Refactored the header, catalog layout, and product cards to remove AI "slop" and align with the production standards defined in docs/boost/10_UNSLOP_WEBSITE_POLISH_PLAN.md.
+
+Changes:
+- Replaced indigo/purple color schemes with neutral graphite/black.
+- Streamlined navigation and layout spacing.
+- Normalized product cards with clear typography and consistent icons.
+
+Created with Antigravity agent in E-Commerce project.
