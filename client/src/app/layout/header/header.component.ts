@@ -2,32 +2,39 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
+import { CartService } from '../../features/cart/services/cart.service';
+import { CartService } from '../../features/cart/services/cart.service';
 
 @Component({
   selector: 'app-header',
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <header class="border-b border-slate-200 bg-white">
-      <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4" aria-label="Primary navigation">
-        <a routerLink="/products" class="text-lg font-semibold text-slate-950">Stack Commerce</a>
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          <a routerLink="/products" routerLinkActive="text-indigo-700" class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Products</a>
-          <a routerLink="/cart" routerLinkActive="text-indigo-700" class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Cart</a>
-          <a routerLink="/orders" routerLinkActive="text-indigo-700" class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Orders</a>
-          <a routerLink="/profile" routerLinkActive="text-indigo-700" class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Profile</a>
+    <header class="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
+        <!-- Brand -->
+        <a routerLink="/" class="flex items-center gap-2 text-neutral-950 font-semibold tracking-tight text-sm">
+          <span class="h-2 w-2 rounded-full bg-neutral-950"></span>
+          EQUIPMENT &bull; CO
+        </a>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3">
+          <a routerLink="/products" routerLinkActive="text-neutral-950" class="text-sm font-medium text-neutral-600 hover:text-neutral-900">Products</a>
+          <a routerLink="/cart" routerLinkActive="text-neutral-950" class="text-sm font-medium text-neutral-600 hover:text-neutral-900">Bag ({{ cartService.itemCount() }})</a>
           @if (authService.isLoggedIn()) {
-            <button type="button" class="rounded-md bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" (click)="logout()">Logout</button>
+            <button type="button" class="text-sm font-medium text-neutral-600 hover:text-neutral-900" (click)="logout()">Logout</button>
           } @else {
-            <a routerLink="/auth/login" class="rounded-md bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Login</a>
+            <a routerLink="/auth/login" class="text-sm font-medium text-neutral-600 hover:text-neutral-900">Login</a>
           }
         </div>
-      </nav>
+      </div>
     </header>
   `,
 })
 export class HeaderComponent {
   protected readonly authService = inject(AuthService);
+  protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
 
   protected logout(): void {
